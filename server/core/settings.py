@@ -1,17 +1,15 @@
 import os
 from pathlib import Path
-import environ 
-
+import environ
+from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-
 env = environ.Env(
     DEBUG=(bool, False) 
 )
 
-
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+
 
 
 SECRET_KEY = env('SECRET_KEY') 
@@ -27,6 +25,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'ninja_extra', 
+    'ninja_jwt',
+    'accounts',
+    'tickets',
     
 ]
 
@@ -62,15 +64,14 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql', [cite: 56]
-        'NAME': env('DB_NAME'),       
-        'USER': env('DB_USER'),      
-        'PASSWORD': env('DB_PASSWORD'),  
-        'HOST': env('DB_HOST'),      
-        'PORT': env('DB_PORT'),      
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('DB_NAME'),
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT'),
     }
 }
-
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -86,3 +87,17 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
+
+AUTH_USER_MODEL = 'accounts.User'
+
+SIMPLE_JWT = {
+   'ACCESS_TOKEN_LIFETIME': timedelta(days=1), # سنجعلها يوماً كاملاً للتجربة
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+}
+
+NINJA_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'AUTH_TOKEN_CLASSES': ('ninja_jwt.tokens.AccessToken',),
+}
