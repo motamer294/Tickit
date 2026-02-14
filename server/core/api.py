@@ -50,7 +50,7 @@ def signup(request, data: UserSignupSchema):
     )
     
     return {"id": user.id, "username": user.username, "role": user.role}
-
+#Tickets
 # 1. Assign Ticket (Strict Role Check)
 @api.patch("/tickets/{ticket_id}/assign/{employee_id}", response=TicketOutSchema)
 def assign_ticket(request, ticket_id: int, employee_id: int):
