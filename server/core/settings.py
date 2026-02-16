@@ -12,10 +12,11 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 
 
-SECRET_KEY = env('SECRET_KEY') 
+#SECRET_KEY = env('SECRET_KEY')
+SECRET_KEY = 'django-insecure-test-key-just-for-debugging'
 DEBUG = env('DEBUG') 
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*'] 
 
 # Application definition
 INSTALLED_APPS = [
@@ -91,7 +92,10 @@ STATIC_URL = 'static/'
 AUTH_USER_MODEL = 'accounts.User'
 
 SIMPLE_JWT = {
-   'ACCESS_TOKEN_LIFETIME': timedelta(days=1), # سنجعلها يوماً كاملاً للتجربة
+   'ACCESS_TOKEN_LIFETIME': timedelta(days=1), 
+   "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
     'AUTH_HEADER_TYPES': ('Bearer',),
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',

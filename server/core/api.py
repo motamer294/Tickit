@@ -5,7 +5,6 @@ from ninja import Schema
 from django.contrib.auth.hashers import make_password
 from typing import List
 from django.shortcuts import get_object_or_404
-
 from accounts.models import User
 from tickets.models import Ticket, Comment
 from tickets.services import update_ticket_status
@@ -16,6 +15,7 @@ from tickets.schemas import (
     CommentOutSchema
 )
 
+
 class GlobalAuth(JWTAuth):
     def authenticate(self, request, token):
         return super().authenticate(request, token)
@@ -23,7 +23,7 @@ class GlobalAuth(JWTAuth):
 api = NinjaExtraAPI(
     auth=GlobalAuth(),
     title="Help Desk API",
-    description="نظام إدارة التذاكر الذكي"
+    description="API for managing support tickets, users, and comments in a help desk system."
 )
 api.register_controllers(NinjaJWTDefaultController)
 
@@ -50,6 +50,7 @@ def signup(request, data: UserSignupSchema):
     )
     
     return {"id": user.id, "username": user.username, "role": user.role}
+####################
 #Tickets
 # 1. Assign Ticket (Strict Role Check)
 @api.patch("/tickets/{ticket_id}/assign/{employee_id}", response=TicketOutSchema)
@@ -76,13 +77,13 @@ def list_employee_tasks(request):
         return api.create_response(request, {"message": "Only employees have tasks"}, status=403)
 
     return Ticket.objects.filter(assigned_to=request.user)
-# 3. إنشاء تذكرة
+# 3. Create Ticket (Open to Customers & Employees)
 @api.post("/tickets", response=TicketOutSchema)
 def create_ticket(request, data: TicketCreateSchema):
     ticket = Ticket.objects.create(**data.dict(), created_by=request.user)
     return ticket
 
-# 4. تذاكري (حسب الدور)
+# 4. List My Tickets (Customers see their own, Managers see all)
 @api.get("/my-tickets", response=List[TicketOutSchema])
 def list_my_tickets(request):
     # FIX: Using User.Role enum
