@@ -1,5 +1,4 @@
 import os
-# 1. Add this magic line specifically for testing
 os.environ["NINJA_SKIP_REGISTRY"] = "True"
 from django.test import TestCase
 from ninja.testing import TestClient
