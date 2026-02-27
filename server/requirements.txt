@@ -4,6 +4,7 @@ cffi==2.0.0
 contextlib2==21.6.0
 cryptography==46.0.5
 Django==6.0.2
+django-cors-headers==4.9.0
 django-environ==0.12.0
 django-ninja==1.5.3
 django-ninja-extra==0.31.0
@@ -25,4 +26,3 @@ python-dotenv==1.2.1
 sqlparse==0.5.5
 typing-inspection==0.4.2
 typing_extensions==4.15.0
-django-cors-headers
