@@ -12,7 +12,8 @@ from tickets.schemas import (
     TicketCreateSchema, 
     TicketOutSchema, 
     CommentSchema, 
-    CommentOutSchema
+    CommentOutSchema,
+    TicketStatusUpdateSchema
 )
 
 
@@ -96,9 +97,58 @@ def list_my_tickets(request):
 def add_comment(request, ticket_id: int, data: CommentSchema):
     ticket = get_object_or_404(Ticket, id=ticket_id)
     
+    # --- SECURITY/AUTHORIZATION CHECK ---
+    # Determine if the user has rights to this specific ticket
+    is_manager = request.user.role == User.Role.MANAGER
+    is_creator = ticket.created_by == request.user
+    is_assignee = ticket.assigned_to == request.user
+    
+    # If they are none of these, block the request
+    if not (is_manager or is_creator or is_assignee):
+        return api.create_response(
+            request, 
+            {"message": "You do not have permission to comment on this ticket."}, 
+            status=403
+        )
+    # ------------------------------------
+    
     comment = Comment.objects.create(
         ticket=ticket,
         author=request.user,
         text=data.text
     )
     return comment
+# 6. Update Ticket Status (Strict Access)
+@api.patch("/tickets/{ticket_id}/status", response=TicketOutSchema)
+
+def update_status(request, ticket_id: int, data: TicketStatusUpdateSchema):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    # --- SECURITY CHECK ---
+    # Only the agent working on the ticket or an IT Manager can change its status
+    is_manager = request.user.role == User.Role.MANAGER
+    is_assignee = ticket.assigned_to == request.user
+
+    if not (is_manager or is_assignee):
+        return api.create_response(
+            request, 
+            {"message": "Only the assigned agent or a manager can update the status."}, 
+            status=403
+        )
+
+    # --- VALIDATION CHECK ---
+    # Prevent the frontend from sending made-up statuses like "SUPER_DONE"
+    valid_statuses = [choice[0] for choice in Ticket.Status.choices]
+    if data.status not in valid_statuses:
+         return api.create_response(
+            request, 
+            {"message": f"Invalid status. Must be one of: {valid_statuses}"}, 
+            status=400
+        )
+
+    # --- EXECUTE BUSINESS LOGIC ---
+    # This calls the service we already wrote in services.py
+    # It safely updates the ticket AND generates the TicketHistory audit log in one transaction
+    update_ticket_status(ticket, data.status, request.user)
+
+    return ticket
