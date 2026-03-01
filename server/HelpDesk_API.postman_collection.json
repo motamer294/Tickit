@@ -1,0 +1,97 @@
+{
+  "info": {
+    "_postman_id": "677cf7ab-2d5b-4eb6-96a5-5f55703cc402",
+    "name": "HelpDesk_API.postman_collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "47933104"
+  },
+  "item": [
+    {
+      "name": "http://127.0.0.1:8000/api/tickets",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzcxMzY0NDQyLCJpYXQiOjE3NzEyNzgwNDIsImp0aSI6ImI2ZDJjOTFjNjFiODRiMGY5YmIyOGNmMzg5MWU2Y2NhIiwidXNlcl9pZCI6OX0.yZWlIbWrVgKuPmOHue5o7_hO5Uk6ERIQox59TE8AIJs",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"title\": \"Postman Test\",\r\n  \"description\": \"This is so much easier than Swagger\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8000/api/tickets",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "tickets"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "http://127.0.0.1:8000/api/my-tickets",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzcxMzY0NDQyLCJpYXQiOjE3NzEyNzgwNDIsImp0aSI6ImI2ZDJjOTFjNjFiODRiMGY5YmIyOGNmMzg5MWU2Y2NhIiwidXNlcl9pZCI6OX0.yZWlIbWrVgKuPmOHue5o7_hO5Uk6ERIQox59TE8AIJs",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8000/api/my-tickets",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "my-tickets"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

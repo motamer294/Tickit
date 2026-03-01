@@ -16,7 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from .api import api # استيراد الـ api الذي أنشأناه
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path("api/", api.urls), # كل طلبات الـ API تبدأ بـ /api/
 ]
