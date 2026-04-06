@@ -1,0 +1,101 @@
+faq_id,domain,category,question,answer,created_date
+FAQ-001,E-Commerce / Retail,billing,How long does a refund take?,Refunds are processed within 3–5 business days for cards. Bank transfers may take up to 10 business days.,2025-08-15
+FAQ-002,E-Commerce / Retail,billing,I was charged twice. What should I do?,Contact support with your order number and both transaction IDs. We will verify and refund the duplicate within 2 business days.,2025-10-17
+FAQ-003,E-Commerce / Retail,billing,Why was I charged after cancelling?,"Cancellations within 1 hour are voided. If charged, it's a temporary authorisation that drops off within 3–5 days.",2025-12-09
+FAQ-004,E-Commerce / Retail,billing,My promo code didn't apply. Can I still get it?,Contact support within 24 hours with your order number and code. We will apply as a partial refund.,2025-10-10
+FAQ-005,E-Commerce / Retail,billing,How do I get an invoice?,Go to My Orders → select order → Download Invoice. Invoices are also emailed at purchase.,2025-09-18
+FAQ-006,E-Commerce / Retail,billing,Can I get price adjustment if price drops?,We offer price adjustment within 48 hours if the same item drops in price. Contact support with order number.,2025-10-04
+FAQ-007,E-Commerce / Retail,billing,Why is my refund only partial?,Partial refunds occur when items lack original packaging or are damaged. Check return confirmation for breakdown.,2025-09-14
+FAQ-008,E-Commerce / Retail,billing,Invoice shows different amount than I paid.,Invoices reflect final settled amount. Discrepancies can be from tax adjustments or conversion. Contact support.,2025-10-25
+FAQ-009,E-Commerce / Retail,billing,How do I cancel a subscription?,Go to Account → Subscriptions → select → Cancel. Takes effect at end of current cycle.,2025-10-04
+FAQ-010,E-Commerce / Retail,billing,Gift card wasn't deducted at checkout.,"Codes are case-sensitive with no spaces. If correct but not working, contact support with card number.",2025-08-19
+FAQ-011,E-Commerce / Retail,billing,Are there hidden fees?,"We only charge product price, taxes, and selected shipping. No hidden fees. All shown before payment confirmation.",2025-10-10
+FAQ-012,E-Commerce / Retail,billing,How do I dispute an unrecognised charge?,"Check if a family member ordered. If not, contact support immediately with transaction date and amount.",2025-09-04
+FAQ-013,E-Commerce / Retail,billing,Can I change payment method after ordering?,Payment methods cannot be changed once confirmed. Cancel and re-order with correct method.,2026-01-18
+FAQ-014,E-Commerce / Retail,billing,What happens to refund if I paid with gift card?,"Refunds return to original gift card. If card fully redeemed and partially paid by card, card portion refunds to card.",2026-02-03
+FAQ-015,E-Commerce / Retail,billing,Why am I charged a maintenance fee?,"We don't charge maintenance fees. If you see one, contact support immediately — may indicate billing error.",2025-12-18
+FAQ-016,E-Commerce / Retail,billing,How do I get VAT invoice for business?,"Go to My Orders → select order → Download VAT Invoice. If account not set up, contact support with VAT number.",2025-11-16
+FAQ-017,E-Commerce / Retail,billing,Refund issued but not in my bank.,"Refunds take 3–10 business days depending on bank. If over 10 days, contact support with confirmation number.",2026-01-23
+FAQ-018,E-Commerce / Retail,billing,Can I get instalment payment?,We partner with Klarna and Afterpay for orders over $50. Select 'Pay in instalments' at checkout.,2025-11-04
+FAQ-019,E-Commerce / Retail,billing,How do I remove saved credit card?,"Go to Account → Payment Methods → select card → Remove. If linked to subscription, update subscription first.",2025-11-06
+FAQ-020,E-Commerce / Retail,billing,Will I be charged during free trial?,No charge during trial. Email notification 3 days before trial ends. Cancel anytime before to avoid charge.,2025-11-02
+FAQ-021,E-Commerce / Retail,billing,What if my order total doesn't match at checkout?,"Verify all items, quantities, shipping, and taxes. Contact support before completing if total seems wrong.",2025-09-24
+FAQ-022,E-Commerce / Retail,billing,Can I split payment across multiple cards?,"We currently don't support split payments. Use gift cards to offset, then pay remainder with one card.",2025-09-04
+FAQ-023,E-Commerce / Retail,billing,How do subscription renewals work?,Auto-renew at end of cycle. Email reminder 7 days before. Update or cancel anytime in Account → Subscriptions.,2025-12-26
+FAQ-024,E-Commerce / Retail,billing,Why was I charged shipping on free shipping order?,Free shipping has minimum order value or item restrictions. Check promotion terms or contact support.,2025-08-19
+FAQ-025,E-Commerce / Retail,billing,Can I get a receipt for tax purposes?,Invoices serve as receipts for tax. Download from My Orders or contact support for specific tax documentation.,2025-08-24
+FAQ-026,E-Commerce / Retail,delivery,How do I track my order?,Go to My Orders → select order → Track Package. Real-time carrier updates and estimated delivery shown.,2025-10-03
+FAQ-027,E-Commerce / Retail,delivery,My order is late. What to do?,"Check tracking first. If no update for 3+ business days, contact support with order number.",2025-10-01
+FAQ-028,E-Commerce / Retail,delivery,Package says delivered but I didn't get it.,"Check with neighbours and safe locations. If not found, contact support within 7 days to file claim.",2025-08-20
+FAQ-029,E-Commerce / Retail,delivery,Can I change delivery address after ordering?,Only if carrier hasn't picked up yet. Contact support immediately with order number to request.,2025-12-03
+FAQ-030,E-Commerce / Retail,delivery,How do I return an item?,Go to My Orders → select order → Start Return. Print prepaid label and drop at carrier location.,2025-12-25
+FAQ-031,E-Commerce / Retail,delivery,Order arrived damaged. What now?,Don't discard packaging. Take photos and contact support within 48 hours for replacement or refund.,2026-01-03
+FAQ-032,E-Commerce / Retail,delivery,How long does standard shipping take?,3–7 business days within continental US. Express (1–2 days) available at checkout for fee.,2025-11-14
+FAQ-033,E-Commerce / Retail,delivery,Can I pick up in-store?,Click-and-collect available at selected locations. Choose 'Pick up in store' at checkout.,2026-01-02
+FAQ-034,E-Commerce / Retail,delivery,I got wrong item. How to get correct one?,Contact support with order number and photo of item. We'll ship correct item with expedited delivery free.,2025-11-15
+FAQ-035,E-Commerce / Retail,delivery,Does my package need signature?,"Orders over $200 require signature. If unavailable, carrier leaves collection notice for re-delivery or pickup.",2025-08-30
+FAQ-036,E-Commerce / Retail,delivery,Can I reschedule delivery?,Rescheduling managed with carrier. Use tracking link in shipping email to access carrier rescheduling.,2025-10-03
+FAQ-037,E-Commerce / Retail,delivery,How to return large/heavy item?,Contact support to arrange courier collection at your convenience at no extra charge.,2025-12-05
+FAQ-038,E-Commerce / Retail,delivery,What if I'm not home when order arrives?,"Carrier leaves package in safe location if possible, or collection notice. Redirect to pickup via tracking link.",2026-02-01
+FAQ-039,E-Commerce / Retail,delivery,How to track international order?,International tracking on Track Package page. Customs processing can add 3–10 business days.,2025-09-22
+FAQ-040,E-Commerce / Retail,delivery,Tracking hasn't updated in 5 days. Is package lost?,"Gaps occur at sorting facilities. If no update after 7 business days, contact support for carrier investigation.",2025-11-11
+FAQ-041,E-Commerce / Retail,delivery,Can I choose specific delivery date?,"Scheduled delivery available on select items. If offered, calendar shown at checkout to choose date.",2026-01-16
+FAQ-042,E-Commerce / Retail,delivery,Do you ship to PO boxes?,"Yes, via USPS. Express services like FedEx and UPS don't deliver to PO boxes.",2025-10-04
+FAQ-043,E-Commerce / Retail,delivery,How do I cancel return I initiated?,"Go to My Orders → Returns → select return → Cancel Return. If shipped back, contact support.",2025-12-29
+FAQ-044,E-Commerce / Retail,delivery,What's delivery policy for fragile items?,"Fragile items packed with reinforced materials and marked. If damaged, contact support within 24 hours with photos.",2025-12-05
+FAQ-045,E-Commerce / Retail,delivery,Is same-day delivery available?,"Available in select cities on eligible items. If available, 'Same-Day Delivery' shown at checkout before 12 PM local.",2025-11-16
+FAQ-046,E-Commerce / Retail,delivery,Can I combine multiple orders into one shipment?,"Orders ship as soon as ready. We can't combine after placement. To ship together, place as single order.",2025-12-24
+FAQ-047,E-Commerce / Retail,delivery,What happens if delivery fails multiple times?,"After 3 failed attempts, package returns to warehouse. We'll contact you to arrange re-delivery or refund.",2025-08-17
+FAQ-048,E-Commerce / Retail,delivery,How do I report a missing package?,Contact support with order and tracking numbers. We file claim with carrier and resend or refund.,2026-01-01
+FAQ-049,E-Commerce / Retail,delivery,Can I redirect package in transit?,"Use tracking link to access carrier's redirect options (hold at location, neighbor delivery, etc).",2026-01-29
+FAQ-050,E-Commerce / Retail,delivery,What if only part of my order arrives?,"Some items may ship separately. Check tracking for all packages. If item truly missing, contact support.",2025-10-28
+FAQ-051,E-Commerce / Retail,technical,Why can't I add items to cart?,"Clear browser cache and cookies, reload page. If using app, force-close and reopen. Try different browser/device.",2025-10-16
+FAQ-052,E-Commerce / Retail,technical,Website errors when checking out.,"504 error means temporary server overload. Wait 5 minutes and retry. If persists 30+ minutes, contact support.",2025-09-30
+FAQ-053,E-Commerce / Retail,technical,Product images not loading.,Often caused by slow connection or ad-blockers. Try disabling extensions and refreshing. Clear cache helps.,2025-11-27
+FAQ-054,E-Commerce / Retail,technical,App crashes when trying to pay.,"Update app to latest version. If updated, uninstall and reinstall. Ensure OS is up to date.",2025-11-24
+FAQ-055,E-Commerce / Retail,technical,Search not returning results for existing products.,Search indexes refresh every few hours. Newly added items may not appear yet. Try browsing category directly.,2025-10-20
+FAQ-056,E-Commerce / Retail,technical,Order history blank after app update.,"Can happen after major update. Log out completely and log back in. If still missing after 30 min, contact support.",2025-11-29
+FAQ-057,E-Commerce / Retail,technical,Discount disappeared between cart and checkout.,Codes validated at final step. Some have quantity/product restrictions. Check code terms or contact support.,2025-12-06
+FAQ-058,E-Commerce / Retail,technical,Checkout form says address invalid.,"Use standard format, avoid abbreviations in street name. Use 'Apt/Unit' field for unit numbers.",2025-11-11
+FAQ-059,E-Commerce / Retail,technical,Website logs me out every few minutes.,Can be caused by cookie restrictions. Ensure cookies enabled for our site and not in private/incognito mode.,2026-01-27
+FAQ-060,E-Commerce / Retail,technical,Website very slow today. Is there outage?,"Check status.ourstore.com for real-time platform updates. If no outage listed and continues, contact support.",2025-12-18
+FAQ-061,E-Commerce / Retail,technical,Wishlist empty after logging back in.,"Wishlists tied to logged-in account. Ensure correct account. If items missing from correct account, contact support.",2025-08-15
+FAQ-062,E-Commerce / Retail,technical,Promo code field not visible on mobile.,"Scroll down on checkout — field is below item summary on smaller screens. If absent, update app to latest.",2025-11-05
+FAQ-063,E-Commerce / Retail,technical,Not receiving order confirmation emails.,Check spam/junk folder. Add our domain to whitelist. Verify account email address is correct.,2025-10-13
+FAQ-064,E-Commerce / Retail,technical,Payment asking for code I never receive.,Codes sent by bank for 3D Secure. Contact your bank if not receiving. This is bank-level security.,2025-12-11
+FAQ-065,E-Commerce / Retail,technical,App shows different price than website.,"Prices should match. If different, clear app cache. If discrepancy remains, contact support with screenshots.",2026-02-09
+FAQ-066,E-Commerce / Retail,technical,Can I use website on mobile browser?,"Yes, fully optimized for mobile browsers. Use Safari, Chrome, or Firefox for best experience.",2025-08-25
+FAQ-067,E-Commerce / Retail,technical,Why does page reload when I click anything?,Usually caused by JavaScript errors or extensions. Try different browser or disable extensions temporarily.,2026-01-17
+FAQ-068,E-Commerce / Retail,technical,Images show broken icon after site update.,"Hard refresh page (Ctrl+F5 or Cmd+Shift+R). If persists, clear browser cache completely.",2025-09-06
+FAQ-069,E-Commerce / Retail,technical,Can I save items without creating account?,Guest checkout available but wishlist and saved items require account to persist across sessions.,2026-01-20
+FAQ-070,E-Commerce / Retail,technical,App asks for permissions I don't understand.,Camera: scan barcodes. Location: find nearby stores. Notifications: order updates. All optional.,2025-11-11
+FAQ-071,E-Commerce / Retail,technical,Website certificate error in browser.,"Ensure date/time correct on device. If correct, may be ISP issue. Try different network or contact support.",2025-10-04
+FAQ-072,E-Commerce / Retail,technical,Can I use multiple devices with same account?,"Yes, log in on unlimited devices. Data syncs across all. Log out on public/shared devices for security.",2025-08-29
+FAQ-073,E-Commerce / Retail,technical,Page stuck loading indefinitely.,"Check internet connection. Try different browser. Clear cache. If persists, may be regional connectivity issue.",2025-09-11
+FAQ-074,E-Commerce / Retail,technical,Checkout button greyed out and won't click.,"Ensure all required fields completed. Check email format, card expiry valid, and address fields filled.",2025-08-26
+FAQ-075,E-Commerce / Retail,technical,Can't upload photo in product review.,"Max file size 5MB. Accepted formats: JPG, PNG, GIF. Reduce size or try different image.",2025-08-19
+FAQ-076,E-Commerce / Retail,account,Forgot password. How to reset?,"Click 'Forgot Password' on login, enter email. Reset link emailed to you. Link expires in 24 hours.",2025-08-23
+FAQ-077,E-Commerce / Retail,account,Account suspended. What to do?,Suspensions due to suspected fraud or policy violations. Contact support with account email for review within 24 hours.,2026-02-08
+FAQ-078,E-Commerce / Retail,account,How to change account email?,Go to Account → Settings → Email → Update. Confirmation email to new address must be clicked to complete.,2025-12-19
+FAQ-079,E-Commerce / Retail,account,Locked out by two-factor auth.,"Contact support with account email and ID verification (e.g., last order details). We can disable 2FA after verifying.",2025-08-27
+FAQ-080,E-Commerce / Retail,account,Loyalty points disappeared. How to recover?,Contact support with account email. We review points transaction history and restore incorrectly removed points.,2025-12-14
+FAQ-081,E-Commerce / Retail,account,How to delete account?,Go to Account → Settings → Delete Account. Removes all order history and points permanently. Irreversible.,2025-11-14
+FAQ-082,E-Commerce / Retail,account,Can I save multiple addresses?,Yes. Go to Account → Addresses → Add New. Save up to 5 addresses and set one as default.,2025-09-01
+FAQ-083,E-Commerce / Retail,account,How to update phone number?,Go to Account → Settings → Contact Info → Edit Phone. Verification code sent to new number to confirm.,2025-10-15
+FAQ-084,E-Commerce / Retail,account,Can't see invoices in account.,"Invoices generated 24 hours after order confirmed. If older invoices missing, try different browser or clear cache.",2025-10-26
+FAQ-085,E-Commerce / Retail,account,How to opt out of marketing emails?,"Click 'Unsubscribe' at bottom of marketing email, or Account → Notification Preferences → uncheck 'Promotional'.",2025-12-05
+FAQ-086,E-Commerce / Retail,account,Account hacked. What to do?,Change password immediately and enable 2FA. Contact support right away to review recent activity and secure account.,2025-10-28
+FAQ-087,E-Commerce / Retail,account,Can I merge two accounts?,We can merge accounts with same name and verified identity. Contact support with both emails to process.,2026-01-28
+FAQ-088,E-Commerce / Retail,account,How to manage notification preferences?,"Go to Account → Notification Preferences. Toggle email, push, SMS for orders, promotions, account alerts individually.",2025-09-06
+FAQ-089,E-Commerce / Retail,account,Name spelled wrong on account.,"Go to Account → Personal Info → Edit Name. If locked, contact support with proof of ID to update manually.",2025-09-22
+FAQ-090,E-Commerce / Retail,account,Can I add family member to account?,Individual accounts only. Family members create own accounts. Share loyalty points balance using points transfer feature.,2026-01-23
+FAQ-091,E-Commerce / Retail,account,How do I enable two-factor authentication?,"Go to Account → Security → Two-Factor Auth → Enable. Scan QR with authenticator app (Google Authenticator, Authy).",2025-12-02
+FAQ-092,E-Commerce / Retail,account,Can I see login history for security?,"Go to Account → Security → Login Activity. Shows recent logins with device, location, time.",2026-01-30
+FAQ-093,E-Commerce / Retail,account,How to update password?,"Go to Account → Security → Change Password. Enter current password, then new password twice.",2025-09-11
+FAQ-094,E-Commerce / Retail,account,Account showing wrong country/currency.,Set at account creation. Contact support to change — requires re-entering payment details due to currency conversion.,2025-09-19
+FAQ-095,E-Commerce / Retail,account,Can I have business and personal account with same email?,"One account per email. Use different email for business account or add +business to your email (e.g., you+business@email.com).",2026-01-14
+FAQ-096,E-Commerce / Retail,account,How to close account but keep order history?,"Order history exported before deletion. Go to Account → Delete → Export Data first, then proceed with deletion.",2026-01-13
+FAQ-097,E-Commerce / Retail,account,Why does account ask for ID verification?,"For high-value orders, address changes, or unusual activity to protect against fraud. Upload government ID or contact support.",2025-12-21
+FAQ-098,E-Commerce / Retail,account,Can I transfer my account to someone else?,Accounts are non-transferable. New user must create their own account.,2025-10-11
+FAQ-099,E-Commerce / Retail,account,How to update marketing preferences?,"Account → Notifications → Marketing. Choose email, SMS, push preferences. Can opt out of all or select specific categories.",2025-09-07
+FAQ-100,E-Commerce / Retail,account,Account locked after multiple login attempts.,Security feature after 5 failed logins. Wait 30 minutes or use password reset to unlock immediately.,2025-11-22

@@ -1,0 +1,25 @@
+# Core ML Libraries
+pandas==2.3.3
+numpy==2.4.2
+scikit-learn==1.8.0
+joblib==1.5.3
+transformers==5.2.0
+
+# Backend / API
+fastapi==0.129.2
+uvicorn==0.41.0
+pydantic==2.12.5
+
+# Frontend UI
+streamlit==1.54.0
+requests==2.32.5
+
+# RAG System - NEW
+sentence-transformers==5.2.3    # For embeddings
+faiss-cpu==1.13.2               # Vector search 
+ollama==0.6.1                  # Local LLM
+tqdm==4.67.3                 # Progress bars
+notebook                 
+nltk==3.9.2
+# Utilities
+python-multipart==0.0.22        # For file uploads 
