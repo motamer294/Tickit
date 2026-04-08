@@ -1,5 +1,24 @@
+# Python & Notebooks
 __pycache__/
 .ipynb_checkpoints/
 *.pyc
 venv/
 docs/
+
+# ==============================
+# Machine Learning Models & Vectors
+# ==============================
+*.pkl
+*.bin
+*.faiss
+*.npy
+models/*
+!models/.gitkeep
+
+# ==============================
+# Datasets
+# ==============================
+*.csv
+*.xlsx
+dataset/*
+!dataset/.gitkeep
