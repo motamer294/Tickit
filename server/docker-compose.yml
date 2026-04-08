@@ -16,6 +16,12 @@ services:
     ports:
       - "5432:5432"
 
+  redis:
+    image: redis:alpine
+    container_name: helpdesk_redis
+    ports:
+      - "6379:6379"
+
   web:
     build: .
     container_name: helpdesk_django_app

@@ -1,8 +1,12 @@
 from ninja import Schema
 from datetime import datetime
-from typing import Optional
-from typing import Literal
-#Tickets
+from typing import Dict
+from typing import Optional, Literal
+
+# ==========================
+# Tickets Schemas
+# ==========================
+
 class TicketCreateSchema(Schema):
     title: str
     description: str
@@ -12,9 +16,17 @@ class TicketOutSchema(Schema):
     title: str
     description: str
     status: str
+    
+    # 🤖 AI Fields (Strictly Required - No Optional)
+    category: str
+    priority: str
+    sentiment: str
+    ai_suggested_solution: str
+
     created_at: datetime
     
     # NEW: We need to pass the usernames to the frontend, not just raw database IDs!
+    # (Kept Optional here only because assigned_to can legitimately be empty/unassigned)
     creator_username: Optional[str] = None
     assigned_to_username: Optional[str] = None
 
@@ -30,7 +42,11 @@ class TicketOutSchema(Schema):
 
 class TicketStatusUpdateSchema(Schema):
     status: Literal["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"]
-#Comments
+
+# ==========================
+# Comments Schemas
+# ==========================
+
 class CommentSchema(Schema):
     text: str
 
@@ -47,3 +63,16 @@ class CommentOutSchema(Schema):
         
     # FIX: The broken resolve_text(obj) method was deleted. 
     # Django Ninja will automatically map schema.text to model.text perfectly.
+    # ==========================
+# Analytics & Dashboard Schemas
+# ==========================
+class DashboardStatsSchema(Schema):
+    total_tickets: int
+    open_tickets: int
+    resolved_tickets: int
+    avg_resolution_time_hours: float
+    
+    # We will return the statistics as dictionaries so they can be easily plotted in the charts
+    tickets_by_category: Dict[str, int]
+    tickets_by_priority: Dict[str, int]
+    sentiment_analysis: Dict[str, int]

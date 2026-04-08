@@ -1,19 +1,26 @@
+Here is the updated, modernized `README.md` for your `server` directory. I have significantly upgraded it to reflect your transition to **Django 6.0, Django Ninja, ASGI/WebSockets, Redis, and the new Analytics/SLA features**.
+
+***
+
+### `HELPDESK_AI_WORKSPACE/Nexus_Ai/server/README.md`
+
 ```markdown
-# 🛠️ Help Desk Ticketing System - Core Backend
+# ⚙️ Nexus AI: Core Backend Server
 
-Welcome to the Core Backend of our Help Desk Ticketing System. This service is built with **Django & Django REST Framework / Ninja** and uses **PostgreSQL** as the primary database.
+Welcome to the Core Backend (The "Body") of the Nexus AI Help Desk System. This service handles all central business logic, database management, user authentication, and real-time live chat communications. 
 
-This repository is containerized using **Docker** for running the server, but we also recommend setting up a local virtual environment for the best development experience (IDE autocomplete & linting).
+It is built for high performance using **Django 6.0** and **Django Ninja** (FastAPI-style routing), with an **ASGI** architecture powered by **Daphne** and **Redis** for WebSocket support.
 
 ---
 
-## 📌 Features
+## 📌 Key Features
 
-- ✅ **Ticket management** – create, update, assign, and track support tickets  
-- ✅ **User authentication & roles** – customers, support agents, admins  
-- ✅ **RESTful API** – fully documented, ready for frontend integration  
-- ✅ **Dockerised** – run anywhere with zero local dependencies  
-- ✅ **PostgreSQL** – production‑ready relational database  
+- ✅ **High-Speed RESTful API** – Built with Django Ninja for Pydantic-validated, fast routing.
+- ✅ **Real-Time WebSockets** – Room-based live chat per ticket via Django Channels, Daphne, and Redis, complete with message persistence.
+- ✅ **Advanced Analytics & SLA tracking** – Manager-only dashboard endpoints utilizing complex PostgreSQL aggregations (`Count`, `Avg`, `F` expressions) and MTTR (Mean Time To Resolution) tracking.
+- ✅ **AI Microservice Integration** – Seamless REST communication with the isolated FastAPI RAG engine.
+- ✅ **JWT Authentication & RBAC** – Secure role-based access control (Roles: `CUSTOMER`, `EMPLOYEE`, `MANAGER`).
+- ✅ **Fully Containerized** – Postgres and Redis run via Docker for zero-friction local development.
 
 ---
 
@@ -21,31 +28,29 @@ This repository is containerized using **Docker** for running the server, but we
 
 Make sure you have the following installed on your machine:
 
-- Python 3.11+
+- Python 3.10+
 - [Git](https://git-scm.com/downloads)
-- [Docker](https://docs.docker.com/get-docker/)
+- [Docker & Docker Compose](https://docs.docker.com/get-docker/)
 
 ---
 
 ## 💻 1. Local Setup (For VS Code / IDE Support)
 
-While Docker runs the code, you need a local virtual environment so your IDE (like VS Code) recognizes Django imports and provides autocomplete.
+For the best development experience (IDE autocomplete & linting), you should set up a local Python virtual environment.
 
-### Step 1: Clone the Repository
+### Step 1: Navigate and Create Virtual Environment
 ```bash
-git clone https://github.com/motamer294/graduation_project.git django_backend
-cd django_backend
+cd server
+python -m venv venv
 ```
 
-### Step 2: Create and Activate Virtual Environment
+### Step 2: Activate the Environment
 **For Windows:**
 ```bash
-python -m venv venv
 venv\Scripts\activate
 ```
 **For Mac/Linux:**
 ```bash
-python3 -m venv venv
 source venv/bin/activate
 ```
 
@@ -57,47 +62,55 @@ pip install -r requirements.txt
 
 ---
 
-## 🚀 2. Docker Setup (Running the Server)
+## 🚀 2. Running the Infrastructure (Database & Redis)
+
+We use Docker to instantly spin up **PostgreSQL** (for relational data) and **Redis** (as the message broker for WebSockets).
 
 ### Step 1: Set Up Environment Variables
-Copy the example environment file:
+Copy the example environment file (if available) or ensure your `.env` is configured for local defaults:
 ```bash
 cp .env.example .env
 ```
-*(Default values for local development are already pre‑filled in the `.env` file).*
 
-### Step 2: Build and Start the Containers (First Time Only)
-Run this command to build the images and start the database and Django server:
+### Step 2: Start the Dockerized Services
+Run this command from the root directory (where `docker-compose.yml` lives) to start Postgres and Redis in the background:
 ```bash
-docker compose up --build
+docker compose up -d
 ```
-*(Wait a few minutes for Docker to download PostgreSQL and install Python libraries inside the container).*
-
-### Step 3: Run Database Migrations
-Open a **new terminal window** (keep the server running in the first one) and execute:
-```bash
-docker exec -it helpdesk_django_app python manage.py migrate
-```
-
-### Step 4: Create a Superuser (Admin)
-To access the admin panel, create your account:
-```bash
-docker exec -it helpdesk_django_app python manage.py createsuperuser
-```
-Follow the prompts to set your email, username, and password.
 
 ---
 
-## 🌅 3. Daily Routine (How to start working every day)
+## 🏃 3. Running the Django Server
 
-You **do not** need to rebuild or migrate every day. When you open your computer to work, simply open the terminal in the project folder and run:
+Because we are using WebSockets, we run the server using **Daphne** (an ASGI server) instead of the standard WSGI `runserver`.
+
+### Step 1: Run Database Migrations
+Ensure your database schema is up to date:
 ```bash
-docker compose up
+python manage.py migrate
 ```
-To stop the server when you are done, press `Ctrl+C` or run:
+
+### Step 2: Create a Superuser (Admin)
+To access the Django Admin panel:
 ```bash
-docker compose down
+python manage.py createsuperuser
 ```
+
+### Step 3: Start the ASGI Server
+Start the real-time server:
+```bash
+daphne -p 8001 core.asgi:application
+```
+*(Note: Ensure the ML Microservice is also running on its designated port if you plan to test AI ticket analysis features).*
+
+---
+
+## 🌅 4. Daily Routine (How to start working)
+
+When you open your computer to work, simply:
+1. Make sure Docker is running (`docker compose up -d`).
+2. Activate your virtual environment (`source venv/bin/activate`).
+3. Start Daphne (`daphne -p 8001 core.asgi:application`).
 
 ---
 
@@ -105,26 +118,27 @@ docker compose down
 
 | Service                            | URL                              |
 |------------------------------------|----------------------------------|
-| Django Backend / API               | `http://localhost:8000`          |
-| Django Admin Panel                 | `http://localhost:8000/admin`    |
-| **Interactive API Docs** (Swagger) | `http://localhost:8000/api/docs` |
+| Django API Base                    | `http://localhost:8001/api/`     |
+| **Interactive API Docs** (Swagger) | `http://localhost:8001/api/docs` |
+| Django Admin Panel                 | `http://localhost:8001/admin`    |
+| WebSocket Chat Connection          | `ws://localhost:8001/ws/chat/<ticket_id>/` |
 
 You can also test the API using the provided Postman collection:  
 `HelpDesk_API.postman_collection.json`
 
 ---
 
-## 🛑 Useful Docker Commands
+## 🛑 Useful Commands
 
 | Action                             | Command                                                          |
 |------------------------------------|------------------------------------------------------------------|
-| Stop all containers                | `docker compose down`                                            |
-| Stop + remove volumes (fresh DB)   | `docker compose down -v`                                         |
-| View logs                          | `docker compose logs -f`                                         |
-| Open Django shell                  | `docker exec -it helpdesk_django_app python manage.py shell`     |
-| Run any `manage.py` command        | `docker exec -it helpdesk_django_app python manage.py <command>` |
-| Run Tests                          | `docker exec -it helpdesk_django_app pytest`                     |
+| Open Django shell                  | `python manage.py shell`                                         |
+| Create new DB migrations           | `python manage.py makemigrations`                                |
+| Run Unit Tests                     | `pytest`                                                         |
+| Stop Docker infrastructure         | `docker compose down`                                            |
+| Wipe Docker DB & Redis clean       | `docker compose down -v`                                         |
 
 ---
 Happy Coding! 💻🚀
-```
+
+

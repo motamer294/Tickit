@@ -5,9 +5,11 @@ from ninja import Schema
 from django.contrib.auth.hashers import make_password
 from typing import List
 from django.shortcuts import get_object_or_404
+from django.db.models import Count, Avg, F
+from tickets.schemas import DashboardStatsSchema
 from accounts.models import User
 from tickets.models import Ticket, Comment
-from tickets.services import update_ticket_status
+from tickets.services import update_ticket_status,create_ticket_with_ai
 from tickets.schemas import (
     TicketCreateSchema, 
     TicketOutSchema, 
@@ -81,7 +83,15 @@ def list_employee_tasks(request):
 # 3. Create Ticket (Open to Customers & Employees)
 @api.post("/tickets", response=TicketOutSchema)
 def create_ticket(request, data: TicketCreateSchema):
-    ticket = Ticket.objects.create(**data.dict(), created_by=request.user)
+    # مسحنا الطريقة القديمة:
+    # ticket = Ticket.objects.create(**data.dict(), created_by=request.user)
+    
+    # استخدمنا الـ AI Service بتاعتنا:
+    ticket = create_ticket_with_ai(
+        title=data.title,
+        description=data.description,
+        user=request.user
+    )
     return ticket
 
 # 4. List My Tickets (Customers see their own, Managers see all)
@@ -152,3 +162,52 @@ def update_status(request, ticket_id: int, data: TicketStatusUpdateSchema):
     update_ticket_status(ticket, data.status, request.user)
 
     return ticket
+# 7. Analytics Dashboard (Strictly for Managers)
+@api.get("/analytics/dashboard", response=DashboardStatsSchema)
+def get_dashboard_stats(request):
+    # حماية الـ API: المديرين بس هما اللي يشوفوا الإحصائيات
+    if request.user.role != User.Role.MANAGER:
+        return api.create_response(request, {"message": "Access Denied: Managers only."}, status=403)
+
+    # 1. الأرقام الأساسية
+    total = Ticket.objects.count()
+    open_count = Ticket.objects.filter(status=Ticket.Status.OPEN).count()
+    resolved_count = Ticket.objects.filter(status__in=[Ticket.Status.RESOLVED, Ticket.Status.CLOSED]).count()
+
+    # 2. حساب متوسط وقت الحل (MTTR)
+    resolved_tickets = Ticket.objects.filter(resolved_at__isnull=False)
+    mttr_delta = resolved_tickets.aggregate(
+        mttr=Avg(F('resolved_at') - F('created_at'))
+    )['mttr']
+
+    mttr_hours = 0.0
+    if mttr_delta:
+        # تحويل الوقت الكلي لساعات وتقريبه لرقمين عشريين
+        mttr_hours = round(mttr_delta.total_seconds() / 3600, 2)
+
+    # 3. التجميع (Aggregations) للـ Charts
+    # بتجيب كل تصنيف وبتعد جواه كام تذكرة، وبنحولها لـ Dictionary
+    categories = {
+        item['category'] or "Uncategorized": item['count'] 
+        for item in Ticket.objects.values('category').annotate(count=Count('id'))
+    }
+    
+    priorities = {
+        item['priority'] or "None": item['count'] 
+        for item in Ticket.objects.values('priority').annotate(count=Count('id'))
+    }
+    
+    sentiments = {
+        item['sentiment'] or "Unknown": item['count'] 
+        for item in Ticket.objects.values('sentiment').annotate(count=Count('id'))
+    }
+
+    return {
+        "total_tickets": total,
+        "open_tickets": open_count,
+        "resolved_tickets": resolved_count,
+        "avg_resolution_time_hours": mttr_hours,
+        "tickets_by_category": categories,
+        "tickets_by_priority": priorities,
+        "sentiment_analysis": sentiments
+    }
