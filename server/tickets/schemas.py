@@ -10,6 +10,8 @@ from typing import Optional, Literal
 class TicketCreateSchema(Schema):
     title: str
     description: str
+    assigned_to_id: Optional[int] = None  # Option A: Manual assignment by manager
+    auto_assign: bool = False  # Option C: Auto-assign by workload
 
 class TicketOutSchema(Schema):
     id: int
