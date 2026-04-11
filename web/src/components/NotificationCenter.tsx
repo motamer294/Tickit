@@ -48,29 +48,32 @@ export const NotificationCenter = () => {
       <Popover.Target>
         <Tooltip label="Notifications" withArrow position="bottom">
           <ActionIcon
-            variant="default"
+            variant={unreadCount > 0 ? 'light' : 'default'}
             size="lg"
             radius="md"
+            color={unreadCount > 0 ? 'blue' : undefined}
             onClick={() => setOpened(!opened)}
             style={{
-              border: '1px solid var(--mantine-color-default-border)',
-              transition: 'transform 0.2s ease',
+              border: unreadCount > 0 ? '1px solid var(--mantine-color-blue-4)' : '1px solid var(--mantine-color-default-border)',
+              transition: 'all 0.2s ease',
               position: 'relative',
             }}
             onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
             onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
           >
-            <Icon icon="solar:bell-bold-duotone" width={22} />
+            <Icon icon="solar:bell-bold-duotone" width={24} color={unreadCount > 0 ? 'var(--mantine-color-blue-6)' : 'currentColor'} />
 
             {unreadCount > 0 && (
               <Badge
                 size="xs"
                 circle
                 color="red"
+                variant="filled"
                 style={{
                   position: 'absolute',
-                  top: -6,
-                  right: -6,
+                  top: -8,
+                  right: -8,
+                  fontWeight: 700,
                 }}
               >
                 {unreadCount > 99 ? '99+' : unreadCount}
@@ -80,7 +83,7 @@ export const NotificationCenter = () => {
         </Tooltip>
       </Popover.Target>
 
-      <Popover.Dropdown p={0} w={{ base: 320, sm: 360, md: 420 }}>
+      <Popover.Dropdown p={0} w={{ base: '90vw', xs: 320, sm: 360, md: 420 }} maw="calc(100vw - 16px)">
         <Stack gap={0} style={{ borderRadius: 'var(--mantine-radius-md)' }}>
           {/* Header */}
           <Group
@@ -122,28 +125,30 @@ export const NotificationCenter = () => {
 
           {/* Filter Tabs */}
           {hasNotifications && (
-            <Group gap="xs" p="md" wrap="wrap" style={{ borderBottom: `1px solid var(--mantine-color-default-border)` }}>
+            <Group gap={6} p={12} wrap="wrap" style={{ borderBottom: `1px solid var(--mantine-color-default-border)`, overflowX: 'auto' }}>
               {NOTIFICATION_TYPES.map(({ type, label, icon }) => (
                 <UnstyledButton
                   key={type}
                   onClick={() => setFilter(type)}
                   style={{
-                    padding: '6px 12px',
+                    padding: '5px 10px',
                     borderRadius: 'var(--mantine-radius-md)',
-                    fontSize: '12px',
+                    fontSize: '11px',
                     fontWeight: filter === type ? 600 : 500,
                     backgroundColor: filter === type ? 'var(--mantine-color-blue-light)' : 'transparent',
-                    color: filter === type ? 'var(--mantine-color-blue-filled)' : 'var(--mantine-color-gray-6)',
-                    border: filter === type ? '1px solid var(--mantine-color-blue-filled)' : '1px solid transparent',
+                    color: filter === type ? 'var(--mantine-color-blue-filled)' : 'var(--mantine-color-gray-7)',
+                    border: filter === type ? '1px solid var(--mantine-color-blue-3)' : '1px solid var(--mantine-color-default-border)',
                     transition: 'all 0.2s ease',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px',
+                    gap: '3px',
                     cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
                   }}
                   onMouseEnter={(e) => {
                     if (filter !== type) {
-                      e.currentTarget.style.backgroundColor = 'var(--mantine-color-default-hover)'
+                      e.currentTarget.style.backgroundColor = isDark ? 'rgba(59, 130, 246, 0.08)' : 'rgba(59, 130, 246, 0.05)'
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -152,8 +157,8 @@ export const NotificationCenter = () => {
                     }
                   }}
                 >
-                  <Icon icon={icon} width={12} />
-                  {label}
+                  <Icon icon={icon} width={11} />
+                  <span>{label}</span>
                 </UnstyledButton>
               ))}
             </Group>

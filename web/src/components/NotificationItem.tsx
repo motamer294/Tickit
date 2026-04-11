@@ -63,10 +63,10 @@ export const NotificationItem = ({ notification }: NotificationItemProps) => {
 
   const bgColor = notification.read
     ? 'transparent'
-    : (isDark ? 'rgba(59, 130, 246, 0.08)' : 'rgba(59, 130, 246, 0.05)')
+    : (isDark ? 'rgba(59, 130, 246, 0.12)' : 'rgba(59, 130, 246, 0.08)')
 
   const colorName = getTypeColor(notification.type)
-  const borderColor = theme.colors[colorName]?.[5] || theme.colors.gray[5]
+  const borderColor = theme.colors[colorName]?.[6] || theme.colors.gray[6]
 
   const handleToggleRead = () => {
     if (notification.read) {
@@ -119,11 +119,11 @@ export const NotificationItem = ({ notification }: NotificationItemProps) => {
               <Text
                 size="xs"
                 fw={500}
-                c={colorName}
+                c="white"
                 style={{
-                  padding: '2px 6px',
+                  padding: '3px 7px',
                   borderRadius: '4px',
-                  backgroundColor: theme.colors[colorName]?.[0],
+                  backgroundColor: theme.colors[colorName]?.[6],
                   whiteSpace: 'nowrap',
                   flexShrink: 0,
                 }}
