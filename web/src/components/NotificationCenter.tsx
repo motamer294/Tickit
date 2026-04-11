@@ -78,7 +78,7 @@ export const NotificationCenter = () => {
         </Box>
       </Popover.Target>
 
-      <Popover.Dropdown p="md" w={400}>
+      <Popover.Dropdown p="md" w={{ base: 320, sm: 360, md: 400 }} miw={300}>
         <Stack gap="sm">
           {/* Header */}
           <Group justify="space-between" align="center">

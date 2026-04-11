@@ -22,7 +22,7 @@ const getTypeColor = (type: NotificationType): string => {
   const colors = {
     TICKET_ASSIGNED: 'blue',
     TICKET_UPDATED: 'yellow',
-    COMMENT_ADDED: 'purple',
+    COMMENT_ADDED: 'violet',
     TICKET_RESOLVED: 'green',
     SYSTEM: 'red',
   }
@@ -70,8 +70,9 @@ export const NotificationItem = ({ notification }: NotificationItemProps) => {
       : 'rgba(0, 0, 0, 0.03)'
 
   const hoverBg = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)'
-  
-  const borderColor = theme.colors[getTypeColor(notification.type)][6]
+
+  const colorName = getTypeColor(notification.type)
+  const borderColor = theme.colors[colorName]?.[6] || theme.colors.gray[6]
 
   const handleToggleRead = () => {
     if (notification.read) {
@@ -100,7 +101,7 @@ export const NotificationItem = ({ notification }: NotificationItemProps) => {
         e.currentTarget.style.backgroundColor = bgColor
       }}
     >
-      <Group justify="apart" gap="xs">
+      <Group justify="apart" gap={6}>
         <Group gap="xs" style={{ flex: 1 }}>
           <ThemeIcon
             variant="light"
