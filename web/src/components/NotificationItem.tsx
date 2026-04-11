@@ -9,13 +9,13 @@ interface NotificationItemProps {
 
 const getTypeIcon = (type: NotificationType) => {
   const icons = {
-    TICKET_ASSIGNED: 'mdi:briefcase-outline',
-    TICKET_UPDATED: 'mdi:pencil-outline',
-    COMMENT_ADDED: 'mdi:comment-outline',
-    TICKET_RESOLVED: 'mdi:check-circle-outline',
-    SYSTEM: 'mdi:bell-outline',
+    TICKET_ASSIGNED: 'solar:briefcase-bold-duotone',
+    TICKET_UPDATED: 'solar:pen-bold-duotone',
+    COMMENT_ADDED: 'solar:chat-round-bold-duotone',
+    TICKET_RESOLVED: 'solar:check-circle-bold-duotone',
+    SYSTEM: 'solar:bell-bold-duotone',
   }
-  return icons[type] || 'mdi:notification-outline'
+  return icons[type] || 'solar:notification-bold-duotone'
 }
 
 const getTypeColor = (type: NotificationType): string => {
@@ -61,18 +61,12 @@ export const NotificationItem = ({ notification }: NotificationItemProps) => {
   const isDark = colorScheme === 'dark'
   const { markAsRead, markAsUnread, deleteNotification } = useNotifications()
 
-  const bgColor = isDark
-    ? notification.read
-      ? 'rgba(255, 255, 255, 0.02)'
-      : 'rgba(255, 255, 255, 0.05)'
-    : notification.read
-      ? 'rgba(0, 0, 0, 0.01)'
-      : 'rgba(0, 0, 0, 0.03)'
-
-  const hoverBg = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)'
+  const bgColor = notification.read
+    ? 'transparent'
+    : (isDark ? 'rgba(59, 130, 246, 0.08)' : 'rgba(59, 130, 246, 0.05)')
 
   const colorName = getTypeColor(notification.type)
-  const borderColor = theme.colors[colorName]?.[6] || theme.colors.gray[6]
+  const borderColor = theme.colors[colorName]?.[5] || theme.colors.gray[5]
 
   const handleToggleRead = () => {
     if (notification.read) {
@@ -82,57 +76,65 @@ export const NotificationItem = ({ notification }: NotificationItemProps) => {
     }
   }
 
+  const hoverBg = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'
+
   return (
     <Box
-      p="xs"
+      p="sm"
       style={{
         backgroundColor: bgColor,
-        borderLeftWidth: '3px',
-        borderLeftStyle: 'solid',
-        borderLeftColor: borderColor,
-        borderRadius: 'var(--mantine-radius-sm)',
-        transition: 'background-color 200ms ease',
+        borderLeft: `3px solid ${borderColor}`,
+        borderRadius: 'var(--mantine-radius-md)',
+        transition: 'all 0.2s ease',
         cursor: 'default',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = hoverBg
+        if (notification.read) {
+          e.currentTarget.style.backgroundColor = hoverBg
+        }
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = bgColor
+        if (notification.read) {
+          e.currentTarget.style.backgroundColor = 'transparent'
+        }
       }}
     >
-      <Group justify="apart" gap={6}>
-        <Group gap="xs" style={{ flex: 1 }}>
+      <Group justify="apart" gap={8}>
+        <Group gap={10} style={{ flex: 1 }}>
           <ThemeIcon
             variant="light"
-            size="lg"
-            color={getTypeColor(notification.type)}
+            size="md"
+            color={colorName}
             radius="md"
+            style={{ flexShrink: 0 }}
           >
-            <Icon icon={getTypeIcon(notification.type)} width={18} height={18} />
+            <Icon icon={getTypeIcon(notification.type)} width={16} height={16} />
           </ThemeIcon>
 
-          <Stack gap={0} style={{ flex: 1 }}>
-            <Group gap={6}>
-              <Text size="sm" fw={600}>
+          <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
+            <Group gap={6} wrap="nowrap">
+              <Text size="sm" fw={600} truncate>
                 {notification.title}
               </Text>
               <Text
                 size="xs"
-                c="dimmed"
+                fw={500}
+                c={colorName}
                 style={{
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
                   padding: '2px 6px',
                   borderRadius: '4px',
+                  backgroundColor: theme.colors[colorName]?.[0],
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
               >
                 {getTypeLabel(notification.type)}
               </Text>
             </Group>
-            <Text size="sm" c="dimmed" style={{ marginTop: '2px' }}>
+            <Text size="sm" c="dimmed" truncate style={{ lineHeight: 1.3 }}>
               {notification.message}
             </Text>
-            <Text size="xs" c="dimmed" style={{ marginTop: '4px' }}>
+            <Text size="xs" c="dimmed">
               {formatTime(notification.createdAt)}
             </Text>
           </Stack>
@@ -140,38 +142,38 @@ export const NotificationItem = ({ notification }: NotificationItemProps) => {
           {!notification.read && (
             <Box
               style={{
-                width: '8px',
-                height: '8px',
+                width: '6px',
+                height: '6px',
                 borderRadius: '50%',
-                backgroundColor: `var(--mantine-color-${getTypeColor(notification.type)}-6)`,
+                backgroundColor: borderColor,
+                flexShrink: 0,
               }}
             />
           )}
         </Group>
 
-        <Group gap={4}>
+        <Group gap={2} style={{ flexShrink: 0 }}>
           <ActionIcon
             variant="subtle"
-            color={notification.read ? 'gray' : 'blue'}
-            size="sm"
+            color={notification.read ? 'gray' : colorName}
+            size="xs"
             onClick={handleToggleRead}
             title={notification.read ? 'Mark as unread' : 'Mark as read'}
           >
             <Icon
-              icon={notification.read ? 'mdi:envelope-open-outline' : 'mdi:email-outline'}
-              width={16}
-              height={16}
+              icon={notification.read ? 'solar:letter-opened-bold-duotone' : 'solar:letter-bold-duotone'}
+              width={14}
             />
           </ActionIcon>
 
           <ActionIcon
             variant="subtle"
             color="red"
-            size="sm"
+            size="xs"
             onClick={() => deleteNotification(notification.id)}
             title="Delete notification"
           >
-            <Icon icon="mdi:trash-outline" width={16} height={16} />
+            <Icon icon="solar:trash-bin-trash-bold-duotone" width={14} />
           </ActionIcon>
         </Group>
       </Group>

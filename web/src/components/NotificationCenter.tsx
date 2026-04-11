@@ -2,12 +2,14 @@ import {
   Popover,
   Group,
   Stack,
-  Button,
   Text,
   Badge,
   ScrollArea,
   useMantineColorScheme,
-  Box,
+  ActionIcon,
+  Divider,
+  UnstyledButton,
+  Tooltip,
 } from '@mantine/core'
 import { Icon } from '@iconify-icon/react'
 import { useState } from 'react'
@@ -16,11 +18,11 @@ import { NotificationItem } from './NotificationItem'
 import type { NotificationType } from '@/types/notification'
 
 const NOTIFICATION_TYPES: Array<{ type: NotificationType | 'ALL'; label: string; icon: string }> = [
-  { type: 'ALL', label: 'All', icon: 'mdi:layers-outline' },
-  { type: 'TICKET_ASSIGNED', label: 'Assigned', icon: 'mdi:briefcase-outline' },
-  { type: 'TICKET_UPDATED', label: 'Updated', icon: 'mdi:pencil-outline' },
-  { type: 'COMMENT_ADDED', label: 'Comments', icon: 'mdi:comment-outline' },
-  { type: 'TICKET_RESOLVED', label: 'Resolved', icon: 'mdi:check-circle-outline' },
+  { type: 'ALL', label: 'All', icon: 'solar:layers-bold-duotone' },
+  { type: 'TICKET_ASSIGNED', label: 'Assigned', icon: 'solar:briefcase-bold-duotone' },
+  { type: 'TICKET_UPDATED', label: 'Updated', icon: 'solar:pen-bold-duotone' },
+  { type: 'COMMENT_ADDED', label: 'Comments', icon: 'solar:chat-round-bold-duotone' },
+  { type: 'TICKET_RESOLVED', label: 'Resolved', icon: 'solar:check-circle-bold-duotone' },
 ]
 
 export const NotificationCenter = () => {
@@ -44,111 +46,148 @@ export const NotificationCenter = () => {
   return (
     <Popover position="bottom-end" withArrow opened={opened} onChange={setOpened}>
       <Popover.Target>
-        <Box
-          component="button"
-          onClick={() => setOpened(!opened)}
-          style={{
-            position: 'relative',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          title="Notifications"
-        >
-          <Icon icon="mdi:bell-outline" width={24} height={24} />
+        <Tooltip label="Notifications" withArrow position="bottom">
+          <ActionIcon
+            variant="default"
+            size="lg"
+            radius="md"
+            onClick={() => setOpened(!opened)}
+            style={{
+              border: '1px solid var(--mantine-color-default-border)',
+              transition: 'transform 0.2s ease',
+              position: 'relative',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+          >
+            <Icon icon="solar:bell-bold-duotone" width={22} />
 
-          {unreadCount > 0 && (
-            <Badge
-              size="xs"
-              circle
-              color="red"
-              style={{
-                position: 'absolute',
-                top: 0,
-                right: 0,
-              }}
-            >
-              {unreadCount > 99 ? '99+' : unreadCount}
-            </Badge>
-          )}
-        </Box>
+            {unreadCount > 0 && (
+              <Badge
+                size="xs"
+                circle
+                color="red"
+                style={{
+                  position: 'absolute',
+                  top: -6,
+                  right: -6,
+                }}
+              >
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </Badge>
+            )}
+          </ActionIcon>
+        </Tooltip>
       </Popover.Target>
 
-      <Popover.Dropdown p="md" w={{ base: 320, sm: 360, md: 400 }} miw={300}>
-        <Stack gap="sm">
+      <Popover.Dropdown p={0} w={{ base: 320, sm: 360, md: 420 }}>
+        <Stack gap={0} style={{ borderRadius: 'var(--mantine-radius-md)' }}>
           {/* Header */}
-          <Group justify="space-between" align="center">
-            <Group gap={6}>
-              <Icon icon="mdi:bell-outline" width={20} height={20} />
+          <Group
+            justify="space-between"
+            align="center"
+            p="md"
+            style={{
+              background: isDark ? 'var(--mantine-color-dark-7)' : 'var(--mantine-color-gray-0)',
+              borderRadius: 'var(--mantine-radius-md) var(--mantine-radius-md) 0 0',
+            }}
+          >
+            <Group gap="xs">
+              <Icon icon="solar:bell-bold-duotone" width={20} color="var(--mantine-color-blue-filled)" />
               <Text fw={600} size="md">
                 Notifications
               </Text>
               {unreadCount > 0 && (
-                <Badge size="sm" color="red">
+                <Badge size="sm" color="red" variant="light">
                   {unreadCount} new
                 </Badge>
               )}
             </Group>
 
             {hasNotifications && (
-              <Button
-                variant="subtle"
-                size="xs"
-                onClick={clearAll}
-                title="Clear all notifications"
-              >
-                <Icon icon="mdi:trash-outline" width={14} height={14} />
-              </Button>
+              <Tooltip label="Clear all" withArrow>
+                <ActionIcon
+                  variant="subtle"
+                  size="sm"
+                  onClick={clearAll}
+                  color="gray"
+                >
+                  <Icon icon="solar:trash-bin-trash-bold-duotone" width={16} />
+                </ActionIcon>
+              </Tooltip>
             )}
           </Group>
 
+          <Divider m={0} />
+
           {/* Filter Tabs */}
           {hasNotifications && (
-            <Group gap="xs" wrap="wrap">
+            <Group gap="xs" p="md" wrap="wrap" style={{ borderBottom: `1px solid var(--mantine-color-default-border)` }}>
               {NOTIFICATION_TYPES.map(({ type, label, icon }) => (
-                <Button
+                <UnstyledButton
                   key={type}
-                  variant={filter === type ? 'filled' : 'light'}
-                  size="xs"
-                  leftSection={<Icon icon={icon} width={14} height={14} />}
                   onClick={() => setFilter(type)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 'var(--mantine-radius-md)',
+                    fontSize: '12px',
+                    fontWeight: filter === type ? 600 : 500,
+                    backgroundColor: filter === type ? 'var(--mantine-color-blue-light)' : 'transparent',
+                    color: filter === type ? 'var(--mantine-color-blue-filled)' : 'var(--mantine-color-gray-6)',
+                    border: filter === type ? '1px solid var(--mantine-color-blue-filled)' : '1px solid transparent',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (filter !== type) {
+                      e.currentTarget.style.backgroundColor = 'var(--mantine-color-default-hover)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (filter !== type) {
+                      e.currentTarget.style.backgroundColor = 'transparent'
+                    }
+                  }}
                 >
+                  <Icon icon={icon} width={12} />
                   {label}
-                </Button>
+                </UnstyledButton>
               ))}
             </Group>
           )}
 
           {/* Notifications List */}
-          <Box
-            style={{
-              borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
-              paddingTop: '8px',
-            }}
-          >
-            {filteredNotifications.length === 0 ? (
-              <Stack align="center" justify="center" style={{ minHeight: '150px' }} gap="xs">
-                <div style={{ opacity: 0.5 }}>
-                  <Icon icon="mdi:inbox-outline" width={40} height={40} />
-                </div>
-                <Text size="sm" c="dimmed" ta="center">
-                  {hasNotifications ? `No ${filter} notifications` : 'No notifications yet'}
-                </Text>
+          {filteredNotifications.length === 0 ? (
+            <Stack
+              align="center"
+              justify="center"
+              style={{
+                minHeight: '200px',
+                padding: 'var(--mantine-spacing-xl)',
+              }}
+              gap="xs"
+            >
+              <Icon
+                icon="solar:inbox-bold-duotone"
+                width={40}
+                color="var(--mantine-color-gray-4)"
+              />
+              <Text size="sm" c="dimmed" ta="center">
+                {hasNotifications ? `No ${filter} notifications` : 'No notifications yet'}
+              </Text>
+            </Stack>
+          ) : (
+            <ScrollArea style={{ maxHeight: '450px' }}>
+              <Stack gap="xs" p="md">
+                {filteredNotifications.map((notification) => (
+                  <NotificationItem key={notification.id} notification={notification} />
+                ))}
               </Stack>
-            ) : (
-              <ScrollArea>
-                <Stack gap="xs" style={{ maxHeight: '400px' }}>
-                  {filteredNotifications.map((notification) => (
-                    <NotificationItem key={notification.id} notification={notification} />
-                  ))}
-                </Stack>
-              </ScrollArea>
-            )}
-          </Box>
+            </ScrollArea>
+          )}
         </Stack>
       </Popover.Dropdown>
     </Popover>
