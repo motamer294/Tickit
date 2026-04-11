@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import {
   Container,
   Loader,
@@ -36,7 +36,6 @@ import {
   updateTicketApi,
 } from '@/api/tickets.api'
 import type { TicketStatus } from '@/types/ticket'
-import { useState } from 'react'
 
 const statusColors: Record<TicketStatus, string> = {
   OPEN: 'red',
@@ -79,7 +78,7 @@ export default function TicketDetail() {
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
-  
+
   // Store ticket info for notifications
   const ticketTitle = useRef<string>('')
 
@@ -135,15 +134,14 @@ export default function TicketDetail() {
         message: 'Ticket status has been updated successfully',
         color: 'green',
       })
-      // Trigger notification center - use stored title
-      const title = ticketTitle.current || updatedTicket?.title
-      if (title) {
-        if (newStatus === 'RESOLVED') {
-          notificationService.ticketResolved(ticketIdNum, title)
-        } else {
-          notificationService.ticketUpdated(ticketIdNum, title, `Status changed to ${newStatus.replace(/_/g, ' ')}`)
-        }
+      // Trigger notification center - always send, use available data
+      const title = ticketTitle.current || updatedTicket?.title || 'Ticket'
+      if (newStatus === 'RESOLVED') {
+        notificationService.ticketResolved(ticketIdNum, title)
+      } else {
+        notificationService.ticketUpdated(ticketIdNum, title, `Status changed to ${newStatus.replace(/_/g, ' ')}`)
       }
+      console.log('[Notification] Status update for:', title, 'Status:', newStatus)
       queryClient.invalidateQueries({ queryKey: ['ticket', ticketIdNum] })
       setNewStatus(null)
     },
@@ -164,12 +162,11 @@ export default function TicketDetail() {
         message: 'Your comment has been posted',
         color: 'green',
       })
-      // Trigger notification center - use stored title
-      const title = ticketTitle.current
+      // Trigger notification center - always send
+      const title = ticketTitle.current || 'Ticket'
       const userName = user?.username || 'User'
-      if (title) {
-        notificationService.commentAdded(ticketIdNum, title, userName)
-      }
+      notificationService.commentAdded(ticketIdNum, title, userName)
+      console.log('[Notification] Comment added to:', title, 'by:', userName)
       queryClient.invalidateQueries({
         queryKey: ['ticket-comments', ticketIdNum],
       })
@@ -246,6 +243,10 @@ export default function TicketDetail() {
         message: 'Ticket has been deleted successfully',
         color: 'green',
       })
+      // Trigger notification for deletion
+      const title = ticketTitle.current || 'Ticket'
+      notificationService.system(`Ticket "${title}" has been deleted`)
+      console.log('[Notification] Ticket deleted:', title)
       navigate('..')
     },
     onError: (error: any) => {

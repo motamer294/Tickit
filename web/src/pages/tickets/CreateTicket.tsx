@@ -101,10 +101,14 @@ export default function CreateTicket() {
         color: 'green',
       })
 
-      // Trigger notification center if assigned to someone
+      // Trigger notification center - always send
       if (data.assigned_to_username && data.assigned_to_username !== 'Unassigned') {
         notificationService.ticketAssigned(data.id, `${data.title} (${data.category})`)
+      } else {
+        // Send system notification if not assigned
+        notificationService.system(`Ticket "${data.title}" created - ${data.category}`)
       }
+      console.log('[Notification] Ticket created:', data.title, 'ID:', data.id)
     },
     onError: (error: any) => {
       notifications.show({
