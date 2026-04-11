@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useRef, useEffect } from 'react'
 import {
   Container,
   Loader,
@@ -78,6 +79,9 @@ export default function TicketDetail() {
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  
+  // Store ticket info for notifications
+  const ticketTitle = useRef<string>('')
 
   // Fetch employees for dropdown
   const { data: employees = [], isLoading: employeesLoading } = useQuery({
@@ -109,6 +113,13 @@ export default function TicketDetail() {
     enabled: !!ticketIdNum,
   })
 
+  // Update ticketTitle ref whenever ticket loads
+  useEffect(() => {
+    if (ticket?.title) {
+      ticketTitle.current = ticket.title
+    }
+  }, [ticket?.title])
+
   const { data: comments = [] } = useQuery({
     queryKey: ['ticket-comments', ticketIdNum],
     queryFn: () => fetchTicketComments(ticketIdNum),
@@ -118,18 +129,19 @@ export default function TicketDetail() {
   const updateStatusMutation = useMutation({
     mutationFn: (status: TicketStatus) =>
       updateTicketStatusApi(ticketIdNum, status),
-    onSuccess: (_, newStatus) => {
+    onSuccess: (updatedTicket, newStatus) => {
       notifications.show({
         title: 'Status updated',
         message: 'Ticket status has been updated successfully',
         color: 'green',
       })
-      // Trigger notification center
-      if (ticket?.title) {
+      // Trigger notification center - use stored title
+      const title = ticketTitle.current || updatedTicket?.title
+      if (title) {
         if (newStatus === 'RESOLVED') {
-          notificationService.ticketResolved(ticketIdNum, ticket.title)
+          notificationService.ticketResolved(ticketIdNum, title)
         } else {
-          notificationService.ticketUpdated(ticketIdNum, ticket.title, `Status changed to ${newStatus.replace(/_/g, ' ')}`)
+          notificationService.ticketUpdated(ticketIdNum, title, `Status changed to ${newStatus.replace(/_/g, ' ')}`)
         }
       }
       queryClient.invalidateQueries({ queryKey: ['ticket', ticketIdNum] })
@@ -152,9 +164,11 @@ export default function TicketDetail() {
         message: 'Your comment has been posted',
         color: 'green',
       })
-      // Trigger notification center
-      if (ticket?.title && user?.username) {
-        notificationService.commentAdded(ticketIdNum, ticket.title, user.username)
+      // Trigger notification center - use stored title
+      const title = ticketTitle.current
+      const userName = user?.username || 'User'
+      if (title) {
+        notificationService.commentAdded(ticketIdNum, title, userName)
       }
       queryClient.invalidateQueries({
         queryKey: ['ticket-comments', ticketIdNum],
