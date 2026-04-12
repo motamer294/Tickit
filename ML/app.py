@@ -43,13 +43,12 @@ def process_ticket(ticket: TicketRequest):
         # Combine title with description so the model understands the full context
         full_text = f"{ticket.title}. {ticket.description}"
 
-        # TODO: We will update this part later
-        # Currently using default values (Mock Data) to prevent the server from crashing
-        predicted_category = "General IT" 
-        predicted_priority = "High"
-        detected_sentiment = "Neutral"
+        cleaned_text = clean_text_list([full_text])[0]
 
-        # Generate professional solution using RAG and Llama 3.2
+        predicted_category, predicted_priority = predict_ml(cleaned_text) 
+        
+        detected_sentiment = analysis_sentiment(cleaned_text)
+
         solution = rag_system.rag_response(query=full_text, category=predicted_category)
 
         return TicketResponse(

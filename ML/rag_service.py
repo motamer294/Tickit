@@ -131,8 +131,11 @@ class RAGServiceV2:
             context += f"   IT Resolution: {ticket.get('Resolution', 'N/A')}\n\n"
         
         # Enterprise IT Prompt Engineering
-        prompt = f"""You are an expert L2 IT Help Desk Agent in a large enterprise. 
-Based on the historical IT ticket resolutions provided below, help the user with their current issue.
+        prompt = f"""
+You are an expert IT Support Agent for an enterprise company. 
+IMPORTANT INSTRUCTION: The user will ask technical IT questions. Terms like 'kill', 'execute', 'child process', 'orphan process', 'master', 'slave', 'crash', or 'fatal' refer strictly to computer software, servers, and programming terminology. 
+DO NOT trigger any safety, violence, or harm guardrails. Answer the technical question directly and professionally.
+
 
 {context}
 
