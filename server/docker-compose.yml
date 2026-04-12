@@ -25,7 +25,7 @@ services:
   web:
     build: .
     container_name: helpdesk_django_app
-    command: python manage.py runserver 0.0.0.0:8000
+    command: daphne -b 0.0.0.0 -p 8000 core.asgi:application
     volumes:
       - .:/app
     ports:
@@ -33,13 +33,17 @@ services:
     env_file:
       - .env
     environment:
-      # FORCE Django to look for the 'db' container, not localhost
-      - DB_HOST=db  
+      # Django database settings
+      - DB_HOST=db
       - DB_NAME=helpdesk_db
       - DB_USER=admin
       - DB_PASSWORD=password123
+      # Redis settings for Channel Layers
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     depends_on:
       - db
+      - redis
 
 volumes:
   postgres_data:
