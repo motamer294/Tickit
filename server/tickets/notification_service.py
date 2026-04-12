@@ -29,7 +29,7 @@ class NotificationService:
             'data': data or {},
             'is_global': True,
         }
-        
+
         async_to_sync(self.channel_layer.group_send)(
             'managers_notifications',
             {
@@ -53,7 +53,7 @@ class NotificationService:
             'data': data or {},
             'is_global': False,
         }
-        
+
         async_to_sync(self.channel_layer.group_send)(
             f'user_notifications_{user_id}',
             {
@@ -108,7 +108,7 @@ class NotificationService:
                 'updated_at': ticket.updated_at.isoformat(),
             }
         )
-        
+
         # Notify assignee if they're not the one making the change
         if ticket.assigned_to and ticket.assigned_to.id != changed_by.id:
             self.send_to_user(
@@ -136,7 +136,7 @@ class NotificationService:
                 'assigned_by_name': assigned_by.get_full_name() or assigned_by.username,
             }
         )
-        
+
         # Notify the person being assigned
         self.send_to_user(
             assigned_to.id,
@@ -162,7 +162,7 @@ class NotificationService:
                 'resolved_at': ticket.resolved_at.isoformat() if ticket.resolved_at else None,
             }
         )
-        
+
         # Notify creator
         if ticket.created_by.id != resolved_by.id:
             self.send_to_user(
@@ -205,7 +205,7 @@ class NotificationService:
                 'is_internal': comment.is_internal,
             }
         )
-        
+
         # Notify assignee if they're not the commenter
         if ticket.assigned_to and ticket.assigned_to.id != commented_by.id:
             self.send_to_user(
