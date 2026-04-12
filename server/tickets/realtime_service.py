@@ -23,7 +23,7 @@ class RealtimeService:
             'title': ticket.title,
             'timestamp': datetime.now().isoformat(),
         }
-        
+
         async_to_sync(self.channel_layer.group_send)(
             'realtime_updates',
             payload
@@ -39,7 +39,7 @@ class RealtimeService:
             'title': title,
             'timestamp': datetime.now().isoformat(),
         }
-        
+
         async_to_sync(self.channel_layer.group_send)(
             'realtime_updates',
             payload
@@ -58,19 +58,19 @@ class RealtimeService:
             'changedFields': changed_fields,
             'timestamp': datetime.now().isoformat(),
         }
-        
+
         async_to_sync(self.channel_layer.group_send)(
             'realtime_updates',
             payload
         )
-        
+
         # Also broadcast to specific user if assigned
         if ticket.assigned_to_id:
             async_to_sync(self.channel_layer.group_send)(
                 f'user_realtime_{ticket.assigned_to_id}',
                 payload
             )
-        
+
         print(f"🔄 Broadcast: Ticket #{ticket.id} updated - {changed_fields}")
 
     def broadcast_comment_added(self, ticket_id, comment_id, author_name):
@@ -83,9 +83,10 @@ class RealtimeService:
             'author': author_name,
             'timestamp': datetime.now().isoformat(),
         }
-        
+
+        # Broadcast to all connected clients for real-time updates
         async_to_sync(self.channel_layer.group_send)(
-            f'user_realtime_{ticket_id}',  # Broadcast to anyone viewing this ticket
+            'realtime_updates',  # Send to everyone
             payload
         )
         print(f"🔄 Broadcast: New comment on ticket #{ticket_id}")
@@ -98,7 +99,7 @@ class RealtimeService:
             'data': data,
             'timestamp': datetime.now().isoformat(),
         }
-        
+
         async_to_sync(self.channel_layer.group_send)(
             f'user_realtime_{user_id}',
             payload
