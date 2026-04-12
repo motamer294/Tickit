@@ -4,7 +4,10 @@ __pycache__/
 *.pyc
 venv/
 docs/
-
+dataset/
+models/
+__pycache__/
+*.pyc
 # ==============================
 # Machine Learning Models & Vectors
 # ==============================
