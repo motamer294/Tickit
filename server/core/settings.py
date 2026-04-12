@@ -5,7 +5,7 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(
-    DEBUG=(bool, False) 
+    DEBUG=(bool, False)
 )
 
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
@@ -14,9 +14,9 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 #SECRET_KEY = env('SECRET_KEY')
 SECRET_KEY = 'django-insecure-test-key-just-for-debugging'
-DEBUG = env('DEBUG') 
+DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = ['*'] 
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -27,12 +27,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'ninja_extra', 
+    'ninja_extra',
     'ninja_jwt',
     'accounts',
     'tickets',
     'corsheaders',
-    
+
 ]
 
 MIDDLEWARE = [
@@ -89,7 +89,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'Africa/Cairo' 
+TIME_ZONE = 'Africa/Cairo'
 USE_I18N = True
 USE_TZ = True
 
@@ -98,7 +98,7 @@ STATIC_URL = 'static/'
 AUTH_USER_MODEL = 'accounts.User'
 
 SIMPLE_JWT = {
-   'ACCESS_TOKEN_LIFETIME': timedelta(days=1), 
+   'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": False,
@@ -112,11 +112,16 @@ NINJA_JWT = {
     'AUTH_TOKEN_CLASSES': ('core.api.CustomAccessToken',),
 }
 # WebSockets / Channels Configuration
+# Redis configuration for Django Channels
+# Use environment-specific host: 'redis' for Docker, 'localhost' for local dev
+REDIS_HOST = os.environ.get('REDIS_HOST', 'redis')  # Defaults to Redis service name in Docker
+REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [(REDIS_HOST, REDIS_PORT)],
         },
     },
 }
