@@ -8,33 +8,36 @@ interface NotificationItemProps {
 }
 
 const getTypeIcon = (type: NotificationType) => {
-  const icons = {
+  const icons: Record<NotificationType, string> = {
     TICKET_ASSIGNED: 'solar:briefcase-bold-duotone',
     TICKET_UPDATED: 'solar:pen-bold-duotone',
     COMMENT_ADDED: 'solar:chat-round-bold-duotone',
     TICKET_RESOLVED: 'solar:check-circle-bold-duotone',
+    TICKET_DELETED: 'solar:trash-bin-trash-bold-duotone',
     SYSTEM: 'solar:bell-bold-duotone',
   }
   return icons[type] || 'solar:notification-bold-duotone'
 }
 
 const getTypeColor = (type: NotificationType): string => {
-  const colors = {
+  const colors: Record<NotificationType, string> = {
     TICKET_ASSIGNED: 'blue',
     TICKET_UPDATED: 'yellow',
     COMMENT_ADDED: 'violet',
     TICKET_RESOLVED: 'green',
+    TICKET_DELETED: 'red',
     SYSTEM: 'red',
   }
   return colors[type] || 'gray'
 }
 
 const getTypeLabel = (type: NotificationType) => {
-  const labels = {
+  const labels: Record<NotificationType, string> = {
     TICKET_ASSIGNED: 'Assigned',
     TICKET_UPDATED: 'Updated',
     COMMENT_ADDED: 'Comment',
     TICKET_RESOLVED: 'Resolved',
+    TICKET_DELETED: 'Deleted',
     SYSTEM: 'System',
   }
   return labels[type]

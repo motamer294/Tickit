@@ -83,8 +83,19 @@ export const NotificationCenter = () => {
         </Tooltip>
       </Popover.Target>
 
-      <Popover.Dropdown p={0} w={{ base: '90vw', xs: 320, sm: 360, md: 420 }} maw="calc(100vw - 16px)">
-        <Stack gap={0} style={{ borderRadius: 'var(--mantine-radius-md)' }}>
+      <Popover.Dropdown 
+        p={0} 
+        w={{ base: '90vw', xs: 320, sm: 360, md: 420 }} 
+        maw="calc(100vw - 16px)"
+        style={{ 
+          maxHeight: 'calc(100vh - 100px)',
+          display: 'flex',
+          flexDirection: 'column',
+          borderRadius: 'var(--mantine-radius-md)',
+          overflow: 'hidden'
+        }}
+      >
+        <Stack gap={0} style={{ borderRadius: 'var(--mantine-radius-md)', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Header */}
           <Group
             justify="space-between"
@@ -125,9 +136,10 @@ export const NotificationCenter = () => {
 
           {/* Filter Tabs */}
           {hasNotifications && (
-            <Group gap={6} p={12} wrap="wrap" style={{ borderBottom: `1px solid var(--mantine-color-default-border)`, overflowX: 'auto' }}>
-              {NOTIFICATION_TYPES.map(({ type, label, icon }) => (
-                <UnstyledButton
+            <ScrollArea style={{ borderBottom: `1px solid var(--mantine-color-default-border)` }}>
+              <Group gap={6} p={12} wrap="nowrap" style={{ minWidth: 'min-content' }}>
+                {NOTIFICATION_TYPES.map(({ type, label, icon }) => (
+                  <UnstyledButton
                   key={type}
                   onClick={() => setFilter(type)}
                   style={{
@@ -161,7 +173,8 @@ export const NotificationCenter = () => {
                   <span>{label}</span>
                 </UnstyledButton>
               ))}
-            </Group>
+              </Group>
+            </ScrollArea>
           )}
 
           {/* Notifications List */}
@@ -185,7 +198,7 @@ export const NotificationCenter = () => {
               </Text>
             </Stack>
           ) : (
-            <ScrollArea style={{ maxHeight: '450px' }}>
+            <ScrollArea style={{ flex: 1, minHeight: 0 }} type="auto">
               <Stack gap="xs" p="md">
                 {filteredNotifications.map((notification) => (
                   <NotificationItem key={notification.id} notification={notification} />

@@ -20,6 +20,8 @@ from tickets.schemas import (
     CommentOutSchema,
     TicketStatusUpdateSchema
 )
+from tickets.notification_service import notification_service
+from tickets.realtime_service import realtime_service
 
 
 # Custom AccessToken that includes user role
@@ -156,6 +158,12 @@ def assign_ticket(request, ticket_id: int, employee_id: int):
     update_ticket_status(ticket, "IN_PROGRESS", request.user)
     ticket.save()
 
+    # � Send real-time notifications
+    notification_service.ticket_assigned(ticket, employee, request.user)
+    
+    # 🔄 Broadcast real-time data update
+    realtime_service.broadcast_ticket_updated(ticket, ['assigned_to', 'status'])
+
     return ticket
 
 # 2. Employee Tasks (Strict Access)
@@ -177,7 +185,12 @@ def create_ticket(request, data: TicketCreateSchema):
         assigned_to_id=data.assigned_to_id,  # Option A: Manual assignment
         auto_assign=data.auto_assign  # Option C: Auto-assign by workload
     )
-    return ticket
+    
+    # 🔔 Send real-time notifications to managers
+    notification_service.ticket_created(ticket, request.user)
+        # 🔄 Broadcast real-time data update
+    realtime_service.broadcast_ticket_created(ticket)
+        return ticket
 
 # 4. List My Tickets (Customers see their own, Managers see all, Employees see assigned)
 @api.get("/my-tickets", response=List[TicketOutSchema])
@@ -258,12 +271,20 @@ def add_comment(request, ticket_id: int, data: CommentSchema):
         author=request.user,
         text=data.text
     )
+    
+    # 🔔 Send real-time notifications
+    notification_service.comment_added(ticket, comment, request.user)
+    
+    # 🔄 Broadcast real-time data update
+    realtime_service.broadcast_comment_added(ticket.id, comment.id, request.user.get_full_name() or request.user.username)
+    
     return comment
 # 6. Update Ticket Status (Strict Access)
 @api.patch("/tickets/{ticket_id}/status", response=TicketOutSchema)
 
 def update_status(request, ticket_id: int, data: TicketStatusUpdateSchema):
     ticket = get_object_or_404(Ticket, id=ticket_id)
+    old_status = ticket.status
 
     # --- SECURITY CHECK ---
     # Only the agent working on the ticket or an IT Manager can change its status
@@ -291,6 +312,12 @@ def update_status(request, ticket_id: int, data: TicketStatusUpdateSchema):
     # This calls the service we already wrote in services.py
     # It safely updates the ticket AND generates the TicketHistory audit log in one transaction
     update_ticket_status(ticket, data.status, request.user)
+    
+    # 🔔 Send real-time notifications
+    notification_service.ticket_updated(ticket, request.user, old_status, data.status)
+    
+    # 🔄 Broadcast real-time data update
+    realtime_service.broadcast_ticket_updated(ticket, ['status'])
 
     return ticket
 
@@ -309,8 +336,17 @@ def delete_ticket(request, ticket_id: int):
             status=403
         )
 
+    # Save ticket info before deleting (for broadcasting)
+    ticket_title = ticket.title
+    
+    # 🔔 Send notification before deleting (so we still have ticket data)
+    notification_service.ticket_deleted(ticket, request.user)
+
     # Delete the ticket
     ticket.delete()
+    
+    # 🔄 Broadcast real-time data update
+    realtime_service.broadcast_ticket_deleted(ticket_id, ticket_title)
 
     return api.create_response(
         request,
