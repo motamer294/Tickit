@@ -1,5 +1,13 @@
-function App() {
-  return <div>Hello, World!</div>
-}
+import RootRouter from '@/routes/RootRouter'
+import { MantineProvider } from '@/providers/MantineProvider'
+import ReactQueryProvider from '@/providers/ReactQueryProvider'
 
-export default App
+export default function App() {
+  return (
+    <ReactQueryProvider>
+      <MantineProvider>
+        <RootRouter />
+      </MantineProvider>
+    </ReactQueryProvider>
+  )
+}

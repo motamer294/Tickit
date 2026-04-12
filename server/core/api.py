@@ -1,28 +1,54 @@
 from ninja_extra import NinjaExtraAPI
 from ninja_jwt.controller import NinjaJWTDefaultController
 from ninja_jwt.authentication import JWTAuth
-from ninja import Schema  
+from ninja_jwt.tokens import AccessToken, RefreshToken
+from ninja import Schema
 from django.contrib.auth.hashers import make_password
 from typing import List
 from django.shortcuts import get_object_or_404
 from django.db.models import Count, Avg, F
 from tickets.schemas import DashboardStatsSchema
 from accounts.models import User
+from accounts.schemas import UserProfileSchema, UserUpdateSchema, PasswordChangeSchema, UserStatsSchema
+from accounts.services import get_user_stats, update_user_profile, change_password
 from tickets.models import Ticket, Comment
-from tickets.services import update_ticket_status,create_ticket_with_ai
+from tickets.services import update_ticket_status, create_ticket_with_ai
 from tickets.schemas import (
-    TicketCreateSchema, 
-    TicketOutSchema, 
-    CommentSchema, 
+    TicketCreateSchema,
+    TicketOutSchema,
+    CommentSchema,
     CommentOutSchema,
     TicketStatusUpdateSchema
 )
+from tickets.notification_service import notification_service
+from tickets.realtime_service import realtime_service
+
+
+# Custom AccessToken that includes user role
+class CustomAccessToken(AccessToken):
+    @classmethod
+    def for_user(cls, user):
+        """Generate token and add role field"""
+        token = super().for_user(user)
+        # Add role to the payload
+        token.payload['role'] = getattr(user, 'role', 'CUSTOMER')
+        return token
+
+
+# Custom RefreshToken that uses CustomAccessToken for token regeneration
+class CustomRefreshToken(RefreshToken):
+    access_token_class = CustomAccessToken
+
+
+# Custom RefreshToken that uses CustomAccessToken for token regeneration
+class CustomRefreshToken(RefreshToken):
+    access_token_class = CustomAccessToken
 
 
 class GlobalAuth(JWTAuth):
     def authenticate(self, request, token):
         return super().authenticate(request, token)
-    
+
 api = NinjaExtraAPI(
     auth=GlobalAuth(),
     title="Help Desk API",
@@ -31,7 +57,43 @@ api = NinjaExtraAPI(
 api.register_controllers(NinjaJWTDefaultController)
 
 # --- Endpoints ---
-#Sign up 
+# 0.5 Custom Login with Role in JWT
+class LoginSchema(Schema):
+    username: str
+    password: str
+
+@api.post("/login", auth=None)
+def login_with_role(request, data: LoginSchema):
+    """
+    Custom login endpoint that returns JWT with role field included.
+    The default /token/pair doesn't include role, so we provide this alternative.
+    """
+    from django.contrib.auth import authenticate
+
+    user = authenticate(username=data.username, password=data.password)
+
+    if user is None:
+        return api.create_response(
+            request,
+            {"message": "Invalid username or password"},
+            status=401
+        )
+
+    # Generate tokens with role included
+    access_token = CustomAccessToken.for_user(user)
+    refresh_token = CustomRefreshToken.for_user(user)
+
+    return {
+        "access": str(access_token),
+        "refresh": str(refresh_token),
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "role": user.role
+        }
+    }
+
+#Sign up
 # 1. Define the Schema for Input
 class UserSignupSchema(Schema):
     username: str
@@ -44,15 +106,41 @@ def signup(request, data: UserSignupSchema):
     # Check if username exists
     if User.objects.filter(username=data.username).exists():
         return api.create_response(request, {"message": "Username already taken"}, status=400)
-    
+
     # Create User
     user = User.objects.create(
         username=data.username,
         password=make_password(data.password), # Hash the password!
         role=data.role
     )
-    
-    return {"id": user.id, "username": user.username, "role": user.role}
+
+    # Generate JWT tokens with custom token that includes role
+    access_token = CustomAccessToken.for_user(user)
+    refresh_token = CustomRefreshToken.for_user(user)
+
+    return {
+        "id": user.id,
+        "username": user.username,
+        "role": user.role,
+        "access": str(access_token),
+        "refresh": str(refresh_token)
+    }
+
+# 2.5 Get Employees List (for dropdown in CreateTicket - Option A)
+class EmployeeSchema(Schema):
+    id: int
+    username: str
+
+@api.get("/employees", response=List[EmployeeSchema])
+def list_employees(request):
+    """Get all employees for assignment dropdown (managers only)"""
+    if request.user.role != User.Role.MANAGER:
+        return api.create_response(request, {"message": "Only managers can view employees"}, status=403)
+
+    # Return User objects so Ninja serializes them properly as EmployeeSchema
+    employees = User.objects.filter(role=User.Role.EMPLOYEE).order_by('username')
+    return employees
+
 ####################
 #Tickets
 # 1. Assign Ticket (Strict Role Check)
@@ -61,15 +149,21 @@ def assign_ticket(request, ticket_id: int, employee_id: int):
     # Use the Enum (User.Role.MANAGER) instead of the string "MANAGER"
     if request.user.role != User.Role.MANAGER:
         return api.create_response(request, {"message": "Permission denied"}, status=403)
-    
+
     ticket = get_object_or_404(Ticket, id=ticket_id)
     employee = get_object_or_404(User, id=employee_id, role=User.Role.EMPLOYEE) # Check employee role too!
-    
+
     # Use our Service to handle history & status safely
     ticket.assigned_to = employee
     update_ticket_status(ticket, "IN_PROGRESS", request.user)
     ticket.save()
-    
+
+    # � Send real-time notifications
+    notification_service.ticket_assigned(ticket, employee, request.user)
+
+    # 🔄 Broadcast real-time data update
+    realtime_service.broadcast_ticket_updated(ticket, ['assigned_to', 'status'])
+
     return ticket
 
 # 2. Employee Tasks (Strict Access)
@@ -83,56 +177,131 @@ def list_employee_tasks(request):
 # 3. Create Ticket (Open to Customers & Employees)
 @api.post("/tickets", response=TicketOutSchema)
 def create_ticket(request, data: TicketCreateSchema):
-    # مسحنا الطريقة القديمة:
-    # ticket = Ticket.objects.create(**data.dict(), created_by=request.user)
-    
-    # استخدمنا الـ AI Service بتاعتنا:
+    # Option A + C: Pass assignment parameters to service
     ticket = create_ticket_with_ai(
         title=data.title,
         description=data.description,
-        user=request.user
+        user=request.user,
+        assigned_to_id=data.assigned_to_id,  # Option A: Manual assignment
+        auto_assign=data.auto_assign  # Option C: Auto-assign by workload
     )
+
+    # 🔔 Send real-time notifications to managers
+    notification_service.ticket_created(ticket, request.user)
+
+    # 🔄 Broadcast real-time data update
+    realtime_service.broadcast_ticket_created(ticket)
+
     return ticket
 
-# 4. List My Tickets (Customers see their own, Managers see all)
+# 4. List My Tickets (Customers see their own, Managers see all, Employees see assigned)
 @api.get("/my-tickets", response=List[TicketOutSchema])
 def list_my_tickets(request):
     # FIX: Using User.Role enum
     if request.user.role == User.Role.MANAGER:
         return Ticket.objects.all()
-    return Ticket.objects.filter(created_by=request.user)
+    elif request.user.role == User.Role.EMPLOYEE:
+        # Employees see tickets assigned to them
+        return Ticket.objects.filter(assigned_to=request.user)
+    else:
+        # Customers see only tickets they created
+        return Ticket.objects.filter(created_by=request.user)
+
+# 4.5 Get Single Ticket Details
+@api.get("/tickets/{ticket_id}", response=TicketOutSchema)
+def get_ticket_detail(request, ticket_id: int):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    # --- SECURITY/AUTHORIZATION CHECK ---
+    # Users can only view their own tickets unless they are a manager
+    is_manager = request.user.role == User.Role.MANAGER
+    is_creator = ticket.created_by == request.user
+    is_assignee = ticket.assigned_to == request.user
+
+    if not (is_manager or is_creator or is_assignee):
+        return api.create_response(
+            request,
+            {"message": "You do not have permission to view this ticket."},
+            status=403
+        )
+
+    return ticket
+
+# 4.6 Get Ticket Comments
+@api.get("/tickets/{ticket_id}/comments", response=List[CommentOutSchema])
+def get_ticket_comments(request, ticket_id: int):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    # --- SECURITY/AUTHORIZATION CHECK ---
+    # Same permission logic as viewing the ticket
+    is_manager = request.user.role == User.Role.MANAGER
+    is_creator = ticket.created_by == request.user
+    is_assignee = ticket.assigned_to == request.user
+
+    if not (is_manager or is_creator or is_assignee):
+        return api.create_response(
+            request,
+            {"message": "You do not have permission to view comments on this ticket."},
+            status=403
+        )
+
+    comments = Comment.objects.filter(ticket=ticket).order_by('-created_at')
+    # Return properly formatted response with author_username for each comment
+    return [
+        {
+            'id': comment.id,
+            'text': comment.text,
+            'author_username': comment.author.username if comment.author else "Unknown User",
+            'created_at': comment.created_at,
+        }
+        for comment in comments
+    ]
 
 # 5. Add Comment Endpoint
 @api.post("/tickets/{ticket_id}/comments", response=CommentOutSchema)
 def add_comment(request, ticket_id: int, data: CommentSchema):
     ticket = get_object_or_404(Ticket, id=ticket_id)
-    
+
     # --- SECURITY/AUTHORIZATION CHECK ---
     # Determine if the user has rights to this specific ticket
     is_manager = request.user.role == User.Role.MANAGER
     is_creator = ticket.created_by == request.user
     is_assignee = ticket.assigned_to == request.user
-    
+
     # If they are none of these, block the request
     if not (is_manager or is_creator or is_assignee):
         return api.create_response(
-            request, 
-            {"message": "You do not have permission to comment on this ticket."}, 
+            request,
+            {"message": "You do not have permission to comment on this ticket."},
             status=403
         )
     # ------------------------------------
-    
+
     comment = Comment.objects.create(
         ticket=ticket,
         author=request.user,
         text=data.text
     )
-    return comment
+
+    # 🔔 Send real-time notifications
+    notification_service.comment_added(ticket, comment, request.user)
+
+    # 🔄 Broadcast real-time data update
+    realtime_service.broadcast_comment_added(ticket.id, comment.id, request.user.get_full_name() or request.user.username)
+
+    # Return properly formatted response with author_username
+    return {
+        'id': comment.id,
+        'text': comment.text,
+        'author_username': request.user.username,
+        'created_at': comment.created_at,
+    }
 # 6. Update Ticket Status (Strict Access)
 @api.patch("/tickets/{ticket_id}/status", response=TicketOutSchema)
 
 def update_status(request, ticket_id: int, data: TicketStatusUpdateSchema):
     ticket = get_object_or_404(Ticket, id=ticket_id)
+    old_status = ticket.status
 
     # --- SECURITY CHECK ---
     # Only the agent working on the ticket or an IT Manager can change its status
@@ -141,8 +310,8 @@ def update_status(request, ticket_id: int, data: TicketStatusUpdateSchema):
 
     if not (is_manager or is_assignee):
         return api.create_response(
-            request, 
-            {"message": "Only the assigned agent or a manager can update the status."}, 
+            request,
+            {"message": "Only the assigned agent or a manager can update the status."},
             status=403
         )
 
@@ -151,8 +320,8 @@ def update_status(request, ticket_id: int, data: TicketStatusUpdateSchema):
     valid_statuses = [choice[0] for choice in Ticket.Status.choices]
     if data.status not in valid_statuses:
          return api.create_response(
-            request, 
-            {"message": f"Invalid status. Must be one of: {valid_statuses}"}, 
+            request,
+            {"message": f"Invalid status. Must be one of: {valid_statuses}"},
             status=400
         )
 
@@ -161,7 +330,73 @@ def update_status(request, ticket_id: int, data: TicketStatusUpdateSchema):
     # It safely updates the ticket AND generates the TicketHistory audit log in one transaction
     update_ticket_status(ticket, data.status, request.user)
 
+    # 🔔 Send real-time notifications
+    notification_service.ticket_updated(ticket, request.user, old_status, data.status)
+
+    # 🔄 Broadcast real-time data update
+    realtime_service.broadcast_ticket_updated(ticket, ['status'])
+
     return ticket
+
+
+# 6.5 Delete Ticket (Manager Only)
+@api.delete("/tickets/{ticket_id}")
+def delete_ticket(request, ticket_id: int):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    # --- SECURITY CHECK ---
+    # Only managers can delete tickets
+    if request.user.role != User.Role.MANAGER:
+        return api.create_response(
+            request,
+            {"message": "Only managers can delete tickets."},
+            status=403
+        )
+
+    # Save ticket info before deleting (for broadcasting)
+    ticket_title = ticket.title
+
+    # 🔔 Send notification before deleting (so we still have ticket data)
+    notification_service.ticket_deleted(ticket, request.user)
+
+    # Delete the ticket
+    ticket.delete()
+
+    # 🔄 Broadcast real-time data update
+    realtime_service.broadcast_ticket_deleted(ticket_id, ticket_title)
+
+    return api.create_response(
+        request,
+        {"message": f"Ticket #{ticket_id} has been deleted successfully."},
+        status=200
+    )
+
+
+# 6.6 Update Ticket (Manager Only) - Edit title, description, category, priority
+@api.patch("/tickets/{ticket_id}", response=TicketOutSchema)
+def update_ticket(request, ticket_id: int, data: TicketCreateSchema):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    # --- SECURITY CHECK ---
+    # Only managers can edit tickets
+    if request.user.role != User.Role.MANAGER:
+        return api.create_response(
+            request,
+            {"message": "Only managers can edit tickets."},
+            status=403
+        )
+
+    # Update fields
+    if hasattr(data, 'title') and data.title:
+        ticket.title = data.title
+    if hasattr(data, 'description') and data.description:
+        ticket.description = data.description
+
+    ticket.save()
+
+    return ticket
+
+
 # 7. Analytics Dashboard (Strictly for Managers)
 @api.get("/analytics/dashboard", response=DashboardStatsSchema)
 def get_dashboard_stats(request):
@@ -188,17 +423,17 @@ def get_dashboard_stats(request):
     # 3. التجميع (Aggregations) للـ Charts
     # بتجيب كل تصنيف وبتعد جواه كام تذكرة، وبنحولها لـ Dictionary
     categories = {
-        item['category'] or "Uncategorized": item['count'] 
+        item['category'] or "Uncategorized": item['count']
         for item in Ticket.objects.values('category').annotate(count=Count('id'))
     }
-    
+
     priorities = {
-        item['priority'] or "None": item['count'] 
+        item['priority'] or "None": item['count']
         for item in Ticket.objects.values('priority').annotate(count=Count('id'))
     }
-    
+
     sentiments = {
-        item['sentiment'] or "Unknown": item['count'] 
+        item['sentiment'] or "Unknown": item['count']
         for item in Ticket.objects.values('sentiment').annotate(count=Count('id'))
     }
 
@@ -211,3 +446,85 @@ def get_dashboard_stats(request):
         "tickets_by_priority": priorities,
         "sentiment_analysis": sentiments
     }
+
+
+# ============================================
+# 8. USER PROFILE MANAGEMENT ENDPOINTS
+# ============================================
+
+@api.get("/profile", response=UserProfileSchema)
+def get_user_profile(request):
+    """
+    Get the current authenticated user's profile information.
+    Accessible to all authenticated users.
+    """
+    return request.user
+
+
+@api.get("/profile/stats", response=UserStatsSchema)
+def get_profile_stats(request):
+    """
+    Get statistics for the current user.
+    Stats depend on user role:
+    - MANAGER: All tickets
+    - EMPLOYEE: Assigned tickets
+    - CUSTOMER: Created tickets
+    """
+    stats = get_user_stats(request.user)
+    return stats
+
+
+@api.patch("/profile", response=UserProfileSchema)
+def update_profile(request, data: UserUpdateSchema):
+    """
+    Update the current user's profile information.
+    Can update: first_name, last_name, email
+    """
+    try:
+        user = update_user_profile(
+            request.user,
+            first_name=data.first_name,
+            last_name=data.last_name,
+            email=data.email
+        )
+        return user
+    except ValueError as e:
+        return api.create_response(
+            request,
+            {"message": str(e)},
+            status=400
+        )
+
+
+@api.post("/profile/change-password")
+def change_user_password(request, data: PasswordChangeSchema):
+    """
+    Change the current user's password.
+    Requires: current_password, new_password, confirm_password
+    """
+    # Validate passwords match
+    if data.new_password != data.confirm_password:
+        return api.create_response(
+            request,
+            {"message": "Password confirmation does not match"},
+            status=400
+        )
+
+    try:
+        change_password(
+            request.user,
+            data.current_password,
+            data.new_password
+        )
+        return api.create_response(
+            request,
+            {"message": "Password changed successfully"},
+            status=200
+        )
+    except ValueError as e:
+        return api.create_response(
+            request,
+            {"message": str(e)},
+            status=400
+        )
+

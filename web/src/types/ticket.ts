@@ -1,0 +1,142 @@
+/**
+ * Type Definitions for Help Desk Frontend
+ * Ensures type safety across the application
+ */
+
+// ============================================
+// User Types
+// ============================================
+
+export type UserRole = 'MANAGER' | 'EMPLOYEE' | 'CUSTOMER'
+
+export interface User {
+  id: number
+  username: string
+  role: UserRole
+}
+
+// ============================================
+// Ticket Types
+// ============================================
+
+export type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
+
+export type TicketPriority = 'HIGH' | 'MEDIUM' | 'LOW'
+
+export type TicketSentiment = 'Positive' | 'Neutral' | 'Negative'
+
+export interface Ticket {
+  id: number
+  title: string
+  description: string
+  status: TicketStatus
+
+  // AI Fields (from backend AI service)
+  category: string
+  priority: string
+  sentiment: string
+  ai_suggested_solution: string
+
+  // People involved
+  created_by?: User | string
+  created_by_id?: number
+  creator_username: string
+
+  assigned_to?: User | string
+  assigned_to_id?: number | null
+  assigned_to_username: string | 'Unassigned'
+
+  // Timestamps
+  created_at: string // ISO 8601
+  updated_at?: string
+  resolved_at?: string | null
+}
+
+export interface TicketCreatePayload {
+  title: string
+  description: string
+}
+
+export interface TicketStatusUpdatePayload {
+  status: TicketStatus
+}
+
+// ============================================
+// Comment Types
+// ============================================
+
+export interface Comment {
+  id: number
+  ticket_id: number
+  text: string
+  author: User | string
+  author_id?: number
+  author_username: string
+  is_internal: boolean // Only visible to EMPLOYEE + MANAGER
+  created_at: string
+}
+
+export interface CommentCreatePayload {
+  text: string
+}
+
+// ============================================
+// Analytics Types
+// ============================================
+
+export interface DashboardStats {
+  total_tickets: number
+  open_tickets: number
+  resolved_tickets: number
+  avg_resolution_time_hours: number
+  tickets_by_category: Record<string, number>
+  tickets_by_priority: Record<string, number>
+  sentiment_analysis: Record<string, number>
+}
+
+// ============================================
+// API Response Types
+// ============================================
+
+export interface LoginResponse {
+  access: string
+  refresh: string
+  id?: number
+  username?: string
+  role?: UserRole
+}
+
+export interface SignupResponse {
+  id: number
+  username: string
+  role: UserRole
+  access: string
+  refresh: string
+}
+
+// ============================================
+// Filter & Pagination Types (for future use)
+// ============================================
+
+export interface TicketFilter {
+  status?: TicketStatus
+  category?: string
+  priority?: TicketPriority
+  assigned_to_id?: number | null
+  created_by_id?: number
+  created_after?: string
+  created_before?: string
+}
+
+export interface PaginationParams {
+  page: number
+  pageSize: number
+}
+
+export interface PaginatedResponse<T> {
+  items: T[]
+  totalCount: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
