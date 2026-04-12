@@ -16,33 +16,33 @@ export const useRealtimeData = () => {
 
   const connectWebSocket = () => {
     if (!accessToken || !user || isConnectingRef.current) return
-    
+
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       console.log('✅ Real-time WebSocket already connected')
       return
     }
 
     isConnectingRef.current = true
-    
+
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
       const host = window.location.hostname
       const port = window.location.port ? `:${window.location.port}` : ''
       const baseURL = `${protocol}//${host}${port}`
-      
+
       // For development, connect to localhost:8000; for production, use current host
-      const wsURL = import.meta.env.DEV 
+      const wsURL = import.meta.env.DEV
         ? `ws://localhost:8000/ws/realtime/?token=${accessToken}`
         : `${baseURL}/ws/realtime/?token=${accessToken}`
-      
+
       console.log('🔌 Connecting to Real-Time WebSocket:', wsURL.split('?')[0] + '?...')
-      
+
       wsRef.current = new WebSocket(wsURL)
 
       wsRef.current.onopen = () => {
         console.log('✅ Real-time WebSocket connected')
         isConnectingRef.current = false
-        
+
         // Send keep-alive ping every 30 seconds
         const pingInterval = setInterval(() => {
           if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -56,12 +56,12 @@ export const useRealtimeData = () => {
       wsRef.current.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data)
-          
+
           // Skip pong responses
           if (data.type === 'pong') return
-          
+
           console.log('🔄 Real-time data update:', data.event)
-          
+
           // Handle different event types
           switch (data.event) {
             case 'ticket_created':
@@ -71,14 +71,14 @@ export const useRealtimeData = () => {
               queryClient.invalidateQueries({ queryKey: ['myTickets'] })
               queryClient.invalidateQueries({ queryKey: ['dashboard'] })
               break
-              
+
             case 'ticket_deleted':
               console.log('📌 Invalidating ticket lists (deleted)...')
               queryClient.invalidateQueries({ queryKey: ['tickets'] })
               queryClient.invalidateQueries({ queryKey: ['myTickets'] })
               queryClient.invalidateQueries({ queryKey: ['dashboard'] })
               break
-              
+
             case 'ticket_updated':
               console.log('📌 Invalidating ticket details & lists...')
               queryClient.invalidateQueries({ queryKey: ['tickets'] })
@@ -86,13 +86,13 @@ export const useRealtimeData = () => {
               queryClient.invalidateQueries({ queryKey: ['ticket', data.ticketId] })
               queryClient.invalidateQueries({ queryKey: ['dashboard'] })
               break
-              
+
             case 'comment_added':
               console.log('📌 Invalidating comments...')
-              queryClient.invalidateQueries({ queryKey: ['comments', data.ticketId] })
+              queryClient.invalidateQueries({ queryKey: ['ticket-comments', data.ticketId] })
               queryClient.invalidateQueries({ queryKey: ['ticket', data.ticketId] })
               break
-              
+
             default:
               // Generic data change event
               queryClient.invalidateQueries()
@@ -111,7 +111,7 @@ export const useRealtimeData = () => {
       wsRef.current.onclose = () => {
         console.log('❌ Real-time WebSocket disconnected')
         isConnectingRef.current = false
-        
+
         // Attempt to reconnect after 5 seconds
         reconnectTimeoutRef.current = setTimeout(() => {
           console.log('🔄 Attempting to reconnect to real-time...')
@@ -139,7 +139,7 @@ export const useRealtimeData = () => {
         wsRef.current.close()
       }
     }
-  }, [accessToken, user, queryClient])
+  }, [accessToken, user])
 
   return {
     isConnected: wsRef.current?.readyState === WebSocket.OPEN,

@@ -34,13 +34,10 @@ export default function ProtectedRoute({
   fallback,
 }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, userRole } = useAuth()
-  
+
   // Initialize WebSocket for real-time notifications
   useNotificationWebSocket()
-  
-  // Initialize WebSocket for real-time data updates
-  useRealtimeData()
-  
+
   // Initialize WebSocket for real-time data updates
   useRealtimeData()
 

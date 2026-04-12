@@ -19,10 +19,12 @@ import type { NotificationType } from '@/types/notification'
 
 const NOTIFICATION_TYPES: Array<{ type: NotificationType | 'ALL'; label: string; icon: string }> = [
   { type: 'ALL', label: 'All', icon: 'solar:layers-bold-duotone' },
+  { type: 'TICKET_CREATED', label: 'Created', icon: 'solar:document-add-bold-duotone' },
   { type: 'TICKET_ASSIGNED', label: 'Assigned', icon: 'solar:briefcase-bold-duotone' },
   { type: 'TICKET_UPDATED', label: 'Updated', icon: 'solar:pen-bold-duotone' },
   { type: 'COMMENT_ADDED', label: 'Comments', icon: 'solar:chat-round-bold-duotone' },
   { type: 'TICKET_RESOLVED', label: 'Resolved', icon: 'solar:check-circle-bold-duotone' },
+  { type: 'MANAGER_ACTIVITY', label: 'Activity', icon: 'solar:pulse-bold-duotone' },
 ]
 
 export const NotificationCenter = () => {
@@ -38,9 +40,7 @@ export const NotificationCenter = () => {
     clearAll,
   } = useNotifications()
 
-  const filteredNotifications =
-    filter === 'ALL' ? notifications : getByType(filter as NotificationType)
-
+  const filteredNotifications = filter === 'ALL' ? notifications : getByType(filter as NotificationType)
   const hasNotifications = notifications.length > 0
 
   return (
@@ -83,63 +83,50 @@ export const NotificationCenter = () => {
         </Tooltip>
       </Popover.Target>
 
-      <Popover.Dropdown 
-        p={0} 
-        w={{ base: '90vw', xs: 320, sm: 360, md: 420 }} 
-        maw="calc(100vw - 16px)"
-        style={{ 
-          maxHeight: 'calc(100vh - 100px)',
-          display: 'flex',
-          flexDirection: 'column',
-          borderRadius: 'var(--mantine-radius-md)',
-          overflow: 'hidden'
+      <Popover.Dropdown
+        p={0}
+        w={{ base: '90vw', xs: 360, sm: 400, md: 460 }}
+        style={{
+          borderRadius: '12px',
+          overflow: 'hidden',
+          boxShadow: isDark ? '0 10px 40px rgba(0, 0, 0, 0.6)' : '0 10px 40px rgba(0, 0, 0, 0.15)',
+          border: `1px solid ${isDark ? 'var(--mantine-color-dark-5)' : 'var(--mantine-color-gray-2)'}`,
         }}
       >
-        <Stack gap={0} style={{ borderRadius: 'var(--mantine-radius-md)', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Header */}
-          <Group
-            justify="space-between"
-            align="center"
-            p="md"
-            style={{
-              background: isDark ? 'var(--mantine-color-dark-7)' : 'var(--mantine-color-gray-0)',
-              borderRadius: 'var(--mantine-radius-md) var(--mantine-radius-md) 0 0',
-            }}
-          >
-            <Group gap="xs">
-              <Icon icon="solar:bell-bold-duotone" width={20} color="var(--mantine-color-blue-filled)" />
-              <Text fw={600} size="md">
-                Notifications
-              </Text>
-              {unreadCount > 0 && (
-                <Badge size="sm" color="red" variant="light">
-                  {unreadCount} new
-                </Badge>
-              )}
-            </Group>
-
-            {hasNotifications && (
-              <Tooltip label="Clear all" withArrow>
-                <ActionIcon
-                  variant="subtle"
-                  size="sm"
-                  onClick={clearAll}
-                  color="gray"
-                >
-                  <Icon icon="solar:trash-bin-trash-bold-duotone" width={16} />
-                </ActionIcon>
-              </Tooltip>
+        {/* Header - Stays fixed at top */}
+        <Group
+          justify="space-between"
+          align="center"
+          p="md"
+          style={{
+            background: isDark ? 'var(--mantine-color-dark-6)' : 'white',
+          }}
+        >
+          <Group gap="xs">
+            <Icon icon="solar:bell-bold-duotone" width={20} color="var(--mantine-color-blue-filled)" />
+            <Text fw={600} size="md">Notifications</Text>
+            {unreadCount > 0 && (
+              <Badge size="sm" color="red" variant="light">
+                {unreadCount} new
+              </Badge>
             )}
           </Group>
 
-          <Divider m={0} />
-
-          {/* Filter Tabs */}
           {hasNotifications && (
-            <ScrollArea style={{ borderBottom: `1px solid var(--mantine-color-default-border)` }}>
-              <Group gap={6} p={12} wrap="nowrap" style={{ minWidth: 'min-content' }}>
-                {NOTIFICATION_TYPES.map(({ type, label, icon }) => (
-                  <UnstyledButton
+            <ActionIcon variant="subtle" size="sm" onClick={clearAll} color="gray">
+              <Icon icon="solar:trash-bin-trash-bold-duotone" width={16} />
+            </ActionIcon>
+          )}
+        </Group>
+
+        <Divider m={0} />
+
+        {/* Filter Tabs - Horizontal Scroll */}
+        {hasNotifications && (
+          <ScrollArea style={{ borderBottom: `1px solid var(--mantine-color-default-border)` }} scrollbars="x">
+            <Group gap={6} p={12} wrap="nowrap">
+              {NOTIFICATION_TYPES.map(({ type, label, icon }) => (
+                <UnstyledButton
                   key={type}
                   onClick={() => setFilter(type)}
                   style={{
@@ -150,63 +137,42 @@ export const NotificationCenter = () => {
                     backgroundColor: filter === type ? 'var(--mantine-color-blue-light)' : 'transparent',
                     color: filter === type ? 'var(--mantine-color-blue-filled)' : 'var(--mantine-color-gray-7)',
                     border: filter === type ? '1px solid var(--mantine-color-blue-3)' : '1px solid var(--mantine-color-default-border)',
-                    transition: 'all 0.2s ease',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '3px',
-                    cursor: 'pointer',
                     whiteSpace: 'nowrap',
-                    flexShrink: 0,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (filter !== type) {
-                      e.currentTarget.style.backgroundColor = isDark ? 'rgba(59, 130, 246, 0.08)' : 'rgba(59, 130, 246, 0.05)'
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (filter !== type) {
-                      e.currentTarget.style.backgroundColor = 'transparent'
-                    }
                   }}
                 >
                   <Icon icon={icon} width={11} />
                   <span>{label}</span>
                 </UnstyledButton>
               ))}
-              </Group>
-            </ScrollArea>
-          )}
+            </Group>
+          </ScrollArea>
+        )}
 
-          {/* Notifications List */}
+        {/* THE FIX: ScrollArea.Autosize */}
+        <ScrollArea.Autosize
+          mah="clamp(250px, calc(100vh - 180px), 60vh)"
+          offsetScrollbars
+          scrollbarSize={8}
+        >
           {filteredNotifications.length === 0 ? (
-            <Stack
-              align="center"
-              justify="center"
-              style={{
-                minHeight: '200px',
-                padding: 'var(--mantine-spacing-xl)',
-              }}
-              gap="xs"
-            >
-              <Icon
-                icon="solar:inbox-bold-duotone"
-                width={40}
-                color="var(--mantine-color-gray-4)"
-              />
+            <Stack align="center" justify="center" mih={200} p="xl" gap="xs">
+              <Icon icon="solar:inbox-bold-duotone" width={40} color="var(--mantine-color-gray-4)" />
               <Text size="sm" c="dimmed" ta="center">
-                {hasNotifications ? `No ${filter} notifications` : 'No notifications yet'}
+                {hasNotifications ? `No ${filter.toLowerCase()} notifications` : 'No notifications yet'}
               </Text>
             </Stack>
           ) : (
-            <ScrollArea style={{ flex: 1, minHeight: 0 }} type="auto">
-              <Stack gap="xs" p="md">
-                {filteredNotifications.map((notification) => (
-                  <NotificationItem key={notification.id} notification={notification} />
-                ))}
-              </Stack>
-            </ScrollArea>
+            <Stack gap="xs" p="md">
+              {filteredNotifications.map((notification) => (
+                <NotificationItem key={notification.id} notification={notification} />
+              ))}
+            </Stack>
           )}
-        </Stack>
+        </ScrollArea.Autosize>
+
       </Popover.Dropdown>
     </Popover>
   )

@@ -22,7 +22,6 @@ import { Icon } from '@iconify-icon/react'
 import { notifications } from '@mantine/notifications'
 import { createTicketApi, fetchEmployeesApi } from '@/api/tickets.api'
 import { useAuth } from '@/hooks/useAuth'
-import { notificationService } from '@/hooks/useNotifications'
 import type { Ticket } from '@/types/ticket'
 import { useState } from 'react'
 
@@ -100,15 +99,6 @@ export default function CreateTicket() {
         message: `Ticket #${data.id} - ${data.category} - ${data.priority} priority${assignmentText}`,
         color: 'green',
       })
-
-      // Trigger notification center - always send
-      if (data.assigned_to_username && data.assigned_to_username !== 'Unassigned') {
-        notificationService.ticketAssigned(data.id, `${data.title} (${data.category})`)
-      } else {
-        // Send system notification if not assigned
-        notificationService.system(`Ticket "${data.title}" created - ${data.category}`)
-      }
-      console.log('[Notification] Ticket created:', data.title, 'ID:', data.id)
     },
     onError: (error: any) => {
       notifications.show({

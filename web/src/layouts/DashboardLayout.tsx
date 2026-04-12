@@ -62,7 +62,7 @@ const DashboardLayout = () => {
           <Group>
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             <Text fw={900} size="xl" style={{ letterSpacing: '2px', color: 'var(--mantine-primary-color-filled)' }}>
-              HELP DESK APP
+              TICKETME
             </Text>
           </Group>
 

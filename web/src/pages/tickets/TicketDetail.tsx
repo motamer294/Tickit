@@ -24,7 +24,6 @@ import {
 import { Icon } from '@iconify-icon/react'
 import { notifications } from '@mantine/notifications'
 import { useAuth } from '@/hooks/useAuth'
-import { notificationService } from '@/hooks/useNotifications'
 import {
   fetchTicketById,
   updateTicketStatusApi,
@@ -128,20 +127,15 @@ export default function TicketDetail() {
   const updateStatusMutation = useMutation({
     mutationFn: (status: TicketStatus) =>
       updateTicketStatusApi(ticketIdNum, status),
-    onSuccess: (updatedTicket, newStatus) => {
+    onSuccess: (_updatedTicket, _newStatus) => {
       notifications.show({
         title: 'Status updated',
         message: 'Ticket status has been updated successfully',
         color: 'green',
       })
-      // Trigger notification center - always send, use available data
-      const title = ticketTitle.current || updatedTicket?.title || 'Ticket'
-      if (newStatus === 'RESOLVED') {
-        notificationService.ticketResolved(ticketIdNum, title)
-      } else {
-        notificationService.ticketUpdated(ticketIdNum, title, `Status changed to ${newStatus.replace(/_/g, ' ')}`)
-      }
-      console.log('[Notification] Status update for:', title, 'Status:', newStatus)
+      // ✅ REMOVED: Client-side notification (server sends via WebSocket)
+      // This prevents duplicate notifications
+      console.log('[Status Update] Posted - server will broadcast via WebSocket')
       queryClient.invalidateQueries({ queryKey: ['ticket', ticketIdNum] })
       setNewStatus(null)
     },
@@ -162,11 +156,9 @@ export default function TicketDetail() {
         message: 'Your comment has been posted',
         color: 'green',
       })
-      // Trigger notification center - always send
-      const title = ticketTitle.current || 'Ticket'
-      const userName = user?.username || 'User'
-      notificationService.commentAdded(ticketIdNum, title, userName)
-      console.log('[Notification] Comment added to:', title, 'by:', userName)
+      // ✅ REMOVED: Client-side notification (server sends via WebSocket)
+      // This prevents duplicate notifications
+      console.log('[Comment] Posted - server will broadcast via WebSocket')
       queryClient.invalidateQueries({
         queryKey: ['ticket-comments', ticketIdNum],
       })
@@ -183,19 +175,14 @@ export default function TicketDetail() {
 
   const assignMutation = useMutation({
     mutationFn: (empId: number) => assignTicketApi(ticketIdNum, empId),
-    onSuccess: (data) => {
+    onSuccess: (_data) => {
       notifications.show({
         title: 'Assigned',
         message: 'Ticket has been assigned successfully',
         color: 'green',
       })
-      // Trigger notification center
-      if (ticket?.title && data.assigned_to_username) {
-        notificationService.ticketAssigned(
-          ticketIdNum,
-          `${ticket.title} (assigned to ${data.assigned_to_username})`
-        )
-      }
+      // ✅ REMOVED: Client-side notification (server sends via WebSocket)
+      // This prevents duplicate notifications
       queryClient.invalidateQueries({ queryKey: ['ticket', ticketIdNum] })
       queryClient.invalidateQueries({ queryKey: ['tickets'] })
       setAssignModalOpen(false)
@@ -243,10 +230,9 @@ export default function TicketDetail() {
         message: 'Ticket has been deleted successfully',
         color: 'green',
       })
-      // Trigger notification for deletion
-      const title = ticketTitle.current || 'Ticket'
-      notificationService.system(`Ticket "${title}" has been deleted`)
-      console.log('[Notification] Ticket deleted:', title)
+      // ✅ REMOVED: Client-side notification (server sends via WebSocket)
+      // This prevents duplicate notifications
+      console.log('[Delete] Ticket deleted - server will broadcast via WebSocket')
       navigate('..')
     },
     onError: (error: any) => {

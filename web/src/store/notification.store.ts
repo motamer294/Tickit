@@ -22,13 +22,8 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       notifications: [newNotification, ...state.notifications],
     }))
 
-    // Auto-dismiss after 10 seconds if unread
-    setTimeout(() => {
-      const current = get().notifications.find((n) => n.id === newNotification.id)
-      if (current && !current.read) {
-        get().markAsRead(newNotification.id)
-      }
-    }, 10000)
+    // ✅ REMOVED: No auto-dismiss timeout
+    // Notifications stay unread until user manually opens dropdown
   },
 
   // Mark notification as read

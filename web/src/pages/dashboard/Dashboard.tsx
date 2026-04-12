@@ -31,6 +31,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useAuth } from '@/hooks/useAuth'
+import { useRealtimeData } from '@/hooks/useRealtimeData'
 import { fetchTickets, fetchAnalyticsDashboard } from '@/api/tickets.api'
 import { notificationService } from '@/hooks/useNotifications'
 import type { Ticket, TicketStatus } from '@/types/ticket'
@@ -91,6 +92,9 @@ const Dashboard = () => {
   const { colorScheme } = useMantineColorScheme()
   const isDark = colorScheme === 'dark'
 
+  // Enable real-time updates
+  useRealtimeData()
+
   // Select colors based on theme
   const COLORS = isDark ? COLORS_DARK : COLORS_LIGHT
   const STATUS_COLORS = isDark ? STATUS_COLORS_DARK : STATUS_COLORS_LIGHT
@@ -109,6 +113,8 @@ const Dashboard = () => {
     queryKey: ['tickets', accessToken],
     queryFn: () => fetchTickets(),
     enabled: !!accessToken,
+    refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
+    refetchIntervalInBackground: true, // Keep polling even when not focused
   })
 
   // Fetch analytics for managers only
@@ -119,6 +125,8 @@ const Dashboard = () => {
     queryKey: ['analytics-dashboard'],
     queryFn: () => fetchAnalyticsDashboard(),
     enabled: !!accessToken && user?.role === 'MANAGER',
+    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchIntervalInBackground: true,
   })
 
   // Calculate stats
