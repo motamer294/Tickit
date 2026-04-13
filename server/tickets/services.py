@@ -11,11 +11,11 @@ from accounts.models import User
 logger = logging.getLogger(__name__)
 
 # Most important change: using the Docker gateway IP to communicate with Ubuntu
-ML_SERVICE_URL = "http://172.17.0.1:8001/ticket"
+ML_SERVICE_URL = "http://host.docker.internal:8001/ticket"
 
 def get_employee_with_least_workload() -> 'User':
     """
-    Option C: Calculate which employee has the least open/in-progress tickets
+    Calculate which employee has the least open/in-progress tickets
     and return that employee for auto-assignment.
     """
     # Removed the import Count from here because it's already imported above
