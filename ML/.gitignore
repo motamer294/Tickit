@@ -4,8 +4,9 @@ __pycache__/
 *.pyc
 venv/
 docs/
-dataset/
 models/
+
+
 __pycache__/
 *.pyc
 # ==============================
@@ -18,10 +19,3 @@ __pycache__/
 models/*
 !models/.gitkeep
 
-# ==============================
-# Datasets
-# ==============================
-*.csv
-*.xlsx
-dataset/*
-!dataset/.gitkeep

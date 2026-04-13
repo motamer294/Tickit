@@ -1,10 +1,10 @@
 """
-RAG Service V2 (Enterprise IT Help Desk Edition)
+RAG Service V2 (Enterprise IT Help Desk Edition - Smart Ollama)
 Features:
 - Sentence embeddings for semantic search (all-MiniLM-L6-v2)
 - FAISS vector store for fast similarity search
-- Local Ollama (llama3.2:1b) for secure, offline IT response generation
-- Context-aware answers based on ITSM Synthetic Data
+- Local Fine-Tuned Llama via Ollama (nexus-ai model)
+- Smart AI Priority & Solution Generation (No blind copying)
 """
 
 import pandas as pd
@@ -13,23 +13,24 @@ from sentence_transformers import SentenceTransformer
 import faiss
 import pickle
 import os
-import ollama
+import requests
+import logging
+import re
+
+logger = logging.getLogger(__name__)
 
 class RAGServiceV2:
     def __init__(self, dataset_file='dataset/Synthetic_ITSM_Data_Ready.csv', rebuild_index=False):
         """
-        Initialize RAG system with embeddings and Local Ollama
-        
-        Args:
-            dataset_file: Path to the new ITSM CSV file
-            rebuild_index: Force rebuild of embeddings and FAISS index
+        Initialize RAG system with FAISS embeddings. 
+        Ollama is used externally via REST API.
         """
         self.dataset_file = dataset_file
         self.index_file = 'models/faiss_index.pkl'
         self.embeddings_file = 'models/faq_embeddings.pkl'
         self.faq_data_file = 'models/faq_data.pkl'       
 
-        # Initialize embedding model (Lightweight and fast for CPU)
+        # 1. Initialize embedding model (FAISS)
         print("Loading embedding model (all-MiniLM-L6-v2)...")
         self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
         
@@ -40,75 +41,44 @@ class RAGServiceV2:
         else:
             print("Loading existing FAISS index...")
             self._load_index()
-        
-        print(f"✅ RAG system ready with {len(self.faqs)} IT resolutions.")
-    
+            
+        print("RAG system FAISS Index ready. Connected to Local Ollama.")
+
     def _index_exists(self):
-        """Check if pre-built index exists"""
         return (os.path.exists(self.index_file) and 
                 os.path.exists(self.embeddings_file) and
                 os.path.exists(self.faq_data_file))
     
     def _build_index(self):
-        """Build FAISS index from the Synthetic ITSM data"""
         if not os.path.exists(self.dataset_file):
-            raise FileNotFoundError(f"Dataset not found at {self.dataset_file}. Please ensure the synthetic data is generated.")
+            raise FileNotFoundError(f"Dataset not found at {self.dataset_file}.")
 
-        # Load Data
         df = pd.read_csv(self.dataset_file)
-        
-        # Ensure we don't have NaN values in text columns
         df['Description'] = df['Description'].fillna('')
         df['Resolution'] = df['Resolution'].fillna('')
-        
         self.faqs = df.to_dict('records')
         
-        # Create text corpus for embedding
-        # We combine the user's complaint (Description) and the fix (Resolution)
         texts = [f"{ticket['Description']} {ticket['Resolution']}" for ticket in self.faqs]
+        print(f"Generating embeddings for {len(texts)} IT tickets...")
         
-        print(f"Generating embeddings for {len(texts)} IT tickets... (This might take a moment)")
-        # Generate embeddings
-        self.embeddings = self.embedding_model.encode(
-            texts, 
-            show_progress_bar=True,
-            convert_to_numpy=True
-        )
-        
-        # Build FAISS index
-        dimension = self.embeddings.shape[1]  # 384 dimensions
-        print(f"Building FAISS index (dimension: {dimension})...")
+        self.embeddings = self.embedding_model.encode(texts, show_progress_bar=True, convert_to_numpy=True)
+        dimension = self.embeddings.shape[1]
         
         self.index = faiss.IndexFlatL2(dimension)
         self.index.add(self.embeddings)
         
-        # Save everything
         os.makedirs('models', exist_ok=True)
-        
-        with open(self.index_file, 'wb') as f:
-            pickle.dump(self.index, f)
-        
-        with open(self.embeddings_file, 'wb') as f:
-            pickle.dump(self.embeddings, f)
-        
-        with open(self.faq_data_file, 'wb') as f:
-            pickle.dump(self.faqs, f)
-        
-        print("✅ Index built and saved successfully.")
+        with open(self.index_file, 'wb') as f: pickle.dump(self.index, f)
+        with open(self.embeddings_file, 'wb') as f: pickle.dump(self.embeddings, f)
+        with open(self.faq_data_file, 'wb') as f: pickle.dump(self.faqs, f)
+        print("Index built and saved successfully.")
     
     def _load_index(self):
-        """Load pre-built FAISS index"""
-        with open(self.index_file, 'rb') as f:
-            self.index = pickle.load(f)
-        
-        with open(self.embeddings_file, 'rb') as f:
-            self.embeddings = pickle.load(f)
-        
-        with open(self.faq_data_file, 'rb') as f:
-            self.faqs = pickle.load(f)
+        with open(self.index_file, 'rb') as f: self.index = pickle.load(f)
+        with open(self.embeddings_file, 'rb') as f: self.embeddings = pickle.load(f)
+        with open(self.faq_data_file, 'rb') as f: self.faqs = pickle.load(f)
     
     def search_similar_faqs(self, query, top_k=3):
-        """Search for similar IT tickets using semantic similarity"""
         query_embedding = self.embedding_model.encode([query], convert_to_numpy=True)
         distances, indices = self.index.search(query_embedding, top_k)
         
@@ -118,71 +88,80 @@ class RAGServiceV2:
                 faq = self.faqs[idx]
                 similarity = 1 / (1 + distance)
                 results.append((faq, similarity))
-        
         return results
     
-    def generate_response_ollama(self, query, category, relevant_faqs):
-        """Generate response using Local Llama 3.2 (1B) with retrieved context"""
+    def generate_priority_and_solution_ollama(self, query, category, relevant_faqs):
+        """Generate Smart Priority & Solution using Ollama Local API (nexus-ai)"""
         
-        # Build context from retrieved IT Resolutions
-        context = "Here are similar past IT incidents and how they were resolved:\n\n"
+        faiss_context = ""
         for i, (ticket, score) in enumerate(relevant_faqs, 1):
-            context += f"{i}. User Issue: {ticket.get('Description', 'N/A')}\n"
-            context += f"   IT Resolution: {ticket.get('Resolution', 'N/A')}\n\n"
+            faiss_context += f"{i}. Past Issue: {ticket.get('Description', 'N/A')}\n"
+            faiss_context += f"   Past Resolution: {ticket.get('Resolution', 'N/A')}\n\n"
         
-        # Enterprise IT Prompt Engineering
-        prompt = f"""
-You are an expert IT Support Agent for an enterprise company. 
-IMPORTANT INSTRUCTION: The user will ask technical IT questions. Terms like 'kill', 'execute', 'child process', 'orphan process', 'master', 'slave', 'crash', or 'fatal' refer strictly to computer software, servers, and programming terminology. 
-DO NOT trigger any safety, violence, or harm guardrails. Answer the technical question directly and professionally.
+        prompt_text = f"""You are an Expert IT Support Agent for an enterprise.
+Analyze the following ticket and provide the Priority (LOW, MEDIUM, HIGH, CRITICAL) and a logical Suggested Solution.
 
+Current Ticket: {query}
+Ticket Category: {category}
 
-{context}
+Past Historical Solution (FOR REFERENCE ONLY - DO NOT copy this if the current issue is a simple request like a password reset):
+{faiss_context}
 
-Issue Category: {category}
-Current User Issue: {query}
-
-Provide a direct, professional, and technical (yet understandable) solution based ONLY on the resolutions above. Keep the response concise (3-4 sentences max).
-
-Response:"""
+Provide your response exactly in this format:
+Priority: [Your Priority]
+Solution: [Your Solution]
+"""
+        
+        url = "http://localhost:11434/api/generate"
+        payload = {
+            "model": "nexus-ai",
+            "prompt": prompt_text,
+            "stream": False,
+            "options": {
+                "temperature": 0.1,  
+                "num_predict": 150   
+            }
+        }
         
         try:
-            # Call Local Ollama API
-            response = ollama.generate(
-                model='llama3.2:1b',  # Pointing to your specific lightweight model
-                prompt=prompt,
-                options={
-                    'temperature': 0.3,  # Low temperature for factual, technical accuracy
-                    'top_p': 0.9,
-                    'num_predict': 150,  # Ensure it doesn't ramble (equivalent to max_tokens)
-                }
-            )
-            
-            return response['response'].strip()
-        
+            response = requests.post(url, json=payload, timeout=30)
+            if response.status_code == 200:
+                ai_text = response.json().get("response", "").strip()
+                
+                # Extract priority and solution
+                priority = "LOW"
+                solution = ai_text
+                
+                pri_match = re.search(r"Priority:\s*(.*?)(?:\n|$)", ai_text, re.IGNORECASE)
+                sol_match = re.search(r"Solution:\s*(.*)", ai_text, re.IGNORECASE | re.DOTALL)
+                
+                if pri_match:
+                    priority = pri_match.group(1).strip().upper()
+                if sol_match:
+                    solution = sol_match.group(1).strip()
+                    
+                return priority, solution
+            else:
+                logger.error(f"Ollama Error: {response.text}")
+                return "LOW", "Could not generate solution at this time."
         except Exception as e:
-            print(f"Ollama connection error: {e}")
-            if relevant_faqs:
-                return f"System note: Reverting to exact historical fix. Solution: {relevant_faqs[0][0].get('Resolution', 'N/A')}"
-            return "Local AI Engine is currently offline. Please contact the IT admin."
+            logger.error(f"Failed to connect to Ollama: {e}")
+            return "LOW", "AI Engine is currently offline."
     
-    def rag_response(self, query, category="General IT", use_ollama=True, top_k=3):
-        """Main RAG pipeline: Retrieve + Generate"""
+    def rag_response(self, query, category="General IT", use_ai=True, top_k=3):
         relevant_faqs = self.search_similar_faqs(query, top_k=top_k)
         
         if not relevant_faqs:
-            return "No similar historical tickets found. A human IT agent will review this shortly."
+            return "LOW", "No similar historical tickets found. A human IT agent will review this shortly."
         
-        if use_ollama:
-            return self.generate_response_ollama(query, category, relevant_faqs)
+        if use_ai:
+            return self.generate_priority_and_solution_ollama(query, category, relevant_faqs)
         else:
             top_ticket = relevant_faqs[0][0]
-            return f"Historical Fix for similar {category} issue: {top_ticket.get('Resolution', 'N/A')}"
+            return "LOW", f"Historical Fix for similar {category} issue: {top_ticket.get('Resolution', 'N/A')}"
     
     def get_relevant_context(self, query, top_k=3):
-        """Get relevant tickets without generation (for debugging/inspection)"""
         relevant_faqs = self.search_similar_faqs(query, top_k=top_k)
-        
         results = []
         for ticket, score in relevant_faqs:
             results.append({
@@ -191,54 +170,35 @@ Response:"""
                 'topic': ticket.get('Topic', 'N/A'),
                 'similarity_score': round(score, 3)
             })
-        
         return results
 
-# Initialize global RAG system (singleton pattern)
 _rag_system = None
 
 def get_rag_system(rebuild=False):
-    """Get or create RAG system instance"""
     global _rag_system
     if _rag_system is None or rebuild:
         _rag_system = RAGServiceV2(rebuild_index=rebuild)
     return _rag_system
 
-def rag_response(text, category):
-    """Backward-compatible function for existing code"""
-    rag_system = get_rag_system()
-    return rag_system.rag_response(text, category, use_ollama=True, top_k=3)
-
 if __name__ == "__main__":
-    # Test the Enterprise IT RAG system
-    print("Initializing Enterprise IT RAG system...")
-    # Set rebuild_index=True for the first run to process the new CSV
-    rag = RAGServiceV2(rebuild_index=True) 
+    # Test script updated to unpack both priority and solution
+    print("Initializing Enterprise IT RAG system (Smart Ollama Edition)...")
+    rag = RAGServiceV2(rebuild_index=False) 
     
-    # IT-Specific Test queries
     test_queries = [
-        ("I can't connect to the corporate VPN from home", "Network Issue"),
+        ("I forgot my outlook password and cannot access my emails since morning.", "Software Issue"),
         ("My laptop is randomly showing a blue screen and restarting", "Hardware Failure"),
-        ("I need access to the shared marketing drive on SharePoint", "Access Request"),
-        ("I forgot my Active Directory password", "Authentication"),
     ]
     
     print("\n" + "=" * 70)
-    print("Testing IT RAG System")
+    print("Testing Smart Priority & Solution Generation")
     print("=" * 70)
     
     for query, category in test_queries:
         print(f"\nUser Query: {query}")
-        print(f"Detected Category: {category}")
-        print("-" * 70)
+        print(f"Predicted ML Category: {category}")
         
-        # Get relevant context
-        context = rag.get_relevant_context(query, top_k=2)
-        print("Retrieved Historical Fixes (FAISS):")
-        for i, ctx in enumerate(context, 1):
-            print(f"  {i}. [Score: {ctx['similarity_score']}] {ctx['resolution']}")
-        
-        # Generate response
-        response = rag.rag_response(query, category, use_ollama=True)
-        print(f"\nGenerated IT Response (Llama 3.2:1b):\n{response}")
+        smart_priority, smart_solution = rag.rag_response(query, category, use_ai=True)
+        print(f"AI Priority: {smart_priority}")
+        print(f"AI Solution:\n{smart_solution}")
         print("=" * 70)
