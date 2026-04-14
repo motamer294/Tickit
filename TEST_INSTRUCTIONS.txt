@@ -1,0 +1,78 @@
+# 🧪 Testing Instructions - Updated Fixes
+
+## After Rebuilding:
+
+1. **REFRESH your browser** - Press `Ctrl+F5` (hard refresh) to clear cache
+2. **Go to**: `http://localhost:5174/app/dashboard`
+
+---
+
+## TEST 1: Chat Input (Should be Fixed Now)
+
+1. Click on any ticket
+2. Click "Open Chat" button  
+3. **Try to type in the chat box**
+   - ✅ SHOULD WORK NOW - box should be enabled
+   - ❌ If still disabled: check browser console for errors
+4. Type "Test message"
+5. Press Enter or click send
+6. **Message should appear** in the chat
+
+---
+
+## TEST 2: Create Ticket
+
+**For MANAGER role:**
+1. Go to: `http://localhost:5174/app/tickets/create`
+2. Should see full form with Employee dropdown
+3. Fill and submit
+4. ✅ Should create ticket
+
+**For CUSTOMER role:**
+1. **Logout current user**
+2. **Login as CUSTOMER user** (ask if you have one, or I'll help create)
+3. Go to: `http://localhost:5174/app/tickets/create`
+4. Should see form WITHOUT employee dropdown
+5. Fill and submit
+6. ✅ Should create ticket
+
+---
+
+## TEST 3: Notifications
+
+### Setup:
+- Open TWO browser windows
+- Window A: Login as MANAGER
+- Window B: Login as CUSTOMER
+
+### Test Notification Trigger:
+1. In Window B (CUSTOMER): Create a new ticket
+2. In Window A (MANAGER): Look at top-right bell icon
+   - ✅ Bell should have red badge with number
+   - ✅ Click bell to see "Ticket Created" notification
+   - ❌ If no notification: check browser console for errors
+
+---
+
+## Debug if Issues Persist:
+
+If tests fail, go to: `http://localhost:5174/app/debug`
+And run the tests in the debug page to see what's happening
+
+---
+
+## Common Issues:
+
+**Chat still disabled?**
+- Browser cache issue: Hard refresh (Ctrl+F5)
+- Or: WebSocket not connected - check debug page
+
+**Customer can't create?**
+- Make sure you're logged in as CUSTOMER role
+- Check by going to debug page to see token role
+
+**No notifications?**
+- Must create a NEW ticket to trigger  
+- Notifications only sent to managers
+- Check debug page WebSocket is connected
+

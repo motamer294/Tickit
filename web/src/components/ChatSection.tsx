@@ -37,6 +37,11 @@ export function ChatSection({
   const { colorScheme } = useMantineColorScheme()
   const isDark = colorScheme === 'dark'
 
+  // DEBUG: Log connection status
+  useEffect(() => {
+    console.log(`💬 ChatSection: isConnected=${isConnected}, wss=${ws ? 'present' : 'null'}`)
+  }, [isConnected, ws])
+
   // Fetch initial chat messages
   useEffect(() => {
     const loadMessages = async () => {
@@ -88,11 +93,17 @@ export function ChatSection({
 
   // Handle incoming chat events from WebSocket
   useEffect(() => {
-    if (!ws) return
+    if (!ws) {
+      console.log('💬 ChatSection: No WebSocket available')
+      return
+    }
+
+    console.log('💬 ChatSection: Adding message listener')
 
     const handleMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data)
+        console.log('💬 ChatSection received:', data.type, data)
 
         if (data.type === 'chat_message' && data.ticket_id === ticketId) {
           const newMessage: ChatMessage = {
@@ -111,8 +122,14 @@ export function ChatSection({
       }
     }
 
-    ws.addEventListener('message', handleMessage)
-    return () => ws.removeEventListener('message', handleMessage)
+    // Use message event with proper cleanup
+    const handleWSMessage = handleMessage
+    ws.addEventListener('message', handleWSMessage)
+    
+    return () => {
+      console.log('💬 ChatSection: Removing message listener')
+      ws.removeEventListener('message', handleWSMessage)
+    }
   }, [ws, ticketId])
 
   const handleSendMessage = async () => {
