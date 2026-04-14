@@ -114,10 +114,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
             return
           }
 
-          // Handle chat messages
+          // Handle chat messages - ✅ LET THEM PASS THROUGH to ChatSection listeners
           if (data.type === 'chat_message') {
             console.log('💬 Chat message received')
-            // Chat components will handle this via useWebSocketContext
+            // ✅ IMPORTANT: Don't consume chat messages here
+            // Let them propagate to ChatSection's listener
+            // Just return after logging
             return
           }
 
