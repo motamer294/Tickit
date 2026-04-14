@@ -20,6 +20,9 @@ import AuthLayout from '@/layouts/AuthLayout'
 import Login from '@/pages/auth/Login'
 import Signup from '@/pages/auth/Signup'
 
+/* debug */
+import Debug from '@/pages/Debug'
+
 import { useAuth } from '@/hooks/useAuth'
 
 export default function RootRouter() {
@@ -43,6 +46,7 @@ export default function RootRouter() {
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/debug" element={<Debug />} />
       </Route>
 
       {/* ================= APP (PROTECTED) ================= */}
