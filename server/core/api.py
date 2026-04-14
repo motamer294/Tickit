@@ -177,6 +177,21 @@ def list_employee_tasks(request):
 # 3. Create Ticket (Open to Customers & Employees)
 @api.post("/tickets", response=TicketOutSchema)
 def create_ticket(request, data: TicketCreateSchema):
+    # Input validation
+    if not data.title or len(data.title) < 3 or len(data.title) > 500:
+        return api.create_response(
+            request,
+            {"message": "Title must be between 3 and 500 characters"},
+            status=400
+        )
+    
+    if not data.description or len(data.description) < 10 or len(data.description) > 5000:
+        return api.create_response(
+            request,
+            {"message": "Description must be between 10 and 5000 characters"},
+            status=400
+        )
+    
     # Option A + C: Pass assignment parameters to service
     ticket = create_ticket_with_ai(
         title=data.title,
@@ -253,6 +268,14 @@ def get_ticket_comments(request, ticket_id: int):
 @api.post("/tickets/{ticket_id}/comments", response=CommentOutSchema)
 def add_comment(request, ticket_id: int, data: CommentSchema):
     ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    # --- INPUT VALIDATION ---
+    if not data.text or len(data.text) < 1 or len(data.text) > 2000:
+        return api.create_response(
+            request,
+            {"message": "Comment must be between 1 and 2000 characters"},
+            status=400
+        )
 
     # --- SECURITY/AUTHORIZATION CHECK ---
     # Determine if the user has rights to this specific ticket

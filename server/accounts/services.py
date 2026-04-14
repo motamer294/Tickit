@@ -72,6 +72,11 @@ def update_user_profile(user: User, first_name: str = None, last_name: str = Non
         # Validate email format (basic check)
         if email and '@' not in email:
             raise ValueError("Invalid email format")
+        
+        # Check for email uniqueness (only if email is different from current)
+        if email != user.email and User.objects.filter(email=email).exists():
+            raise ValueError("Email address is already in use")
+        
         user.email = email
 
     user.save()

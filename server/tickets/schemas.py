@@ -18,7 +18,7 @@ class TicketOutSchema(Schema):
     title: str
     description: str
     status: str
-    
+
     # 🤖 AI Fields (Strictly Required - No Optional)
     category: str
     priority: str
@@ -26,7 +26,7 @@ class TicketOutSchema(Schema):
     ai_suggested_solution: str
 
     created_at: datetime
-    
+
     # NEW: We need to pass the usernames to the frontend, not just raw database IDs!
     # (Kept Optional here only because assigned_to can legitimately be empty/unassigned)
     creator_username: Optional[str] = None
@@ -62,8 +62,8 @@ class CommentOutSchema(Schema):
     def resolve_author_username(obj):
         # Use the username of the commenter, or "Unknown User" if something went wrong (e.g., deleted user)
         return obj.author.username if getattr(obj, "author", None) else "Unknown User"
-        
-    # FIX: The broken resolve_text(obj) method was deleted. 
+
+    # FIX: The broken resolve_text(obj) method was deleted.
     # Django Ninja will automatically map schema.text to model.text perfectly.
     # ==========================
 # Analytics & Dashboard Schemas
@@ -73,7 +73,7 @@ class DashboardStatsSchema(Schema):
     open_tickets: int
     resolved_tickets: int
     avg_resolution_time_hours: float
-    
+
     # We will return the statistics as dictionaries so they can be easily plotted in the charts
     tickets_by_category: Dict[str, int]
     tickets_by_priority: Dict[str, int]
