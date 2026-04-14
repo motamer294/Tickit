@@ -14,6 +14,7 @@ import { useForm } from '@mantine/form'
 import { useNavigate } from 'react-router-dom'
 import { Icon } from '@iconify-icon/react'
 import { useSignup } from '@/hooks/useAuth'
+import { validatePassword, validateUsername } from '@/utils/validation'
 
 export default function Signup() {
   const navigate = useNavigate()
@@ -26,9 +27,14 @@ export default function Signup() {
       role: 'CUSTOMER',
     },
     validate: {
-      username: (val) =>
-        val.length < 3 ? 'Username must be at least 3 characters' : null,
-      password: (val) => (val.length < 6 ? 'Password too short' : null),
+      username: (val) => {
+        const result = validateUsername(val)
+        return result.valid ? null : result.error
+      },
+      password: (val) => {
+        const result = validatePassword(val)
+        return result.valid ? null : result.error
+      },
     },
   })
 
@@ -117,7 +123,8 @@ export default function Signup() {
               label="Password"
               radius="md"
               size="md"
-              placeholder="At least 6 characters"
+              placeholder="8+ chars, uppercase, number, special char (!@#$%^&*)"
+              description="Must contain: uppercase, number, and special character"
               leftSection={
                 <Icon icon="solar:lock-password-bold-duotone" width="20" />
               }
