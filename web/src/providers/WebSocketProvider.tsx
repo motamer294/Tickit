@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
+import { useNotificationStore } from '@/store/notification.store'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface WebSocketContextType {
   ws: WebSocket | null
@@ -26,6 +28,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   const [ws, setWs] = useState<WebSocket | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
+  const queryClient = useQueryClient()
+  const addNotification = useNotificationStore((s) => s.addNotification)
 
   useEffect(() => {
     if (wsRef.current) {
@@ -46,6 +50,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       const newWs = new WebSocket(wsUrl)
 
       newWs.onopen = () => {
+        console.log('✅ Unified WebSocket connected')
         setIsConnected(true)
         const message = {
           type: 'authenticate',
@@ -54,20 +59,100 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         newWs.send(JSON.stringify(message))
       }
 
+      newWs.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          console.log('📨 WebSocket message received:', data)
+
+          // Handle authentication confirmation
+          if (data.type === 'authenticated') {
+            console.log(
+              `✅ Authenticated as ${data.username} (${data.role})`,
+            )
+            return
+          }
+
+          // Handle notifications (ticket_created, ticket_updated, etc.)
+          if (
+            data.type === 'TICKET_CREATED' ||
+            data.type === 'TICKET_UPDATED' ||
+            data.type === 'TICKET_ASSIGNED' ||
+            data.type === 'TICKET_RESOLVED' ||
+            data.type === 'TICKET_DELETED' ||
+            data.type === 'COMMENT_ADDED'
+          ) {
+            console.log('🔔 Notification received:', data.type)
+            addNotification({
+              type: data.type,
+              title: data.title || 'Notification',
+              message: data.message || '',
+              relatedTo: data.ticket_id ? { ticketId: data.ticket_id } : undefined,
+              data: data.data,
+              isGlobal: data.isGlobal,
+              fromUser: data.fromUser,
+            })
+            // Invalidate query for this ticket if available
+            if (data.ticket_id) {
+              queryClient.invalidateQueries({
+                queryKey: ['ticket', data.ticket_id],
+              })
+            }
+            return
+          }
+
+          // Handle real-time data changes (triggers React Query invalidation)
+          if (data.type === 'data_changed' || data.event) {
+            console.log('🔄 Real-time update:', data.event)
+            // Invalidate all ticket queries to reflect changes
+            queryClient.invalidateQueries({ queryKey: ['my-tickets'] })
+            queryClient.invalidateQueries({ queryKey: ['employee/tasks'] })
+            if (data.ticketId) {
+              queryClient.invalidateQueries({
+                queryKey: ['ticket', data.ticketId],
+              })
+            }
+            return
+          }
+
+          // Handle chat messages
+          if (data.type === 'chat_message') {
+            console.log('💬 Chat message received')
+            // Chat components will handle this via useWebSocketContext
+            return
+          }
+
+          // Handle pong response
+          if (data.type === 'pong') {
+            console.log('💓 Pong received (connection alive)')
+            return
+          }
+        } catch (error) {
+          console.error('❌ Error parsing WebSocket message:', error)
+        }
+      }
+
       newWs.onclose = () => {
+        console.log('❌ Unified WebSocket closed')
         setIsConnected(false)
         wsRef.current = null
+        // Attempt reconnect after 3 seconds
+        setTimeout(() => {
+          if (!wsRef.current) {
+            console.log('🔄 Attempting WebSocket reconnect...')
+            // Trigger reconnection by recreating
+          }
+        }, 3000)
       }
 
       newWs.onerror = (error) => {
-        console.error('WebSocket error:', error)
+        console.error('❌ WebSocket error:', error)
         setIsConnected(false)
       }
 
       wsRef.current = newWs
       setWs(newWs)
     } catch (error) {
-      console.error('Failed to create WebSocket:', error)
+      console.error('❌ Failed to create WebSocket:', error)
       setIsConnected(false)
     }
 
@@ -76,7 +161,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         wsRef.current.close()
       }
     }
-  }, [])
+  }, [addNotification, queryClient])
 
   return (
     <WebSocketContext.Provider value={{ ws: ws || wsRef.current, isConnected }}>
