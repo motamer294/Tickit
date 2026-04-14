@@ -74,11 +74,11 @@ export default function RootRouter() {
           {/* View tickets - all authenticated users */}
           <Route index element={<TicketsList />} />
 
-          {/* Create ticket - CUSTOMER and EMPLOYEE only */}
+          {/* Create ticket - CUSTOMER, EMPLOYEE, and MANAGER */}
           <Route
             path="create"
             element={
-              <ProtectedRoute requiredRoles={['CUSTOMER', 'EMPLOYEE']}>
+              <ProtectedRoute requiredRoles={['CUSTOMER', 'EMPLOYEE', 'MANAGER']}>
                 <CreateTicket />
               </ProtectedRoute>
             }

@@ -157,6 +157,8 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
     async def send_notification(self, event):
         """Send notification to frontend"""
         try:
+            print(f"📬 Processing notification: type={event.get('type')}, title={event.get('title')}, ticket_id={event.get('ticket_id')}")
+            
             # Map backend notification types to frontend types
             type_map = {
                 'ticket_created': 'TICKET_CREATED',
@@ -189,9 +191,14 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
                     'id': data['commented_by_id'],
                     'username': data.get('commented_by_name', 'Unknown'),
                 }
+            elif 'deleted_by_id' in data:
+                from_user = {
+                    'id': data['deleted_by_id'],
+                    'username': data.get('deleted_by_name', 'Unknown'),
+                }
 
             # Send formatted notification to frontend
-            await self.send(text_data=json.dumps({
+            notification_payload = {
                 'id': f"notif-{event.get('ticket_id', 'system')}-{data.get('timestamp', '')}",
                 'type': frontend_type,
                 'title': event.get('title', 'System Notification'),
@@ -202,9 +209,10 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
                 'data': data,
                 'isGlobal': event.get('is_global', False),
                 'fromUser': from_user,
-            }))
-
-            print(f"📬 Notification sent to user {self.user_id}: {event.get('title', 'System')}")
+            }
+            
+            await self.send(text_data=json.dumps(notification_payload))
+            print(f"✅ Notification sent to user {self.user_id}: {event.get('title', 'System')} (type: {frontend_type})")
         except Exception as e:
             print(f"❌ Error sending notification: {e}")
             import traceback

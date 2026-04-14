@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import {
   Paper,
   ScrollArea,
@@ -32,15 +32,17 @@ export function ChatSection({
   const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [joined, setJoined] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const listenerRef = useRef<((event: MessageEvent) => void) | null>(null)
   const { ws, isConnected } = useWebSocketContext()
   const { colorScheme } = useMantineColorScheme()
   const isDark = colorScheme === 'dark'
 
   // DEBUG: Log connection status
   useEffect(() => {
-    console.log(`💬 ChatSection: isConnected=${isConnected}, wss=${ws ? 'present' : 'null'}`)
-  }, [isConnected, ws])
+    console.log(`💬 ChatSection: isConnected=${isConnected}, wss=${ws ? 'present' : 'null'}, joined=${joined}`)
+  }, [isConnected, ws, joined])
 
   // Fetch initial chat messages
   useEffect(() => {
@@ -71,16 +73,70 @@ export function ChatSection({
 
   // Join chat room when component mounts or ticket changes
   useEffect(() => {
-    if (!ws || !isConnected || ws.readyState !== WebSocket.OPEN) return
+    if (!ws || !isConnected || ws.readyState !== WebSocket.OPEN) {
+      setJoined(false)
+      return
+    }
 
     // Send join_chat message to subscribe to this ticket's chat group
-    ws.send(
-      JSON.stringify({
-        type: 'join_chat',
-        ticket_id: ticketId,
-      }),
-    )
+    try {
+      ws.send(
+        JSON.stringify({
+          type: 'join_chat',
+          ticket_id: ticketId,
+        }),
+      )
+      setJoined(true)
+      console.log(`✅ ChatSection: Joined chat for ticket ${ticketId}`)
+    } catch (error) {
+      console.error('Error joining chat:', error)
+      setJoined(false)
+    }
   }, [ws, isConnected, ticketId])
+
+  // Handle incoming chat messages - create listener with useCallback to avoid recreation
+  const handleChatMessage = useCallback((event: MessageEvent) => {
+    try {
+      const data = JSON.parse(event.data)
+      
+      // Only process chat messages for this ticket
+      if (data.type === 'chat_message' && data.ticket_id === ticketId) {
+        console.log('💬 ChatSection received message:', data)
+        const newMessage: ChatMessage = {
+          id: data.message_id,
+          ticket_id: data.ticket_id,
+          message: data.message,
+          sender_id: data.sender_id,
+          sender_username: data.sender_username,
+          created_at: data.created_at,
+        }
+        setMessages((prev) => [...prev, newMessage])
+      }
+    } catch (error) {
+      console.error('Error parsing WebSocket message:', error)
+    }
+  }, [ticketId])
+
+  // Set up and clean up message listener once
+  useEffect(() => {
+    if (!ws) {
+      return
+    }
+
+    // Only add listener if not already added
+    if (!listenerRef.current) {
+      listenerRef.current = handleChatMessage
+      ws.addEventListener('message', listenerRef.current)
+      console.log('💬 ChatSection: Added message listener')
+    }
+
+    return () => {
+      if (listenerRef.current && ws) {
+        ws.removeEventListener('message', listenerRef.current)
+        console.log('💬 ChatSection: Removed message listener')
+      }
+    }
+  }, [ws, handleChatMessage])
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -91,53 +147,16 @@ export function ChatSection({
     }
   }, [messages])
 
-  // Handle incoming chat events from WebSocket
-  useEffect(() => {
-    if (!ws) {
-      console.log('💬 ChatSection: No WebSocket available')
-      return
-    }
-
-    console.log('💬 ChatSection: Adding message listener')
-
-    const handleMessage = (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data)
-        console.log('💬 ChatSection received:', data.type, data)
-
-        if (data.type === 'chat_message' && data.ticket_id === ticketId) {
-          const newMessage: ChatMessage = {
-            id: data.message_id,
-            ticket_id: data.ticket_id,
-            message: data.message,
-            sender_id: data.sender_id,
-            sender_username: data.sender_username,
-            created_at: data.created_at,
-          }
-
-          setMessages((prev) => [...prev, newMessage])
-        }
-      } catch (error) {
-        console.error('Error handling WebSocket message:', error)
-      }
-    }
-
-    // Use message event with proper cleanup
-    const handleWSMessage = handleMessage
-    ws.addEventListener('message', handleWSMessage)
-    
-    return () => {
-      console.log('💬 ChatSection: Removing message listener')
-      ws.removeEventListener('message', handleWSMessage)
-    }
-  }, [ws, ticketId])
-
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || !ws || !isConnected) {
+    if (!inputValue.trim() || !ws || !isConnected || !joined) {
+      const reason = !inputValue.trim() ? 'empty message' 
+        : !ws ? 'no WebSocket'
+        : !isConnected ? 'not connected'
+        : 'not joined chat room'
       notifications.show({
-        title: 'Error',
-        message: 'Cannot send message. Connection not ready.',
-        color: 'red',
+        title: 'Cannot send message',
+        message: `Connection not ready (${reason}).`,
+        color: 'yellow',
       })
       return
     }
@@ -149,16 +168,18 @@ export function ChatSection({
         JSON.stringify({
           type: 'chat_message',
           ticket_id: ticketId,
+          sender_id: currentUserId,
           message: inputValue.trim(),
         }),
       )
 
+      console.log(`💬 Sent message to ticket ${ticketId}`)
       setInputValue('')
     } catch (error) {
       console.error('Error sending message:', error)
       notifications.show({
         title: 'Error',
-        message: 'Failed to send message',
+        message: 'Failed to send message. Please try again.',
         color: 'red',
       })
     } finally {
