@@ -10,7 +10,7 @@
 ## TEST 1: Chat Input (Should be Fixed Now)
 
 1. Click on any ticket
-2. Click "Open Chat" button  
+2. Click "Open Chat" button
 3. **Try to type in the chat box**
    - ✅ SHOULD WORK NOW - box should be enabled
    - ❌ If still disabled: check browser console for errors
@@ -72,7 +72,7 @@ And run the tests in the debug page to see what's happening
 - Check by going to debug page to see token role
 
 **No notifications?**
-- Must create a NEW ticket to trigger  
+- Must create a NEW ticket to trigger
 - Notifications only sent to managers
 - Check debug page WebSocket is connected
 

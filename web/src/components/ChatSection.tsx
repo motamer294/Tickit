@@ -98,7 +98,7 @@ export function ChatSection({
   const handleChatMessage = useCallback((event: MessageEvent) => {
     try {
       const data = JSON.parse(event.data)
-      
+
       // Only process chat messages for this ticket
       if (data.type === 'chat_message' && data.ticket_id === ticketId) {
         console.log('💬 ChatSection received message:', data)
@@ -149,7 +149,7 @@ export function ChatSection({
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || !ws || !isConnected || !joined) {
-      const reason = !inputValue.trim() ? 'empty message' 
+      const reason = !inputValue.trim() ? 'empty message'
         : !ws ? 'no WebSocket'
         : !isConnected ? 'not connected'
         : 'not joined chat room'

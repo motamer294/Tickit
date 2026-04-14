@@ -283,15 +283,6 @@ def add_comment(request, ticket_id: int, data: CommentSchema):
     realtime_service.broadcast_comment_added(ticket.id, comment.id, request.user.username)
 
     return comment
-    # Calling both caused duplicate notifications in frontend
-
-    # Return properly formatted response with author_username
-    return {
-        'id': comment.id,
-        'text': comment.text,
-        'author_username': request.user.username,
-        'created_at': comment.created_at,
-    }
 
 # 5.5 Get Chat Messages for a Ticket
 @api.get("/tickets/{ticket_id}/chat", response=List[dict])

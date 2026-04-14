@@ -17,7 +17,7 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
     - Notifications (ticket created, updated, assigned, commented, etc)
     - Real-time data updates (triggers for React Query invalidation)
     - Keep-alive pings
-    
+
     Authentication via message: {"type": "authenticate", "token": "..."}
     """
 
@@ -158,7 +158,7 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
         """Send notification to frontend"""
         try:
             print(f"📬 Processing notification: type={event.get('type')}, title={event.get('title')}, ticket_id={event.get('ticket_id')}")
-            
+
             # Map backend notification types to frontend types
             type_map = {
                 'ticket_created': 'TICKET_CREATED',
@@ -210,7 +210,7 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
                 'isGlobal': event.get('is_global', False),
                 'fromUser': from_user,
             }
-            
+
             await self.send(text_data=json.dumps(notification_payload))
             print(f"✅ Notification sent to user {self.user_id}: {event.get('title', 'System')} (type: {frontend_type})")
         except Exception as e:
