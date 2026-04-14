@@ -14,6 +14,7 @@ import {
   Card,
 } from '@mantine/core'
 import { Icon } from '@iconify-icon/react'
+import { useAuthStore } from '@/store/auth.store'
 
 export default function DebugPage() {
   const [logs, setLogs] = useState<string[]>([])
@@ -22,11 +23,12 @@ export default function DebugPage() {
   const [ws, setWs] = useState<WebSocket | null>(null)
 
   useEffect(() => {
-    // Get token and API URL
-    const t = localStorage.getItem('access_token')
+    // Get token from auth store
+    const authStore = useAuthStore.getState()
+    const t = authStore.accessToken
     const apiUrl = `http://${window.location.hostname}:8000/api`
     const wsUrl = `ws://${window.location.hostname}:8000/ws/unified/`
-    
+
     setToken(t || 'NO TOKEN FOUND')
 
     addLog('🔍 Debug Page Initialized')
@@ -47,7 +49,7 @@ export default function DebugPage() {
   const testWebSocket = async () => {
     addLog('🚀 Attempting WebSocket connection...')
 
-    const t = localStorage.getItem('access_token')
+    const t = useAuthStore.getState().accessToken
     if (!t) {
       addLog('❌ ERROR: No access token found')
       return
@@ -62,7 +64,7 @@ export default function DebugPage() {
       newWs.onopen = () => {
         addLog('✅ WebSocket connection successful')
         setWsConnected(true)
-        
+
         // Send authentication
         addLog('📤 Sending authentication message...')
         newWs.send(JSON.stringify({
@@ -74,7 +76,7 @@ export default function DebugPage() {
       newWs.onmessage = (event) => {
         const data = JSON.parse(event.data)
         addLog(`📨 Received: ${JSON.stringify(data)}`)
-        
+
         if (data.type === 'authenticated') {
           addLog(`✅ Authenticated as: ${data.username} (${data.role})`)
         }
@@ -98,8 +100,8 @@ export default function DebugPage() {
 
   const testApi = async () => {
     addLog('🚀 Testing API connection...')
-    
-    const t = localStorage.getItem('access_token')
+
+    const t = useAuthStore.getState().accessToken
     if (!t) {
       addLog('❌ ERROR: No access token found')
       return
@@ -112,7 +114,7 @@ export default function DebugPage() {
           'Authorization': `Bearer ${t}`,
         },
       })
-      
+
       addLog(`📥 Response status: ${response.status}`)
       const data = await response.json()
       addLog(`✅ API working. Got ${Array.isArray(data) ? data.length : 0} tickets`)
@@ -124,8 +126,8 @@ export default function DebugPage() {
 
   const testChatApi = async () => {
     addLog('🚀 Testing Chat API...')
-    
-    const t = localStorage.getItem('access_token')
+
+    const t = useAuthStore.getState().accessToken
     if (!t) {
       addLog('❌ ERROR: No access token found')
       return
@@ -139,7 +141,7 @@ export default function DebugPage() {
         },
       })
       const tickets = await ticketsResponse.json()
-      
+
       if (!Array.isArray(tickets) || tickets.length === 0) {
         addLog('❌ No tickets available to test chat')
         return
@@ -147,13 +149,13 @@ export default function DebugPage() {
 
       const ticketId = tickets[0]?.id
       addLog(`📤 Testing GET /api/tickets/${ticketId}/chat...`)
-      
+
       const response = await fetch(`http://${window.location.hostname}:8000/api/tickets/${ticketId}/chat`, {
         headers: {
           'Authorization': `Bearer ${t}`,
         },
       })
-      
+
       addLog(`📥 Response status: ${response.status}`)
       const data = await response.json()
       addLog(`✅ Chat API working. Got ${Array.isArray(data) ? data.length : 0} messages`)

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { useNotificationStore } from '@/store/notification.store'
+import { useAuthStore } from '@/store/auth.store'
 import { useQueryClient } from '@tanstack/react-query'
 
 interface WebSocketContextType {
@@ -36,7 +37,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       return
     }
 
-    const token = localStorage.getItem('access_token')
+    const token = useAuthStore.getState().accessToken
     if (!token) {
       setIsConnected(false)
       return
