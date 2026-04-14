@@ -164,7 +164,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         wsRef.current.close()
       }
     }
-  }, [addNotification, queryClient])
+  }, []) // Empty dependency - only initialize once on mount
 
   return (
     <WebSocketContext.Provider value={{ ws: ws || wsRef.current, isConnected }}>
