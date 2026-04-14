@@ -57,19 +57,24 @@ def get_user_from_token(token_str):
 class JWTAuthMiddleware(BaseMiddleware):
     """
     Custom middleware to authenticate WebSocket connections using JWT tokens.
-    Expects token in query string: ws://host/path/?token=<jwt_token>
+    Supports two authentication methods:
+    1. Legacy: token in query string: ws://host/path/?token=<jwt_token>
+    2. Secure: token sent in message after connection (for /ws/unified/)
+
+    For the unified endpoint, the middleware allows anonymous connections
+    that will be authenticated later via message.
     """
 
     async def __call__(self, scope, receive, send):
         from django.contrib.auth.models import AnonymousUser  # Import here
 
-        # Extract token from query string
+        # Extract token from query string (for legacy endpoints)
         query_string = scope.get('query_string', b'').decode()
         token = None
 
         logger.debug(f"📋 Query string: {query_string}")
 
-        # Parse query string to get token
+        # Parse query string to get token (fallback method)
         if query_string:
             try:
                 # Parse as query string
