@@ -1,13 +1,16 @@
 import RootRouter from '@/routes/RootRouter'
 import { MantineProvider } from '@/providers/MantineProvider'
 import ReactQueryProvider from '@/providers/ReactQueryProvider'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export default function App() {
   return (
-    <ReactQueryProvider>
-      <MantineProvider>
-        <RootRouter />
-      </MantineProvider>
-    </ReactQueryProvider>
+    <ErrorBoundary>
+      <ReactQueryProvider>
+        <MantineProvider>
+          <RootRouter />
+        </MantineProvider>
+      </ReactQueryProvider>
+    </ErrorBoundary>
   )
 }

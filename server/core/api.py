@@ -286,8 +286,9 @@ def add_comment(request, ticket_id: int, data: CommentSchema):
     # 🔔 Send real-time notifications
     notification_service.comment_added(ticket, comment, request.user)
 
-    # 🔄 Broadcast real-time data update
-    realtime_service.broadcast_comment_added(ticket.id, comment.id, request.user.get_full_name() or request.user.username)
+    # ✅ REMOVED: realtime_service.broadcast_comment_added() 
+    # REASON: notification_service already sends via WebSocket to all users
+    # Calling both caused duplicate notifications in frontend
 
     # Return properly formatted response with author_username
     return {

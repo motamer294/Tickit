@@ -57,16 +57,28 @@ export default function RootRouter() {
         {/* Redirect */}
         <Route index element={<Navigate to="dashboard" replace />} />
 
-        {/* Core */}
+        {/* Core - Accessible by all authenticated users */}
         <Route path="dashboard" element={<Dashboard />} />
 
-        {/* Profile */}
+        {/* Profile - Accessible by all authenticated users */}
         <Route path="profile" element={<UserProfile />} />
 
-        {/* Tickets */}
+        {/* Tickets - Role-based access control */}
         <Route path="tickets">
+          {/* View tickets - all authenticated users */}
           <Route index element={<TicketsList />} />
-          <Route path="create" element={<CreateTicket />} />
+          
+          {/* Create ticket - CUSTOMER and EMPLOYEE only */}
+          <Route
+            path="create"
+            element={
+              <ProtectedRoute requiredRoles={['CUSTOMER', 'EMPLOYEE']}>
+                <CreateTicket />
+              </ProtectedRoute>
+            }
+          />
+          
+          {/* View/Edit ticket - all can view, only assignee/manager can edit */}
           <Route path=":ticketId" element={<TicketDetail />} />
         </Route>
       </Route>

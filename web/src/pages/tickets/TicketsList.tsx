@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -50,14 +51,18 @@ export default function TicketsList() {
     enabled: !!accessToken,
   })
 
-  // Filter tickets based on search and status
-  const filteredTickets = (tickets || []).filter((ticket: Ticket) => {
-    const matchesSearch =
-      ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ticket.description.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = !statusFilter || ticket.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+  // Filter tickets based on search and status with memoization
+  const filteredTickets = useMemo(
+    () =>
+      (tickets || []).filter((ticket: Ticket) => {
+        const matchesSearch =
+          ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          ticket.description.toLowerCase().includes(searchQuery.toLowerCase())
+        const matchesStatus = !statusFilter || ticket.status === statusFilter
+        return matchesSearch && matchesStatus
+      }),
+    [tickets, searchQuery, statusFilter],
+  )
 
   if (isLoading) {
     return (

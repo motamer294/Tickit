@@ -409,8 +409,8 @@ export default function CreateTicket() {
 
                 {/* Auto-Assign Info (Non-Managers) */}
                 {user?.role !== 'MANAGER' && (
-                  <Paper p="md" radius="md" bg="blue.0">
-                    <Group gap="xs" c="dimmed">
+                  <Paper p="md" radius="md" withBorder>
+                    <Group gap="xs" c="blue">
                       <Icon icon="solar:info-circle-bold-duotone" width={20} />
                       <Text size="sm">
                         This ticket will be automatically assigned to the
