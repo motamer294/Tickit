@@ -114,14 +114,25 @@ NINJA_JWT = {
 # WebSockets / Channels Configuration
 # Redis configuration for Django Channels
 # Use environment-specific host: 'redis' for Docker, 'localhost' for local dev
-REDIS_HOST = os.environ.get('REDIS_HOST', 'redis')  # Defaults to Redis service name in Docker
+REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')  # Defaults to localhost for development
 REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
 
+# Try to use Redis, fallback to in-memory if Redis is not available
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [(REDIS_HOST, REDIS_PORT)],
+            "capacity": 1500,
+            "expiry": 10,
         },
     },
 }
+
+# Fallback for development without Redis:
+# Uncomment the following to use in-memory channel layer (development only)
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels.layers.InMemoryChannelLayer"
+#     }
+# }

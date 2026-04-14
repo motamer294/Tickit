@@ -245,17 +245,9 @@ def get_ticket_comments(request, ticket_id: int):
             status=403
         )
 
-    comments = Comment.objects.filter(ticket=ticket).order_by('-created_at')
-    # Return properly formatted response with author_username for each comment
-    return [
-        {
-            'id': comment.id,
-            'text': comment.text,
-            'author_username': comment.author.username if comment.author else "Unknown User",
-            'created_at': comment.created_at,
-        }
-        for comment in comments
-    ]
+    # Use select_related to eagerly load author and avoid N+1 queries
+    comments = Comment.objects.filter(ticket=ticket).select_related('author').order_by('-created_at')
+    return comments
 
 # 5. Add Comment Endpoint
 @api.post("/tickets/{ticket_id}/comments", response=CommentOutSchema)
@@ -283,11 +275,14 @@ def add_comment(request, ticket_id: int, data: CommentSchema):
         text=data.text
     )
 
-    # 🔔 Send real-time notifications
+    # 🔔 Send real-time notifications to users subscribed to this ticket
     notification_service.comment_added(ticket, comment, request.user)
 
-    # ✅ REMOVED: realtime_service.broadcast_comment_added() 
-    # REASON: notification_service already sends via WebSocket to all users
+    # 🔄 Broadcast real-time data update to trigger React Query invalidation
+    # This ensures ALL users see the new comment immediately
+    realtime_service.broadcast_comment_added(ticket.id, comment.id, request.user.username)
+
+    return comment
     # Calling both caused duplicate notifications in frontend
 
     # Return properly formatted response with author_username
@@ -297,6 +292,43 @@ def add_comment(request, ticket_id: int, data: CommentSchema):
         'author_username': request.user.username,
         'created_at': comment.created_at,
     }
+
+# 5.5 Get Chat Messages for a Ticket
+@api.get("/tickets/{ticket_id}/chat", response=List[dict])
+def get_chat_messages(request, ticket_id: int):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    # --- SECURITY/AUTHORIZATION CHECK ---
+    # Same permission logic as viewing the ticket
+    is_manager = request.user.role == User.Role.MANAGER
+    is_creator = ticket.created_by == request.user
+    is_assignee = ticket.assigned_to == request.user
+
+    if not (is_manager or is_creator or is_assignee):
+        return api.create_response(
+            request,
+            {"message": "You do not have permission to view chat messages on this ticket."},
+            status=403
+        )
+
+    # Fetch chat messages with select_related for author
+    from tickets.models import ChatMessage
+    chat_messages = ChatMessage.objects.filter(
+        ticket=ticket
+    ).select_related('sender').order_by('timestamp')
+
+    return [
+        {
+            'id': msg.id,
+            'ticket_id': msg.ticket.id,
+            'message': msg.message,
+            'sender_id': msg.sender.id,
+            'sender_username': msg.sender.username,
+            'timestamp': msg.timestamp.isoformat(),
+        }
+        for msg in chat_messages
+    ]
+
 # 6. Update Ticket Status (Strict Access)
 @api.patch("/tickets/{ticket_id}/status", response=TicketOutSchema)
 
