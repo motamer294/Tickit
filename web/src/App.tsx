@@ -1,6 +1,7 @@
 import RootRouter from '@/routes/RootRouter'
 import { MantineProvider } from '@/providers/MantineProvider'
 import ReactQueryProvider from '@/providers/ReactQueryProvider'
+import { WebSocketProvider } from '@/providers/WebSocketProvider'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export default function App() {
@@ -8,7 +9,9 @@ export default function App() {
     <ErrorBoundary>
       <ReactQueryProvider>
         <MantineProvider>
-          <RootRouter />
+          <WebSocketProvider>
+            <RootRouter />
+          </WebSocketProvider>
         </MantineProvider>
       </ReactQueryProvider>
     </ErrorBoundary>

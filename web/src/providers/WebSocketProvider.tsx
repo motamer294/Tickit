@@ -40,7 +40,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const host = window.location.host
-    const wsUrl = `${protocol}//${host}/ws/notifications/`
+    const wsUrl = `${protocol}//${host}/ws/unified/`
 
     try {
       const newWs = new WebSocket(wsUrl)

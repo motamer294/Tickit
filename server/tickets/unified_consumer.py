@@ -60,6 +60,11 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
             # Handle keep-alive ping
             elif message_type == 'ping':
                 await self.send(text_data=json.dumps({'type': 'pong'}))
+            # Handle chat messages
+            elif message_type == 'join_chat':
+                await self.handle_join_chat(data)
+            elif message_type == 'chat_message':
+                await self.handle_chat_message(data)
             else:
                 if not self.is_authenticated:
                     print(f"❌ Unauthenticated message received: {message_type}")
@@ -227,7 +232,111 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
         """Generic data change event for real-time updates"""
         await self.send(text_data=json.dumps(event))
 
+    # ============ CHAT HANDLERS ============
+
+    async def handle_join_chat(self, data):
+        """Subscribe user to chat group when opening ticket chat"""
+        try:
+            ticket_id = data.get('ticket_id')
+            if not ticket_id:
+                return
+
+            # Verify user has access to ticket
+            has_access = await self.verify_ticket_access(ticket_id)
+            if not has_access:
+                print(f"❌ User {self.user_id} denied access to ticket {ticket_id} chat")
+                return
+
+            # Add to chat group
+            chat_group = f'ticket_chat_{ticket_id}'
+            if chat_group not in self.groups:
+                await self.channel_layer.group_add(chat_group, self.channel_name)
+                self.groups.append(chat_group)
+                print(f"✅ User {self.user_id} joined chat for ticket {ticket_id}")
+
+        except Exception as e:
+            print(f"❌ Error in handle_join_chat: {e}")
+
+    async def handle_chat_message(self, data):
+        """Handle incoming chat message"""
+        try:
+            ticket_id = data.get('ticket_id')
+            message = data.get('message')
+
+            if not ticket_id or not message:
+                return
+
+            # Verify access
+            has_access = await self.verify_ticket_access(ticket_id)
+            if not has_access:
+                return
+
+            # Save message to database
+            chat_message = await self.save_chat_message(ticket_id, self.user_id, message)
+
+            if not chat_message:
+                return
+
+            # Broadcast to all users in chat group
+            chat_group = f'ticket_chat_{ticket_id}'
+            await self.channel_layer.group_send(chat_group, {
+                'type': 'chat_message_broadcast',
+                'message_id': chat_message.id,
+                'ticket_id': ticket_id,
+                'sender_id': self.user_id,
+                'sender_username': self.user.username,
+                'message': message,
+                'timestamp': chat_message.created_at.isoformat(),
+            })
+
+            print(f"💬 Chat message from {self.user.username} in ticket {ticket_id}")
+
+        except Exception as e:
+            print(f"❌ Error handling chat message: {e}")
+
+    async def chat_message_broadcast(self, event):
+        """Broadcast chat message to WebSocket client"""
+        await self.send(text_data=json.dumps({
+            'type': 'chat_message',
+            'message_id': event.get('message_id'),
+            'ticket_id': event.get('ticket_id'),
+            'sender': {
+                'id': event.get('sender_id'),
+                'username': event.get('sender_username'),
+            },
+            'message': event.get('message'),
+            'timestamp': event.get('timestamp'),
+        }))
+
     # ============ UTILITY METHODS ============
+
+    @database_sync_to_async
+    def verify_ticket_access(self, ticket_id):
+        """Verify user has access to ticket"""
+        try:
+            ticket = Ticket.objects.get(id=ticket_id)
+            # Manager can access any ticket
+            if self.user.role == 'MANAGER':
+                return True
+            # Customer can only access their own tickets
+            return ticket.created_by_id == self.user_id
+        except Ticket.DoesNotExist:
+            return False
+
+    @database_sync_to_async
+    def save_chat_message(self, ticket_id, user_id, message_text):
+        """Save chat message to database"""
+        try:
+            from .models import ChatMessage
+            chat_message = ChatMessage.objects.create(
+                ticket_id=ticket_id,
+                sender_id=user_id,
+                message=message_text,
+            )
+            return chat_message
+        except Exception as e:
+            print(f"❌ Error saving chat message: {e}")
+            return None
 
     @database_sync_to_async
     def check_if_manager(self):
