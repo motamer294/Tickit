@@ -1,6 +1,5 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { useWebSocket } from '@/hooks/useWebSocket'
 import type { UserRole } from '@/types/ticket'
 import type { JSX } from 'react'
 import { hasAnyRole } from '@/utils/rbac'
@@ -15,8 +14,8 @@ interface ProtectedRouteProps {
  * ProtectedRoute: Checks authentication and authorization
  * Redirects to login if not authenticated
  * Redirects to dashboard if authenticated but lacking permission
- * 
- * Also initializes unified WebSocket for notifications + real-time data
+ *
+ * WebSocket is now initialized by WebSocketProvider in App.tsx
  */
 export default function ProtectedRoute({
   children,
@@ -24,9 +23,6 @@ export default function ProtectedRoute({
   fallback,
 }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, userRole } = useAuth()
-
-  // Initialize single unified WebSocket for both notifications AND real-time updates
-  useWebSocket()
 
   // Show nothing while checking auth state
   if (isLoading) {
