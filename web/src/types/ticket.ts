@@ -81,6 +81,24 @@ export interface CommentCreatePayload {
 }
 
 // ============================================
+// Chat Types
+// ============================================
+
+export interface ChatMessage {
+  id: number
+  ticket_id: number
+  message: string
+  sender_id: number
+  sender_username: string
+  timestamp: string
+}
+
+export interface ChatMessagePayload {
+  ticket_id: number
+  message: string
+}
+
+// ============================================
 // Analytics Types
 // ============================================
 

@@ -24,6 +24,7 @@ import {
 import { Icon } from '@iconify-icon/react'
 import { notifications } from '@mantine/notifications'
 import { useAuth } from '@/hooks/useAuth'
+import { ChatSection } from '@/components/ChatSection'
 import {
   fetchTicketById,
   updateTicketStatusApi,
@@ -77,6 +78,7 @@ export default function TicketDetail() {
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [chatModalOpen, setChatModalOpen] = useState(false)
 
   // Store ticket info for notifications
   const ticketTitle = useRef<string>('')
@@ -299,9 +301,9 @@ export default function TicketDetail() {
   const isManager = user?.role === 'MANAGER'
 
   return (
-    <Container size="lg" py="lg">
+    <Container size="xl" py="lg">
       <Stack gap="lg">
-        {/* Header */}
+        {/* Header - Full Width */}
         <Group justify="space-between" align="flex-start">
           <Stack gap="sm">
             <Group>
@@ -396,205 +398,214 @@ export default function TicketDetail() {
 
         {/* AI Analysis Section */}
         <Paper p="lg" radius="md" withBorder>
-          <Stack gap="md">
-            <Group justify="space-between" align="center">
-              <Group gap="xs">
-                <Icon icon="solar:cpu-bolt-bold-duotone" width={20} />
-                <Text fw={600}>AI Analysis</Text>
-              </Group>
-              <Text size="xs" c="dimmed">
-                Auto-analyzed by ML Engine
-              </Text>
-            </Group>
-
-            <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="md">
-              {/* Category */}
-              <Card withBorder p="md" radius="md">
-                <Stack gap="xs">
-                  <Group justify="space-between">
-                    <Text size="sm" fw={500} c="dimmed">
-                      Category
+                <Stack gap="md">
+                  <Group justify="space-between" align="center">
+                    <Group gap="xs">
+                      <Icon icon="solar:cpu-bolt-bold-duotone" width={20} />
+                      <Text fw={600}>AI Analysis</Text>
+                    </Group>
+                    <Text size="xs" c="dimmed">
+                      Auto-analyzed by ML Engine
                     </Text>
-                    <Icon icon="solar:tag-bold-duotone" width={16} />
                   </Group>
-                  <Text fw={600}>{ticket.category}</Text>
+
+                  <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="md">
+                    {/* Category */}
+                    <Card withBorder p="md" radius="md">
+                      <Stack gap="xs">
+                        <Group justify="space-between">
+                          <Text size="sm" fw={500} c="dimmed">
+                            Category
+                          </Text>
+                          <Icon icon="solar:tag-bold-duotone" width={16} />
+                        </Group>
+                        <Text fw={600}>{ticket.category}</Text>
+                      </Stack>
+                    </Card>
+
+                    {/* Priority */}
+                    <Card withBorder p="md" radius="md">
+                      <Stack gap="xs">
+                        <Group justify="space-between">
+                          <Text size="sm" fw={500} c="dimmed">
+                            Priority
+                          </Text>
+                          <Icon icon="solar:bolt-bold-duotone" width={16} />
+                        </Group>
+                        <Group justify="space-between" align="flex-end">
+                          <Text fw={600}>{ticket.priority}</Text>
+                          <Badge color={priorityColors[ticket.priority] || 'gray'}>
+                            {ticket.priority}
+                          </Badge>
+                        </Group>
+                      </Stack>
+                    </Card>
+
+                    {/* Sentiment */}
+                    <Card withBorder p="md" radius="md">
+                      <Stack gap="xs">
+                        <Group justify="space-between">
+                          <Text size="sm" fw={500} c="dimmed">
+                            Sentiment
+                          </Text>
+                          <Icon icon="solar:face-id-bold-duotone" width={16} />
+                        </Group>
+                        <Group justify="space-between" align="flex-end">
+                          <Text fw={600}>{ticket.sentiment}</Text>
+                          <Badge color={sentimentColors[ticket.sentiment]}>
+                            {ticket.sentiment}
+                          </Badge>
+                        </Group>
+                      </Stack>
+                    </Card>
+
+                    {/* Status */}
+                    <Card withBorder p="md" radius="md">
+                      <Stack gap="xs">
+                        <Group justify="space-between">
+                          <Text size="sm" fw={500} c="dimmed">
+                            Status
+                          </Text>
+                          <Icon icon="solar:clipboard-list-bold-duotone" width={16} />
+                        </Group>
+                        <Group justify="space-between" align="flex-end">
+                          <Text fw={600}>{ticket.status}</Text>
+                          <Badge color={statusColors[ticket.status]}>
+                            {ticket.status}
+                          </Badge>
+                        </Group>
+                      </Stack>
+                    </Card>
+                  </SimpleGrid>
+
+                  {/* Suggested Solution */}
+                  {ticket.ai_suggested_solution && (
+                    <Card withBorder p="md" radius="md">
+                      <Stack gap="xs">
+                        <Group gap="xs">
+                          <Icon icon="solar:lightbulb-bold-duotone" width={18} />
+                          <Text fw={600} size="md">
+                            AI Suggested Solution
+                          </Text>
+                        </Group>
+                        <Text size="sm" style={{ lineHeight: 1.6 }}>
+                          {ticket.ai_suggested_solution}
+                        </Text>
+                      </Stack>
+                    </Card>
+                  )}
                 </Stack>
-              </Card>
+              </Paper>
 
-              {/* Priority */}
-              <Card withBorder p="md" radius="md">
-                <Stack gap="xs">
-                  <Group justify="space-between">
+              {/* Status Update (if allowed) */}
+              {canUpdateStatus && (
+                <Paper p="md" radius="md" withBorder>
+                  <Stack gap="sm">
                     <Text size="sm" fw={500} c="dimmed">
-                      Priority
+                      Update Status
                     </Text>
-                    <Icon icon="solar:bolt-bold-duotone" width={16} />
-                  </Group>
-                  <Group justify="space-between" align="flex-end">
-                    <Text fw={600}>{ticket.priority}</Text>
-                    <Badge color={priorityColors[ticket.priority] || 'gray'}>
-                      {ticket.priority}
-                    </Badge>
-                  </Group>
-                </Stack>
-              </Card>
+                    <Group>
+                      <Select
+                        placeholder="Select new status"
+                        data={[
+                          { value: 'OPEN', label: 'Open' },
+                          { value: 'IN_PROGRESS', label: 'In Progress' },
+                          { value: 'RESOLVED', label: 'Resolved' },
+                          { value: 'CLOSED', label: 'Closed' },
+                        ]}
+                        value={newStatus}
+                        onChange={(value) => setNewStatus(value as TicketStatus)}
+                        clearable
+                        searchable
+                      />
+                      <Button
+                        onClick={() => {
+                          if (newStatus) {
+                            updateStatusMutation.mutate(newStatus)
+                          }
+                        }}
+                        loading={updateStatusMutation.isPending}
+                        disabled={!newStatus}
+                      >
+                        Update
+                      </Button>
+                    </Group>
+                  </Stack>
+                </Paper>
+              )}
 
-              {/* Sentiment */}
-              <Card withBorder p="md" radius="md">
-                <Stack gap="xs">
-                  <Group justify="space-between">
-                    <Text size="sm" fw={500} c="dimmed">
-                      Sentiment
-                    </Text>
-                    <Icon icon="solar:face-id-bold-duotone" width={16} />
-                  </Group>
-                  <Group justify="space-between" align="flex-end">
-                    <Text fw={600}>{ticket.sentiment}</Text>
-                    <Badge color={sentimentColors[ticket.sentiment]}>
-                      {ticket.sentiment}
-                    </Badge>
-                  </Group>
-                </Stack>
-              </Card>
-
-              {/* Status */}
-              <Card withBorder p="md" radius="md">
-                <Stack gap="xs">
-                  <Group justify="space-between">
-                    <Text size="sm" fw={500} c="dimmed">
-                      Status
-                    </Text>
-                    <Icon icon="solar:clipboard-list-bold-duotone" width={16} />
-                  </Group>
-                  <Group justify="space-between" align="flex-end">
-                    <Text fw={600}>{ticket.status}</Text>
-                    <Badge color={statusColors[ticket.status]}>
-                      {ticket.status}
-                    </Badge>
-                  </Group>
-                </Stack>
-              </Card>
-            </SimpleGrid>
-
-            {/* Suggested Solution */}
-            {ticket.ai_suggested_solution && (
-              <Card withBorder p="md" radius="md">
-                <Stack gap="xs">
-                  <Group gap="xs">
-                    <Icon icon="solar:lightbulb-bold-duotone" width={18} />
-                    <Text fw={600} size="md">
-                      AI Suggested Solution
-                    </Text>
-                  </Group>
-                  <Text size="sm" style={{ lineHeight: 1.6 }}>
-                    {ticket.ai_suggested_solution}
+              {/* Comments Section */}
+              <Stack gap="md">
+                <Group justify="space-between" align="center">
+                  <Text size="lg" fw={700}>
+                    Comments ({comments.length})
                   </Text>
-                </Stack>
-              </Card>
-            )}
-          </Stack>
-        </Paper>
+                  <Button
+                    variant="light"
+                    onClick={() => setChatModalOpen(true)}
+                    leftSection={<Icon icon="solar:chat-square-bold-duotone" width={16} />}
+                  >
+                    Open Chat
+                  </Button>
+                </Group>
 
-        {/* Status Update (if allowed) */}
-        {canUpdateStatus && (
-          <Paper p="md" radius="md" withBorder>
-            <Stack gap="sm">
-              <Text size="sm" fw={500} c="dimmed">
-                Update Status
-              </Text>
-              <Group>
-                <Select
-                  placeholder="Select new status"
-                  data={[
-                    { value: 'OPEN', label: 'Open' },
-                    { value: 'IN_PROGRESS', label: 'In Progress' },
-                    { value: 'RESOLVED', label: 'Resolved' },
-                    { value: 'CLOSED', label: 'Closed' },
-                  ]}
-                  value={newStatus}
-                  onChange={(value) => setNewStatus(value as TicketStatus)}
-                  clearable
-                  searchable
-                />
-                <Button
-                  onClick={() => {
-                    if (newStatus) {
-                      updateStatusMutation.mutate(newStatus)
-                    }
-                  }}
-                  loading={updateStatusMutation.isPending}
-                  disabled={!newStatus}
-                >
-                  Update
-                </Button>
-              </Group>
-            </Stack>
-          </Paper>
-        )}
+                {/* Comments List */}
+                {comments.length > 0 ? (
+                  <Timeline active={comments.length} bulletSize={24} lineWidth={2}>
+                    {comments.map((comment: any) => (
+                      <Timeline.Item
+                        key={comment.id}
+                        bullet={
+                          <Avatar
+                            name={comment.author_username}
+                            size={24}
+                            radius="xl"
+                          />
+                        }
+                      >
+                        <Group justify="space-between" mb="xs">
+                          <div>
+                            <Text fw={500} size="sm">
+                              {comment.author_username}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              {new Date(comment.created_at).toLocaleString()}
+                            </Text>
+                          </div>
+                        </Group>
+                        <Paper p="md" radius="md" withBorder>
+                          <Text size="sm">{comment.text}</Text>
+                        </Paper>
+                      </Timeline.Item>
+                    ))}
+                  </Timeline>
+                ) : (
+                  <Text c="dimmed" size="sm">
+                    No comments yet
+                  </Text>
+                )}
 
-        {/* Comments Section */}
-        <Stack gap="md">
-          <Text size="lg" fw={700}>
-            Comments ({comments.length})
-          </Text>
-
-          {/* Comments List */}
-          {comments.length > 0 ? (
-            <Timeline active={comments.length} bulletSize={24} lineWidth={2}>
-              {comments.map((comment: any) => (
-                <Timeline.Item
-                  key={comment.id}
-                  bullet={
-                    <Avatar
-                      name={comment.author_username}
-                      size={24}
-                      radius="xl"
+                {/* Add Comment */}
+                <Paper p="md" radius="md" withBorder>
+                  <Stack gap="sm">
+                    <Textarea
+                      label="Add a comment"
+                      placeholder="Type your comment here..."
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.currentTarget.value)}
+                      minRows={3}
+                      maxRows={6}
                     />
-                  }
-                >
-                  <Group justify="space-between" mb="xs">
-                    <div>
-                      <Text fw={500} size="sm">
-                        {comment.author_username}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        {new Date(comment.created_at).toLocaleString()}
-                      </Text>
-                    </div>
-                  </Group>
-                  <Paper p="md" radius="md" withBorder>
-                    <Text size="sm">{comment.text}</Text>
-                  </Paper>
-                </Timeline.Item>
-              ))}
-            </Timeline>
-          ) : (
-            <Text c="dimmed" size="sm">
-              No comments yet
-            </Text>
-          )}
-
-          {/* Add Comment */}
-          <Paper p="md" radius="md" withBorder>
-            <Stack gap="sm">
-              <Textarea
-                label="Add a comment"
-                placeholder="Type your comment here..."
-                value={commentText}
-                onChange={(e) => setCommentText(e.currentTarget.value)}
-                minRows={3}
-                maxRows={6}
-              />
-              <Button
-                onClick={() => addCommentMutation.mutate()}
-                loading={addCommentMutation.isPending}
-                disabled={!commentText.trim()}
-              >
-                Post Comment
-              </Button>
-            </Stack>
-          </Paper>
-        </Stack>
+                    <Button
+                      onClick={() => addCommentMutation.mutate()}
+                      loading={addCommentMutation.isPending}
+                      disabled={!commentText.trim()}
+                    >
+                      Post Comment
+                    </Button>
+                  </Stack>
+                </Paper>
+              </Stack>
       </Stack>
 
       {/* Assignment Modal (Manager only) */}
@@ -718,6 +729,21 @@ export default function TicketDetail() {
             </Button>
           </Group>
         </Stack>
+      </Modal>
+
+      {/* Chat Modal */}
+      <Modal
+        opened={chatModalOpen}
+        onClose={() => setChatModalOpen(false)}
+        title="Live Chat"
+        size="lg"
+        centered
+      >
+        <ChatSection
+          ticketId={ticketIdNum}
+          currentUserId={user!.id}
+          currentUsername={user!.username}
+        />
       </Modal>
     </Container>
   )
