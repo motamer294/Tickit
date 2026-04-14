@@ -46,7 +46,6 @@ export default function RootRouter() {
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/debug" element={<Debug />} />
       </Route>
 
       {/* ================= APP (PROTECTED) ================= */}
@@ -67,11 +66,14 @@ export default function RootRouter() {
         {/* Profile - Accessible by all authenticated users */}
         <Route path="profile" element={<UserProfile />} />
 
+        {/* Debug - Accessible by all authenticated users */}
+        <Route path="debug" element={<Debug />} />
+
         {/* Tickets - Role-based access control */}
         <Route path="tickets">
           {/* View tickets - all authenticated users */}
           <Route index element={<TicketsList />} />
-          
+
           {/* Create ticket - CUSTOMER and EMPLOYEE only */}
           <Route
             path="create"
@@ -81,7 +83,7 @@ export default function RootRouter() {
               </ProtectedRoute>
             }
           />
-          
+
           {/* View/Edit ticket - all can view, only assignee/manager can edit */}
           <Route path=":ticketId" element={<TicketDetail />} />
         </Route>
