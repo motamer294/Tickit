@@ -21,22 +21,15 @@ import {
   assignTicketApi,
   fetchAnalyticsDashboard,
 } from '@/api/tickets.api'
+import { queryKeys } from '@/api/queryKeys'
 import { useAuth } from './useAuth'
 import { notifications } from '@mantine/notifications'
 import { parseError, toNotificationPayload } from '@/utils/error-handling'
 import type { TicketCreatePayload, TicketStatus } from '@/types/ticket'
 
-// Query keys for cache management
-const ticketKeys = {
-  all: ['tickets'] as const,
-  lists: () => [...ticketKeys.all, 'list'] as const,
-  list: (filters?: string) => [...ticketKeys.lists(), { filters }] as const,
-  details: () => [...ticketKeys.all, 'detail'] as const,
-  detail: (id: number) => [...ticketKeys.details(), id] as const,
-  tasks: () => [...ticketKeys.all, 'tasks'] as const,
-  comments: (id: number) => [...ticketKeys.all, 'comment', id] as const,
-  analytics: () => [...ticketKeys.all, 'analytics'] as const,
-}
+// Use centralized query keys
+const ticketKeys = queryKeys.tickets
+const commentKeys = queryKeys.comments
 
 /**
  * Hook: Fetch all tickets visible to current user
@@ -206,7 +199,7 @@ export function useAddComment() {
 
     onSuccess: (_, { ticketId }) => {
       // Invalidate comments for this ticket
-      queryClient.invalidateQueries({ queryKey: ticketKeys.comments(ticketId) })
+      queryClient.invalidateQueries({ queryKey: commentKeys.list(ticketId) })
 
       notifications.show({
         title: 'Comment added',
@@ -230,7 +223,7 @@ export function useTicketComments(ticketId: number | undefined | null) {
   const { isAuthenticated } = useAuth()
 
   return useQuery({
-    queryKey: ticketId ? ticketKeys.comments(ticketId) : [],
+    queryKey: ticketId ? commentKeys.list(ticketId) : [],
     queryFn: () => fetchTicketComments(ticketId!),
     enabled: isAuthenticated && !!ticketId,
     staleTime: 1000 * 30, // 30 seconds

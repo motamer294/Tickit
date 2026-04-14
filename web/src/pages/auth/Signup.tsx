@@ -127,14 +127,15 @@ export default function Signup() {
             <Select
               label="Account Type"
               placeholder="Select your role"
+              disabled
+              description="New accounts are created as customers"
               data={[
-                { value: 'CUSTOMER', label: 'Customer' },
-                { value: 'EMPLOYEE', label: 'Employee' },
-                { value: 'MANAGER', label: 'Manager' },
+                { value: 'CUSTOMER', label: 'Customer', disabled: false },
               ]}
               radius="md"
               size="md"
-              {...form.getInputProps('role')}
+              value="CUSTOMER"
+              onChange={() => form.setFieldValue('role', 'CUSTOMER')}
             />
 
             <Button

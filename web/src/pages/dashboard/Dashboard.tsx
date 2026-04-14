@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useMantineColorScheme } from '@mantine/core'
@@ -31,9 +32,9 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useAuth } from '@/hooks/useAuth'
-import { useRealtimeData } from '@/hooks/useRealtimeData'
 import { fetchTickets, fetchAnalyticsDashboard } from '@/api/tickets.api'
 import { notificationService } from '@/hooks/useNotifications'
+import { DashboardErrorAlert } from '@/components/DashboardErrorAlert'
 import type { Ticket, TicketStatus } from '@/types/ticket'
 
 const statusColors: Record<TicketStatus, string> = {
@@ -92,8 +93,7 @@ const Dashboard = () => {
   const { colorScheme } = useMantineColorScheme()
   const isDark = colorScheme === 'dark'
 
-  // Enable real-time updates
-  useRealtimeData()
+  // Real-time updates are initialized in ProtectedRoute via useWebSocket()
 
   // Select colors based on theme
   const COLORS = isDark ? COLORS_DARK : COLORS_LIGHT
@@ -129,47 +129,72 @@ const Dashboard = () => {
     refetchIntervalInBackground: true,
   })
 
-  // Calculate stats
-  const stats = {
-    total: tickets.length,
-    open: tickets.filter((t: Ticket) => t.status === 'OPEN').length,
-    inProgress: tickets.filter((t: Ticket) => t.status === 'IN_PROGRESS')
-      .length,
-    resolved: tickets.filter((t: Ticket) => t.status === 'RESOLVED').length,
-    closed: tickets.filter((t: Ticket) => t.status === 'CLOSED').length,
-  }
+  // Calculate stats with memoization to prevent unnecessary recalculation
+  const stats = useMemo(
+    () => ({
+      total: tickets.length,
+      open: tickets.filter((t: Ticket) => t.status === 'OPEN').length,
+      inProgress: tickets.filter((t: Ticket) => t.status === 'IN_PROGRESS')
+        .length,
+      resolved: tickets.filter((t: Ticket) => t.status === 'RESOLVED').length,
+      closed: tickets.filter((t: Ticket) => t.status === 'CLOSED').length,
+    }),
+    [tickets],
+  )
 
-  // Prepare chart data from analytics
-  const priorityChartData = analytics
-    ? Object.entries(analytics.tickets_by_priority || {}).map(([name, value]) => ({
-        name,
-        value,
-      }))
-    : []
+  // Prepare chart data from analytics with memoization
+  const priorityChartData = useMemo(
+    () =>
+      analytics
+        ? Object.entries(analytics.tickets_by_priority || {}).map(([name, value]) => ({
+            name,
+            value,
+          }))
+        : [],
+    [analytics],
+  )
 
-  const categoryChartData = analytics
-    ? Object.entries(analytics.tickets_by_category || {})
-        .filter(([name]) => name !== 'OPEN' && name !== 'IN_PROGRESS' && name !== 'RESOLVED' && name !== 'CLOSED')
-        .map(([name, value]) => ({
-          name,
-          value,
-        }))
-    : []
+  const categoryChartData = useMemo(
+    () =>
+      analytics
+        ? Object.entries(analytics.tickets_by_category || {})
+            .filter(
+              ([name]) =>
+                name !== 'OPEN' &&
+                name !== 'IN_PROGRESS' &&
+                name !== 'RESOLVED' &&
+                name !== 'CLOSED',
+            )
+            .map(([name, value]) => ({
+              name,
+              value,
+            }))
+        : [],
+    [analytics],
+  )
 
-  const sentimentChartData = analytics
-    ? Object.entries(analytics.sentiment_analysis || {}).map(([name, value]) => ({
-        name,
-        value,
-      }))
-    : []
+  const sentimentChartData = useMemo(
+    () =>
+      analytics
+        ? Object.entries(analytics.sentiment_analysis || {}).map(([name, value]) => ({
+            name,
+            value,
+          }))
+        : [],
+    [analytics],
+  )
 
-  // Recent tickets (last 5)
-  const recentTickets = tickets
-    .sort(
-      (a: Ticket, b: Ticket) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    )
-    .slice(0, 5)
+  // Recent tickets (last 5) with memoization
+  const recentTickets = useMemo(
+    () =>
+      tickets
+        .sort(
+          (a: Ticket, b: Ticket) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        )
+        .slice(0, 5),
+    [tickets],
+  )
 
   if (isLoading) {
     return (
@@ -190,6 +215,9 @@ const Dashboard = () => {
   return (
     <Container size="xl" py="lg">
       <Stack gap="lg">
+        {/* Show error alert if query param indicates an error */}
+        <DashboardErrorAlert />
+
         {/* Welcome Header */}
         <Group justify="space-between" align="center">
           <div>

@@ -28,20 +28,25 @@ export const useRealtimeData = () => {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
       const host = window.location.hostname
       const port = window.location.port ? `:${window.location.port}` : ''
-      const baseURL = `${protocol}//${host}${port}`
 
-      // For development, connect to localhost:8000; for production, use current host
-      const wsURL = import.meta.env.DEV
-        ? `ws://localhost:8000/ws/realtime/?token=${accessToken}`
-        : `${baseURL}/ws/realtime/?token=${accessToken}`
+      // ✅ FIXED: Token NOT in URL anymore
+      const wsURL = `${protocol}//${host}${port}/ws/realtime/`
 
-      console.log('🔌 Connecting to Real-Time WebSocket:', wsURL.split('?')[0] + '?...')
+      console.log('🔌 Connecting to Real-Time WebSocket:', wsURL)
 
       wsRef.current = new WebSocket(wsURL)
 
       wsRef.current.onopen = () => {
         console.log('✅ Real-time WebSocket connected')
         isConnectingRef.current = false
+
+        // ✅ SECURE: Send token in message, not URL
+        wsRef.current!.send(
+          JSON.stringify({
+            type: 'authenticate',
+            token: accessToken,
+          }),
+        )
 
         // Send keep-alive ping every 30 seconds
         const pingInterval = setInterval(() => {

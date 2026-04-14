@@ -562,7 +562,7 @@ export default function TicketDetail() {
                       </Text>
                     </div>
                   </Group>
-                  <Paper p="md" radius="md" bg="gray.0">
+                  <Paper p="md" radius="md" withBorder>
                     <Text size="sm">{comment.text}</Text>
                   </Paper>
                 </Timeline.Item>
@@ -696,7 +696,7 @@ export default function TicketDetail() {
             </Text>
           </Group>
 
-          <Paper p="md" radius="md" bg="red.0">
+          <Paper p="md" radius="md" withBorder c="red">
             <Text size="sm" c="red" fw={500}>
               Ticket #{ticket.id} - {ticket.title}
             </Text>

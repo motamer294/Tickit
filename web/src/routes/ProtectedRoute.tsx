@@ -1,18 +1,6 @@
-/**
- * ProtectedRoute Component
- * Guards routes from unauthorized access
- * Supports role-based and permission-based access control
- *
- * Example Usage:
- * <ProtectedRoute requiredRoles={['MANAGER']}>
- *   <UserManagement />
- * </ProtectedRoute>
- */
-
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { useNotificationWebSocket } from '@/hooks/useNotificationWebSocket'
-import { useRealtimeData } from '@/hooks/useRealtimeData'
+import { useWebSocket } from '@/hooks/useWebSocket'
 import type { UserRole } from '@/types/ticket'
 import type { JSX } from 'react'
 import { hasAnyRole } from '@/utils/rbac'
@@ -27,6 +15,8 @@ interface ProtectedRouteProps {
  * ProtectedRoute: Checks authentication and authorization
  * Redirects to login if not authenticated
  * Redirects to dashboard if authenticated but lacking permission
+ * 
+ * Also initializes unified WebSocket for notifications + real-time data
  */
 export default function ProtectedRoute({
   children,
@@ -35,11 +25,8 @@ export default function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, userRole } = useAuth()
 
-  // Initialize WebSocket for real-time notifications
-  useNotificationWebSocket()
-
-  // Initialize WebSocket for real-time data updates
-  useRealtimeData()
+  // Initialize single unified WebSocket for both notifications AND real-time updates
+  useWebSocket()
 
   // Show nothing while checking auth state
   if (isLoading) {
