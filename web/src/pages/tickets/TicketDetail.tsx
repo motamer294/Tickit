@@ -742,7 +742,6 @@ export default function TicketDetail() {
         <ChatSection
           ticketId={ticketIdNum}
           currentUserId={user!.id}
-          currentUsername={user!.username}
         />
       </Modal>
     </Container>

@@ -345,3 +345,39 @@ export async function fetchAnalyticsDashboard(): Promise<DashboardStats> {
     throw error
   }
 }
+
+// ============================================
+// Chat Operations
+// ============================================
+
+export interface ChatMessage {
+  id: number
+  ticket_id: number
+  sender_id: number
+  sender_username: string
+  message: string
+  created_at: string
+}
+
+/**
+ * Fetch chat messages for a ticket
+ * User must have permission to view ticket
+ */
+export async function fetchChatMessages(ticketId: number): Promise<ChatMessage[]> {
+  try {
+    const client = getAxiosInstance()
+    const response = await client.get<ChatMessage[]>(
+      `/tickets/${ticketId}/chat/`,
+    )
+    return response.data
+  } catch (error) {
+    if (error instanceof APIError) {
+      if (error.statusCode === 404) {
+        return []
+      } else if (error.statusCode === 403) {
+        throw new Error('You do not have permission to view this ticket')
+      }
+    }
+    throw error
+  }
+}
