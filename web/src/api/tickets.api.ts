@@ -367,7 +367,7 @@ export async function fetchChatMessages(ticketId: number): Promise<ChatMessage[]
   try {
     const client = getAxiosInstance()
     const response = await client.get<ChatMessage[]>(
-      `/tickets/${ticketId}/chat/`,
+      `/tickets/${ticketId}/chat`,
     )
     return response.data
   } catch (error) {
