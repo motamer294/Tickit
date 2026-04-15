@@ -1,26 +1,21 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
+import React, { createContext, useEffect, useState, useRef } from 'react'
 import { useNotificationStore } from '@/store/notification.store'
 import { useAuthStore } from '@/store/auth.store'
 import { useQueryClient } from '@tanstack/react-query'
 import { logger } from '@/utils/logger'
 
-interface WebSocketContextType {
+export interface WebSocketContextType {
   ws: WebSocket | null
   isConnected: boolean
 }
 
-const WebSocketContext = createContext<WebSocketContextType>({
+export const WebSocketContext = createContext<WebSocketContextType>({
   ws: null,
   isConnected: false,
 })
 
-export const useWebSocketContext = () => {
-  const context = useContext(WebSocketContext)
-  if (!context) {
-    throw new Error('useWebSocketContext must be used within WebSocketProvider')
-  }
-  return context
-}
+// ⚠️ useWebSocketContext moved to: hooks/useWebSocketContext.ts
+// Import from: import { useWebSocketContext } from '@/hooks/useWebSocketContext'
 
 interface WebSocketProviderProps {
   children: React.ReactNode
@@ -116,12 +111,18 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
             return
           }
 
-          // Handle chat messages - ✅ LET THEM PASS THROUGH to ChatSection listeners
+          // Handle chat messages
           if (data.type === 'chat_message') {
-            console.log('💬 Chat message received')
-            // ✅ IMPORTANT: Don't consume chat messages here
-            // Let them propagate to ChatSection's listener
-            // Just return after logging
+            console.log('💬 Chat message received:', data)
+            // ✅ Normalize message format (backend sends nested sender, frontend expects flat)
+            const normalizedMessage = {
+              ...data,
+              sender_id: data.sender?.id || data.sender_id,
+              sender_username: data.sender?.username || data.sender_username,
+            }
+            // Dispatch to listeners via custom event
+            const event = new CustomEvent('ws_chat_message', { detail: normalizedMessage })
+            window.dispatchEvent(event)
             return
           }
 
@@ -165,7 +166,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         wsRef.current.close()
       }
     }
-  }, []) // Only initialize on mount
+  }, [addNotification, queryClient]) // ✅ FIX: Added missing dependencies
 
   // Automatic reconnection when connection drops
   useEffect(() => {
@@ -180,7 +181,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   }, [isConnected])
 
   return (
-    <WebSocketContext.Provider value={{ ws: ws || wsRef.current, isConnected }}>
+    <WebSocketContext.Provider value={{ ws, isConnected }}>
       {children}
     </WebSocketContext.Provider>
   )

@@ -387,3 +387,39 @@ export async function fetchChatMessages(ticketId: number): Promise<ChatMessage[]
     throw error
   }
 }
+
+// ============================================
+// Notifications Operations
+// ============================================
+
+export interface NotificationData {
+  id: number
+  type: string
+  title: string
+  message: string
+  ticket_id?: number
+  read: boolean
+  created_at: string
+}
+
+/**
+ * Fetch user's notifications
+ * Loads recent notification history
+ */
+export async function fetchNotifications(limit: number = 20): Promise<NotificationData[]> {
+  try {
+    const client = getAxiosInstance()
+    const response = await client.get<NotificationData[]>(
+      `/notifications/?limit=${limit}`,
+    )
+    return Array.isArray(response.data) ? response.data : []
+  } catch (error) {
+    if (error instanceof APIError) {
+      if (error.statusCode === 404) {
+        return []
+      }
+    }
+    console.warn('Failed to fetch notifications:', error)
+    return []
+  }
+}

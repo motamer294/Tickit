@@ -16,7 +16,7 @@ import {
 } from '@mantine/core'
 import { Icon } from '@iconify-icon/react'
 import { notifications } from '@mantine/notifications'
-import { useWebSocketContext } from '@/providers/WebSocketProvider'
+import { useWebSocketContext } from '@/hooks/useWebSocketContext'
 import { fetchChatMessages, type ChatMessage } from '@/api/tickets.api'
 
 interface ChatSectionProps {
@@ -137,6 +137,33 @@ export function ChatSection({
       }
     }
   }, [ws, handleChatMessage])
+
+  // Also listen for custom event dispatched by WebSocketProvider (normalized format)
+  useEffect(() => {
+    const handleCustomChatMessage = (event: Event) => {
+      const customEvent = event as CustomEvent
+      const data = customEvent.detail
+
+      // Only process chat messages for this ticket
+      if (data.type === 'chat_message' && data.ticket_id === ticketId) {
+        console.log('💬 ChatSection received message (custom event):', data)
+        const newMessage: ChatMessage = {
+          id: data.message_id || data.id,
+          ticket_id: data.ticket_id,
+          message: data.message,
+          sender_id: data.sender_id,
+          sender_username: data.sender_username,
+          created_at: data.created_at || data.timestamp,
+        }
+        setMessages((prev) => [...prev, newMessage])
+      }
+    }
+
+    window.addEventListener('ws_chat_message', handleCustomChatMessage)
+    return () => {
+      window.removeEventListener('ws_chat_message', handleCustomChatMessage)
+    }
+  }, [ticketId])
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {

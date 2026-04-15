@@ -29,19 +29,19 @@ const getApiUrl = () => {
   if (typeof window !== 'undefined') {
     const protocol = window.location.protocol
     const hostname = window.location.hostname
-    
+
     // Map dev server ports to backend
     const port = window.location.port
     if (port === '5173' || port === '3000') {
       // Vite dev server - backend is on 8000
       return `${protocol}//${hostname}:8000/api`
     }
-    
+
     // Production or custom port
     if (port) {
       return `${protocol}//${hostname}:${port}/api`
     }
-    
+
     // No port specified (production on standard ports)
     return `${protocol}//${hostname}/api`
   }
