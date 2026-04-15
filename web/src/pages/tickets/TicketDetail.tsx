@@ -578,8 +578,7 @@ export default function TicketDetail() {
                         </Paper>
                       </Timeline.Item>
                     ))}
-                    </Timeline>
-                  </>
+                  </Timeline>
                 ) : (
                   <Text c="dimmed" size="sm">
                     No comments yet
