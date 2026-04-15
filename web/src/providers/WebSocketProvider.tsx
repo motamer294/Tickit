@@ -35,24 +35,35 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
     const token = useAuthStore.getState().accessToken
     if (!token) {
+      logger.warn('[WebSocket] No token available, skipping connection')
       setIsConnected(false)
       return
     }
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const host = window.location.host
-    const wsUrl = `${protocol}//${host}/ws/unified/`
+    const hostname = window.location.hostname
+    const port = window.location.port
+
+    // Fix: Dev server ports (5173, 3000) should connect to backend (8000)
+    let wsHost = window.location.host
+    if (port === '5173' || port === '3000') {
+      wsHost = `${hostname}:8000`
+    }
+
+    const wsUrl = `${protocol}//${wsHost}/ws/unified/`
+    logger.info(`[WebSocket] Attempting connection to ${wsUrl}`)
 
     try {
       const newWs = new WebSocket(wsUrl)
 
       newWs.onopen = () => {
-        logger.info('WebSocket connected')
+        logger.info('[WebSocket] ✅ Connected')
         setIsConnected(true)
         const message = {
           type: 'authenticate',
           token: token,
         }
+        logger.info('[WebSocket] Sending authentication')
         newWs.send(JSON.stringify(message))
       }
 
@@ -137,20 +148,21 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       }
 
       newWs.onclose = () => {
-        logger.warn('WebSocket closed')
+        logger.warn('[WebSocket] ❌ Connection closed')
         setIsConnected(false)
         wsRef.current = null
         // Attempt reconnect after 3 seconds
         setTimeout(() => {
           if (!wsRef.current) {
-            console.log('🔄 Attempting WebSocket reconnect...')
+            logger.debug('[WebSocket] Attempting reconnect...')
             // Trigger reconnection by recreating
           }
         }, 3000)
       }
 
       newWs.onerror = (error) => {
-        logger.error('WebSocket error', error)
+        logger.error('[WebSocket] ❌ Connection error:', error)
+        console.error('[WebSocket] Error details:', error)
         setIsConnected(false)
       }
 
