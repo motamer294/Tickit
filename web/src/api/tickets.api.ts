@@ -64,7 +64,13 @@ export async function fetchTickets(): Promise<Ticket[]> {
   try {
     const client = getAxiosInstance()
     const response = await client.get<Ticket[]>('/my-tickets')
-    return response.data
+    // Ensure response.data is always an array
+    const data = response.data
+    if (!Array.isArray(data)) {
+      console.warn('[API] fetchTickets returned non-array data:', data)
+      return []
+    }
+    return data
   } catch (error) {
     if (error instanceof APIError && error.statusCode === 401) {
       throw new Error('Session expired. Please login again.')
