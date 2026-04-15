@@ -719,7 +719,7 @@ const Dashboard = () => {
                             />
                           </Group>
                           <Text size="lg" fw={700}>
-                            {analytics.avg_resolution_time_hours.toFixed(2)}h
+                            {analytics?.avg_resolution_time_hours?.toFixed(2) ?? '0.00'}h
                           </Text>
                           <Text size="xs" c="dimmed">
                             Per ticket

@@ -21,19 +21,32 @@ import axios, {
 
 // Get API URL from environment or use default
 const getApiUrl = () => {
-  // Try Vite environment variable first
+  // Try Vite environment variable first (highest priority)
   const viteUrl = import.meta.env.VITE_API_URL
   if (viteUrl) return viteUrl
-  
-  // Fallback based on current domain
+
+  // For development: redirect dev server ports to backend
   if (typeof window !== 'undefined') {
     const protocol = window.location.protocol
     const hostname = window.location.hostname
-    const port = window.location.port ? `:${window.location.port}` : ''
-    return `${protocol}//${hostname}${port}/api`
+    
+    // Map dev server ports to backend
+    const port = window.location.port
+    if (port === '5173' || port === '3000') {
+      // Vite dev server - backend is on 8000
+      return `${protocol}//${hostname}:8000/api`
+    }
+    
+    // Production or custom port
+    if (port) {
+      return `${protocol}//${hostname}:${port}/api`
+    }
+    
+    // No port specified (production on standard ports)
+    return `${protocol}//${hostname}/api`
   }
-  
-  // Default for development
+
+  // Server-side rendering default
   return 'http://127.0.0.1:8000/api'
 }
 
@@ -144,14 +157,14 @@ export function createApiClient(
           onUnauthorized?.()
           isRefreshing = false
           processQueue('', error)
-          
+
           // Redirect to login page
           if (typeof window !== 'undefined') {
             setTimeout(() => {
               window.location.href = '/auth/login'
             }, 500)
           }
-          
+
           return Promise.reject(error)
         } catch (err) {
           isRefreshing = false
