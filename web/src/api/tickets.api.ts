@@ -362,7 +362,7 @@ export interface ChatMessage {
   sender_id: number
   sender_username: string
   message: string
-  created_at: string
+  timestamp: string
 }
 
 /**

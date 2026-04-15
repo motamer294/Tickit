@@ -34,7 +34,6 @@ export function ChatSection({
   const [sending, setSending] = useState(false)
   const [joined, setJoined] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const listenerRef = useRef<((event: MessageEvent) => void) | null>(null)
   const { ws, isConnected } = useWebSocketContext()
   const { colorScheme } = useMantineColorScheme()
   const isDark = colorScheme === 'dark'
@@ -94,76 +93,45 @@ export function ChatSection({
     }
   }, [ws, isConnected, ticketId])
 
-  // Handle incoming chat messages - create listener with useCallback to avoid recreation
-  const handleChatMessage = useCallback((event: MessageEvent) => {
+  // Handle incoming chat messages via custom event from WebSocketProvider
+  const handleChatMessage = useCallback((event: Event) => {
     try {
-      const data = JSON.parse(event.data)
-
-      // Only process chat messages for this ticket
-      if (data.type === 'chat_message' && data.ticket_id === ticketId) {
-        console.log('💬 ChatSection received message:', data)
-        const newMessage: ChatMessage = {
-          id: data.message_id,
-          ticket_id: data.ticket_id,
-          message: data.message,
-          sender_id: data.sender_id,
-          sender_username: data.sender_username,
-          created_at: data.created_at,
-        }
-        setMessages((prev) => [...prev, newMessage])
-      }
-    } catch (error) {
-      console.error('Error parsing WebSocket message:', error)
-    }
-  }, [ticketId])
-
-  // Set up and clean up message listener once
-  useEffect(() => {
-    if (!ws) {
-      return
-    }
-
-    // Only add listener if not already added
-    if (!listenerRef.current) {
-      listenerRef.current = handleChatMessage
-      ws.addEventListener('message', listenerRef.current)
-      console.log('💬 ChatSection: Added message listener')
-    }
-
-    return () => {
-      if (listenerRef.current && ws) {
-        ws.removeEventListener('message', listenerRef.current)
-        console.log('💬 ChatSection: Removed message listener')
-      }
-    }
-  }, [ws, handleChatMessage])
-
-  // Also listen for custom event dispatched by WebSocketProvider (normalized format)
-  useEffect(() => {
-    const handleCustomChatMessage = (event: Event) => {
       const customEvent = event as CustomEvent
       const data = customEvent.detail
 
       // Only process chat messages for this ticket
       if (data.type === 'chat_message' && data.ticket_id === ticketId) {
-        console.log('💬 ChatSection received message (custom event):', data)
+        console.log('💬 ChatSection received message:', data)
         const newMessage: ChatMessage = {
           id: data.message_id || data.id,
           ticket_id: data.ticket_id,
           message: data.message,
           sender_id: data.sender_id,
           sender_username: data.sender_username,
-          created_at: data.created_at || data.timestamp,
+          timestamp: data.timestamp || data.created_at,
         }
         setMessages((prev) => [...prev, newMessage])
+        // Auto-scroll to new message
+        setTimeout(() => {
+          if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+          }
+        }, 0)
       }
-    }
-
-    window.addEventListener('ws_chat_message', handleCustomChatMessage)
-    return () => {
-      window.removeEventListener('ws_chat_message', handleCustomChatMessage)
+    } catch (error) {
+      console.error('Error processing WebSocket chat message:', error)
     }
   }, [ticketId])
+
+  // Set up listener for custom events from WebSocketProvider (only once)
+  useEffect(() => {
+    console.log('💬 ChatSection: Adding custom event listener for ws_chat_message')
+    window.addEventListener('ws_chat_message', handleChatMessage)
+    return () => {
+      console.log('💬 ChatSection: Removing custom event listener')
+      window.removeEventListener('ws_chat_message', handleChatMessage)
+    }
+  }, [handleChatMessage])
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -226,7 +194,7 @@ export function ChatSection({
     const groups: { [key: string]: ChatMessage[] } = {}
 
     messages.forEach((msg) => {
-      const date = new Date(msg.created_at).toLocaleDateString()
+      const date = new Date(msg.timestamp).toLocaleDateString()
       if (!groups[date]) {
         groups[date] = []
       }
@@ -320,7 +288,7 @@ export function ChatSection({
                               <Text size="sm">{msg.message}</Text>
                             </Paper>
                             <Text size="xs" c="dimmed">
-                              {new Date(msg.created_at).toLocaleTimeString()}
+                              {new Date(msg.timestamp).toLocaleTimeString()}
                             </Text>
                           </Stack>
                           {isOwn && (

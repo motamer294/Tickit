@@ -50,27 +50,37 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         """Handle incoming messages - authenticate or handle various message types"""
+        print(f"📨 [receive] ENTRY: text_data length={len(text_data)}")
         try:
             data = json.loads(text_data)
             message_type = data.get('type')
 
+            print(f"📨 [receive] Got message type: {message_type}, authenticated: {self.is_authenticated}")
+
             # Handle authentication
             if message_type == 'authenticate':
+                print(f"📨 [receive] -> authenticate")
                 await self.handle_authenticate(data)
             # Handle keep-alive ping
             elif message_type == 'ping':
+                print(f"📨 [receive] -> pong")
                 await self.send(text_data=json.dumps({'type': 'pong'}))
             # Handle chat messages
             elif message_type == 'join_chat':
+                print(f"📨 [receive] -> join_chat")
                 await self.handle_join_chat(data)
             elif message_type == 'chat_message':
+                print(f"📨 [receive] -> chat_message - ticket_id={data.get('ticket_id')}, message={data.get('message')[:50] if data.get('message') else None}")
                 await self.handle_chat_message(data)
             else:
+                print(f"❌ [receive] Unknown message type: {message_type}")
                 if not self.is_authenticated:
                     print(f"❌ Unauthenticated message received: {message_type}")
                     await self.close(code=4001)
+        except json.JSONDecodeError as e:
+            print(f"❌ [receive] JSON decode error: {e}")
         except Exception as e:
-            print(f"❌ Receive error: {e}")
+            print(f"❌ [receive] Exception: {type(e).__name__}: {e}")
 
     async def handle_authenticate(self, data):
         """Authenticate user via JWT token in message"""
@@ -272,21 +282,28 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
             message = data.get('message')
 
             if not ticket_id or not message:
+                print(f"❌ Missing ticket_id or message: {ticket_id}, {message}")
                 return
 
             # Verify access
             has_access = await self.verify_ticket_access(ticket_id)
             if not has_access:
+                print(f"❌ Access denied for user {self.user_id} to ticket {ticket_id}")
                 return
 
             # Save message to database
+            print(f"💾 Saving message from user {self.user_id} for ticket {ticket_id}...")
             chat_message = await self.save_chat_message(ticket_id, self.user_id, message)
 
             if not chat_message:
+                print(f"❌ Failed to save chat message (returned None)")
                 return
+
+            print(f"✅ Message saved with ID: {chat_message.id}")
 
             # Broadcast to all users in chat group
             chat_group = f'ticket_chat_{ticket_id}'
+            print(f"📢 Broadcasting to group: {chat_group}")
             await self.channel_layer.group_send(chat_group, {
                 'type': 'chat_message_broadcast',
                 'message_id': chat_message.id,
@@ -294,7 +311,7 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
                 'sender_id': self.user_id,
                 'sender_username': self.user.username,
                 'message': message,
-                'timestamp': chat_message.created_at.isoformat(),
+                'timestamp': chat_message.timestamp.isoformat(),
             })
 
             print(f"💬 Chat message from {self.user.username} in ticket {ticket_id}")
@@ -336,14 +353,18 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
         """Save chat message to database"""
         try:
             from .models import ChatMessage
+            print(f"  [save_chat_message] Creating message for ticket {ticket_id}, user {user_id}")
             chat_message = ChatMessage.objects.create(
                 ticket_id=ticket_id,
                 sender_id=user_id,
                 message=message_text,
             )
+            print(f"  [save_chat_message] ✅ Created message ID: {chat_message.id}, timestamp: {chat_message.timestamp}")
             return chat_message
         except Exception as e:
-            print(f"❌ Error saving chat message: {e}")
+            print(f"  [save_chat_message] ❌ Exception: {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
             return None
 
     @database_sync_to_async

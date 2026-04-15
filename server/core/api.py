@@ -184,14 +184,14 @@ def create_ticket(request, data: TicketCreateSchema):
             {"message": "Title must be between 3 and 500 characters"},
             status=400
         )
-    
+
     if not data.description or len(data.description) < 10 or len(data.description) > 5000:
         return api.create_response(
             request,
             {"message": "Description must be between 10 and 5000 characters"},
             status=400
         )
-    
+
     # Option A + C: Pass assignment parameters to service
     ticket = create_ticket_with_ai(
         title=data.title,

@@ -25,44 +25,86 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   const [ws, setWs] = useState<WebSocket | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
+  const [shouldConnect, setShouldConnect] = useState(false)
   const queryClient = useQueryClient()
   const addNotification = useNotificationStore((s) => s.addNotification)
 
+  // Watch for token changes and trigger connection when token becomes available
   useEffect(() => {
-    if (wsRef.current) {
+    // Subscribe to all auth store changes
+    const unsubscribe = useAuthStore.subscribe(
+      (fullState) => {
+        // This fires whenever auth state changes
+        const token = fullState.accessToken
+        console.log('[WebSocket] 👀 Auth store changed, token:', token ? '✅ present' : '❌ missing')
+        if (token && !wsRef.current) {
+          console.log('[WebSocket] ✅ Token is now available! Triggering connection attempt...')
+          setShouldConnect(true)
+        }
+      }
+    )
+
+    // Check initial token on mount
+    const initialToken = useAuthStore.getState().accessToken
+    if (initialToken && !wsRef.current) {
+      console.log('[WebSocket] ✅ Token available on mount, will connect')
+      setShouldConnect(true)
+    }
+
+    return unsubscribe
+  }, [])
+
+  // Main WebSocket connection effect (triggered when token is available or reconnect flag changes)
+  useEffect(() => {
+    // Get current token
+    const token = useAuthStore.getState().accessToken
+
+    // If already connected or no token, skip
+    if (wsRef.current || !token) {
+      if (!token) {
+        console.log('[WebSocket DEBUG] Skipping: Token status: ❌ missing')
+      }
+      // Reset flag even if skipping
+      if (shouldConnect) {
+        setShouldConnect(false)
+      }
       return
     }
 
-    const token = useAuthStore.getState().accessToken
-    if (!token) {
-      logger.warn('[WebSocket] No token available, skipping connection')
-      setIsConnected(false)
-      return
-    }
+    console.log('[WebSocket DEBUG] Initiating connection (shouldConnect flag)')
+
+    // Reset the flag
+    setShouldConnect(false)
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const hostname = window.location.hostname
     const port = window.location.port
 
+    console.log('[WebSocket DEBUG] Current port:', port, '| Protocol:', protocol)
+
     // Fix: Dev server ports (5173, 3000) should connect to backend (8000)
     let wsHost = window.location.host
     if (port === '5173' || port === '3000') {
       wsHost = `${hostname}:8000`
+      console.log('[WebSocket DEBUG] Dev server detected, rerouting to backend at', wsHost)
     }
 
     const wsUrl = `${protocol}//${wsHost}/ws/unified/`
+    console.log('[WebSocket DEBUG] Connecting to:', wsUrl)
     logger.info(`[WebSocket] Attempting connection to ${wsUrl}`)
 
     try {
       const newWs = new WebSocket(wsUrl)
 
       newWs.onopen = () => {
+        console.log('[WebSocket DEBUG] onopen fired')
         logger.info('[WebSocket] ✅ Connected')
         setIsConnected(true)
         const message = {
           type: 'authenticate',
           token: token,
         }
+        console.log('[WebSocket DEBUG] Sending auth message with token')
         logger.info('[WebSocket] Sending authentication')
         newWs.send(JSON.stringify(message))
       }
@@ -161,6 +203,9 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       }
 
       newWs.onerror = (error) => {
+        console.error('[WebSocket DEBUG] onerror fired:', error)
+        console.error('[WebSocket DEBUG] readyState:', newWs.readyState)
+        console.error('[WebSocket DEBUG] url:', newWs.url)
         logger.error('[WebSocket] ❌ Connection error:', error)
         console.error('[WebSocket] Error details:', error)
         setIsConnected(false)
@@ -178,15 +223,15 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         wsRef.current.close()
       }
     }
-  }, [addNotification, queryClient]) // ✅ FIX: Added missing dependencies
+  }, [addNotification, queryClient, shouldConnect]) // ✅ Added shouldConnect to trigger reconnection
 
   // Automatic reconnection when connection drops
   useEffect(() => {
     const token = useAuthStore.getState().accessToken
     if (!isConnected && token && !wsRef.current) {
       const timer = setTimeout(() => {
-        logger.debug('Attempting WebSocket reconnect')
-        // Reconnection will be handled by the main useEffect on next render
+        console.log('[WebSocket] Reconnecting after disconnect...')
+        setShouldConnect(true)
       }, 3000)
       return () => clearTimeout(timer)
     }
