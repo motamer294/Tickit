@@ -7,6 +7,7 @@ from django.contrib.auth.hashers import make_password
 from typing import List
 from django.shortcuts import get_object_or_404
 from django.db.models import Count, Avg, F
+from django.db import transaction
 from tickets.schemas import DashboardStatsSchema
 from accounts.models import User
 from accounts.schemas import UserProfileSchema, UserUpdateSchema, PasswordChangeSchema, UserStatsSchema
@@ -266,6 +267,7 @@ def get_ticket_comments(request, ticket_id: int):
 
 # 5. Add Comment Endpoint
 @api.post("/tickets/{ticket_id}/comments", response=CommentOutSchema)
+@transaction.atomic
 def add_comment(request, ticket_id: int, data: CommentSchema):
     ticket = get_object_or_404(Ticket, id=ticket_id)
 

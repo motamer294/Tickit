@@ -151,8 +151,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
           }
 
           // Handle real-time data changes (triggers React Query invalidation)
-          if (data.type === 'data_changed' || data.event) {
-            console.log('🔄 Real-time update:', data.event)
+          if (data.type === 'data_changed') {
             // Invalidate all ticket queries to reflect changes
             queryClient.invalidateQueries({ queryKey: ['my-tickets'] })
             queryClient.invalidateQueries({ queryKey: ['employee/tasks'] })
@@ -160,6 +159,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
               queryClient.invalidateQueries({
                 queryKey: ['ticket', data.ticketId],
               })
+              // Special handling for comments - ensure comments list is refetched
+              if (data.event === 'comment_added') {
+                queryClient.invalidateQueries({
+                  queryKey: ['ticket-comments', data.ticketId],
+                })
+              }
             }
             return
           }
