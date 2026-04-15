@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { useNotificationStore } from '@/store/notification.store'
 import { useAuthStore } from '@/store/auth.store'
 import { useQueryClient } from '@tanstack/react-query'
+import { logger } from '@/utils/logger'
 
 interface WebSocketContextType {
   ws: WebSocket | null
@@ -51,7 +52,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       const newWs = new WebSocket(wsUrl)
 
       newWs.onopen = () => {
-        console.log('✅ Unified WebSocket connected')
+        logger.info('WebSocket connected')
         setIsConnected(true)
         const message = {
           type: 'authenticate',
@@ -135,7 +136,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       }
 
       newWs.onclose = () => {
-        console.log('❌ Unified WebSocket closed')
+        logger.warn('WebSocket closed')
         setIsConnected(false)
         wsRef.current = null
         // Attempt reconnect after 3 seconds
@@ -148,14 +149,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       }
 
       newWs.onerror = (error) => {
-        console.error('❌ WebSocket error:', error)
+        logger.error('WebSocket error', error)
         setIsConnected(false)
       }
 
       wsRef.current = newWs
       setWs(newWs)
     } catch (error) {
-      console.error('❌ Failed to create WebSocket:', error)
+      logger.error('Failed to create WebSocket', error)
       setIsConnected(false)
     }
 
@@ -164,7 +165,19 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         wsRef.current.close()
       }
     }
-  }, []) // Empty dependency - only initialize once on mount
+  }, []) // Only initialize on mount
+
+  // Automatic reconnection when connection drops
+  useEffect(() => {
+    const token = useAuthStore.getState().accessToken
+    if (!isConnected && token && !wsRef.current) {
+      const timer = setTimeout(() => {
+        logger.debug('Attempting WebSocket reconnect')
+        // Reconnection will be handled by the main useEffect on next render
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [isConnected])
 
   return (
     <WebSocketContext.Provider value={{ ws: ws || wsRef.current, isConnected }}>

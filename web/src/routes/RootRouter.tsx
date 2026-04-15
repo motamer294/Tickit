@@ -26,7 +26,7 @@ import Debug from '@/pages/Debug'
 import { useAuth } from '@/hooks/useAuth'
 
 export default function RootRouter() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
 
   return (
     <Routes>
@@ -66,8 +66,10 @@ export default function RootRouter() {
         {/* Profile - Accessible by all authenticated users */}
         <Route path="profile" element={<UserProfile />} />
 
-        {/* Debug - Accessible by all authenticated users */}
-        <Route path="debug" element={<Debug />} />
+{/* Debug - Only accessible to managers */}
+          {user?.role === 'MANAGER' && (
+            <Route path="debug" element={<Debug />} />
+          )}
 
         {/* Tickets - Role-based access control */}
         <Route path="tickets">
