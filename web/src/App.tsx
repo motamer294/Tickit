@@ -6,14 +6,14 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export default function App() {
   return (
-    <ErrorBoundary>
+    <MantineProvider>
       <ReactQueryProvider>
-        <MantineProvider>
+        <ErrorBoundary>
           <WebSocketProvider>
             <RootRouter />
           </WebSocketProvider>
-        </MantineProvider>
+        </ErrorBoundary>
       </ReactQueryProvider>
-    </ErrorBoundary>
+    </MantineProvider>
   )
 }
