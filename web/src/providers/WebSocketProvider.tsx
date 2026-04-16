@@ -142,9 +142,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
               fromUser: data.fromUser,
             })
             // Invalidate all ticket and dashboard queries to reflect changes
+            // Invalidate all ticket-related queries
             queryClient.invalidateQueries({ queryKey: ['my-tickets'] })
-            queryClient.invalidateQueries({ queryKey: ['tickets'] })
+            queryClient.invalidateQueries({ queryKey: ['tickets'], exact: false })  // Match ['tickets'], ['tickets', 'list'], etc.
+            queryClient.invalidateQueries({ queryKey: ['ticket'], exact: false })   // Match ['ticket', id]
             queryClient.invalidateQueries({ queryKey: ['analytics-dashboard'] })
+            queryClient.invalidateQueries({ queryKey: ['employee', 'tasks'], exact: false })
             // Also invalidate specific ticket if available
             if (data.ticket_id) {
               queryClient.invalidateQueries({
@@ -158,11 +161,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
           if (data.type === 'data_changed') {
             // Invalidate all ticket-related queries
             queryClient.invalidateQueries({ queryKey: ['my-tickets'] })
-            queryClient.invalidateQueries({ queryKey: ['employee/tasks'] })
-            // Dashboard queries (match any tickets query regardless of accessToken)
-            queryClient.invalidateQueries({ queryKey: ['tickets'] })
-            // Analytics dashboard for managers
-            queryClient.invalidateQueries({ queryKey: ['analytics-dashboard'] })
+            queryClient.invalidateQueries({ queryKey: ['employee', 'tasks'], exact: false })
+            queryClient.invalidateQueries({ queryKey: ['tickets'], exact: false })    // Dashboard & all ticket queries
+            queryClient.invalidateQueries({ queryKey: ['ticket'], exact: false })     // Specific ticket details
+            queryClient.invalidateQueries({ queryKey: ['analytics-dashboard'] })      // Manager analytics
             
             if (data.ticketId) {
               queryClient.invalidateQueries({
@@ -172,6 +174,9 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
               if (data.event === 'comment_added') {
                 queryClient.invalidateQueries({
                   queryKey: ['ticket-comments', data.ticketId],
+                })
+                queryClient.invalidateQueries({
+                  queryKey: ['comments', 'list', data.ticketId],
                 })
               }
             }

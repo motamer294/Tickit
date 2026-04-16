@@ -110,10 +110,10 @@ const Dashboard = () => {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['tickets', accessToken],
+    queryKey: ['tickets'],  // ✅ Match WebSocket invalidation - no accessToken
     queryFn: () => fetchTickets(),
     enabled: !!accessToken,
-    staleTime: Infinity, // Don't auto-refresh; rely on WebSocket invalidation
+    staleTime: 5 * 60 * 1000,  // 5 minute fallback in case WebSocket fails
   })
 
   // Fetch analytics for managers only
@@ -124,7 +124,7 @@ const Dashboard = () => {
     queryKey: ['analytics-dashboard'],
     queryFn: () => fetchAnalyticsDashboard(),
     enabled: !!accessToken && user?.role === 'MANAGER',
-    staleTime: Infinity, // Don't auto-refresh; rely on WebSocket invalidation
+    staleTime: 5 * 60 * 1000,  // 5 minute fallback in case WebSocket fails
   })
 
   // Calculate stats with memoization to prevent unnecessary recalculation
