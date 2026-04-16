@@ -1,6 +1,7 @@
 # Dashboard - Complete Query Keys Analysis
 
 ## Summary
+
 Dashboard components use 2 direct queries + multiple hooks that provide related data fetching capabilities.
 
 ---
@@ -8,15 +9,21 @@ Dashboard components use 2 direct queries + multiple hooks that provide related 
 ## 1. DASHBOARD COMPONENT QUERIES (Dashboard.tsx)
 
 ### Query 1: Tickets List
+
 ```typescript
 // Location: web/src/pages/dashboard/Dashboard.tsx (lines 108-118)
-const { data: tickets = [], isLoading, error } = useQuery({
-  queryKey: ['tickets'],  // ✅ Match WebSocket invalidation
+const {
+  data: tickets = [],
+  isLoading,
+  error,
+} = useQuery({
+  queryKey: ["tickets"], // ✅ Match WebSocket invalidation
   queryFn: () => fetchTickets(),
   enabled: !!accessToken,
-  staleTime: 5 * 60 * 1000,  // 5 minutes
-})
+  staleTime: 5 * 60 * 1000, // 5 minutes
+});
 ```
+
 - **Query Key**: `['tickets']`
 - **API Endpoint**: `/my-tickets` (from fetchTickets)
 - **Fetch Function**: `fetchTickets()`
@@ -31,15 +38,17 @@ const { data: tickets = [], isLoading, error } = useQuery({
 - **Data Type**: Ticket[]
 
 ### Query 2: Analytics Dashboard
+
 ```typescript
 // Location: web/src/pages/dashboard/Dashboard.tsx (lines 120-128)
 const { data: analytics, isLoading: analyticsLoading } = useQuery({
-  queryKey: ['analytics-dashboard'],
+  queryKey: ["analytics-dashboard"],
   queryFn: () => fetchAnalyticsDashboard(),
-  enabled: !!accessToken && user?.role === 'MANAGER',
-  staleTime: 5 * 60 * 1000,  // 5 minutes
-})
+  enabled: !!accessToken && user?.role === "MANAGER",
+  staleTime: 5 * 60 * 1000, // 5 minutes
+});
 ```
+
 - **Query Key**: `['analytics-dashboard']`
 - **API Endpoint**: `/analytics/dashboard`
 - **Fetch Function**: `fetchAnalyticsDashboard()`
@@ -51,15 +60,16 @@ const { data: analytics, isLoading: analyticsLoading } = useQuery({
 - **Data Type**: DashboardStats
 
 ### DashboardStats Type
+
 ```typescript
 interface DashboardStats {
-  total_tickets: number
-  open_tickets: number
-  resolved_tickets: number
-  avg_resolution_time_hours: number
-  tickets_by_category: Record<string, number>
-  tickets_by_priority: Record<string, number>
-  sentiment_analysis: Record<string, number>
+  total_tickets: number;
+  open_tickets: number;
+  resolved_tickets: number;
+  avg_resolution_time_hours: number;
+  tickets_by_category: Record<string, number>;
+  tickets_by_priority: Record<string, number>;
+  sentiment_analysis: Record<string, number>;
 }
 ```
 
@@ -70,6 +80,7 @@ interface DashboardStats {
 These hooks use centralized query keys and are alternatives/complements to direct queries:
 
 ### Hook 1: useTickets()
+
 ```typescript
 // Location: web/src/hooks/useTickets.ts (lines 43-51)
 export function useTickets() {
@@ -77,12 +88,13 @@ export function useTickets() {
     queryKey: ticketKeys.lists(),
     queryFn: () => fetchTickets(),
     enabled: isAuthenticated,
-    staleTime: 1000 * 60 * 5,  // 5 minutes
-    gcTime: 1000 * 60 * 10,    // 10 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes
     retry: 2,
-  })
+  });
 }
 ```
+
 - **Query Key**: `queryKeys.tickets.lists()` = `['tickets', 'list']`
 - **API Endpoint**: `/my-tickets`
 - **staleTime**: 5 minutes
@@ -91,6 +103,7 @@ export function useTickets() {
 - **Data Type**: Ticket[]
 
 ### Hook 2: useTicket(ticketId)
+
 ```typescript
 // Location: web/src/hooks/useTickets.ts (lines 56-67)
 export function useTicket(ticketId: number | undefined | null) {
@@ -101,9 +114,10 @@ export function useTicket(ticketId: number | undefined | null) {
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
     retry: 2,
-  })
+  });
 }
 ```
+
 - **Query Key**: `queryKeys.tickets.detail(id)` = `['tickets', 'detail', id]`
 - **API Endpoint**: `/tickets/:id`
 - **Parameters**: `ticketId` (number)
@@ -113,10 +127,11 @@ export function useTicket(ticketId: number | undefined | null) {
 - **Data Type**: Ticket
 
 ### Hook 3: useEmployeeTasks()
+
 ```typescript
 // Location: web/src/hooks/useTickets.ts (lines 240-249)
 export function useEmployeeTasks() {
-  const { isAuthenticated, isEmployee } = useAuth()
+  const { isAuthenticated, isEmployee } = useAuth();
   return useQuery({
     queryKey: ticketKeys.tasks(),
     queryFn: () => fetchEmployeeTasks(),
@@ -124,9 +139,10 @@ export function useEmployeeTasks() {
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
     retry: 2,
-  })
+  });
 }
 ```
+
 - **Query Key**: `queryKeys.tickets.tasks()` = `['tickets', 'tasks']`
 - **API Endpoint**: `/employee/tasks`
 - **Scope**: EMPLOYEE role only
@@ -137,20 +153,22 @@ export function useEmployeeTasks() {
 - **Data Type**: Ticket[]
 
 ### Hook 4: useAnalyticsDashboard()
+
 ```typescript
 // Location: web/src/hooks/useTickets.ts (lines 256-265)
 export function useAnalyticsDashboard() {
-  const { isAuthenticated, isManager } = useAuth()
+  const { isAuthenticated, isManager } = useAuth();
   return useQuery({
     queryKey: ticketKeys.analytics(),
     queryFn: () => fetchAnalyticsDashboard(),
     enabled: isAuthenticated && isManager,
     staleTime: 1000 * 60 * 15, // 15 minutes
-    gcTime: 1000 * 60 * 30,    // 30 minutes
-    retry: 1,  // Single retry for analytics
-  })
+    gcTime: 1000 * 60 * 30, // 30 minutes
+    retry: 1, // Single retry for analytics
+  });
 }
 ```
+
 - **Query Key**: `queryKeys.tickets.analytics()` = `['tickets', 'analytics']`
 - **API Endpoint**: `/analytics/dashboard`
 - **Scope**: MANAGER role only
@@ -161,6 +179,7 @@ export function useAnalyticsDashboard() {
 - **Data Type**: DashboardStats
 
 ### Hook 5: useTicketComments(ticketId)
+
 ```typescript
 // Location: web/src/hooks/useTickets.ts (lines 226-236)
 export function useTicketComments(ticketId: number | undefined | null) {
@@ -168,12 +187,13 @@ export function useTicketComments(ticketId: number | undefined | null) {
     queryKey: ticketId ? commentKeys.list(ticketId) : [],
     queryFn: () => fetchTicketComments(ticketId!),
     enabled: isAuthenticated && !!ticketId,
-    staleTime: 1000 * 30,   // 30 seconds
-    gcTime: 1000 * 60 * 5,  // 5 minutes
+    staleTime: 1000 * 30, // 30 seconds
+    gcTime: 1000 * 60 * 5, // 5 minutes
     retry: 2,
-  })
+  });
 }
 ```
+
 - **Query Key**: `queryKeys.comments.list(ticketId)` = `['comments', 'list', ticketId]`
 - **API Endpoint**: `/tickets/:id/comments`
 - **staleTime**: 30 seconds (most aggressive refresh)
@@ -186,38 +206,39 @@ export function useTicketComments(ticketId: number | undefined | null) {
 ## 3. QUERY KEY FACTORY (queryKeys.ts)
 
 ### Centralized Query Keys Definition
+
 ```typescript
 export const queryKeys = {
   // Tickets namespace
   tickets: {
-    all: ['tickets'],
-    lists: () => ['tickets', 'list'],
-    list: (filters?: string) => ['tickets', 'list', { filters }],
-    details: () => ['tickets', 'detail'],
-    detail: (id: number) => ['tickets', 'detail', id],
-    tasks: () => ['tickets', 'tasks'],
-    myTickets: () => ['tickets', 'my'],
-    analytics: () => ['tickets', 'analytics'],
+    all: ["tickets"],
+    lists: () => ["tickets", "list"],
+    list: (filters?: string) => ["tickets", "list", { filters }],
+    details: () => ["tickets", "detail"],
+    detail: (id: number) => ["tickets", "detail", id],
+    tasks: () => ["tickets", "tasks"],
+    myTickets: () => ["tickets", "my"],
+    analytics: () => ["tickets", "analytics"],
   },
-  
+
   // Comments namespace
   comments: {
-    all: ['comments'],
-    lists: () => ['comments', 'list'],
-    list: (ticketId: number) => ['comments', 'list', ticketId],
-    details: () => ['comments', 'detail'],
-    detail: (id: number) => ['comments', 'detail', id],
+    all: ["comments"],
+    lists: () => ["comments", "list"],
+    list: (ticketId: number) => ["comments", "list", ticketId],
+    details: () => ["comments", "detail"],
+    detail: (id: number) => ["comments", "detail", id],
   },
-  
+
   // Dashboard namespace (defined but NOT USED IN DASHBOARD COMPONENT)
   dashboard: {
-    all: ['dashboard'],
-    analytics: () => ['dashboard', 'analytics'],
-    stats: () => ['dashboard', 'stats'],
+    all: ["dashboard"],
+    analytics: () => ["dashboard", "analytics"],
+    stats: () => ["dashboard", "stats"],
   },
-  
+
   // ... other namespaces (auth, users, notifications, realtime)
-}
+};
 ```
 
 ---
@@ -225,7 +246,9 @@ export const queryKeys = {
 ## 4. STAT CARDS ANALYSIS
 
 ### Result: NO CHILD COMPONENTS WITH QUERIES
+
 The dashboard uses **inline stat cards** (not separate StatCard components):
+
 - Total Tickets - calculated from `tickets` array
 - Open Tickets - calculated from `tickets` array
 - In Progress - calculated from `tickets` array
@@ -239,6 +262,7 @@ The dashboard uses **inline stat cards** (not separate StatCard components):
 ## 5. MY-TICKETS vs TICKETS QUERY DIFFERENCES
 
 ### Query Key Discrepancy Found ⚠️
+
 ```
 Location: Dashboard.tsx
 Direct useQuery: queryKey: ['tickets']
@@ -252,6 +276,7 @@ API Endpoint: /my-tickets (same)
 **Finding**: Dashboard component uses simplified key `['tickets']` while the hook uses `['tickets', 'list']`. Both hit the same `/my-tickets` endpoint.
 
 ### Unused Query Key
+
 - `queryKeys.tickets.myTickets()` = `['tickets', 'my']` - **NOT USED ANYWHERE**
 
 ---
@@ -259,11 +284,12 @@ API Endpoint: /my-tickets (same)
 ## 6. WEBSOCKET INVALIDATION
 
 Found in [WebSocketProvider.tsx](web/src/providers/WebSocketProvider.tsx):
+
 ```typescript
 // Lines 145, 160-161
-queryClient.invalidateQueries({ queryKey: ['my-tickets'] })
-queryClient.invalidateQueries({ queryKey: ['my-tickets'] })
-queryClient.invalidateQueries({ queryKey: ['employee/tasks'] })
+queryClient.invalidateQueries({ queryKey: ["my-tickets"] });
+queryClient.invalidateQueries({ queryKey: ["my-tickets"] });
+queryClient.invalidateQueries({ queryKey: ["employee/tasks"] });
 ```
 
 ⚠️ **Issue**: WebSocket invalidates `['my-tickets']` but queries use `['tickets']`
@@ -273,6 +299,7 @@ queryClient.invalidateQueries({ queryKey: ['employee/tasks'] })
 ## 7. EMPLOYEE TASKS QUERIES
 
 ### Query Configuration
+
 - **Direct API**: `/employee/tasks`
 - **Hook Query Key**: `['tickets', 'tasks']`
 - **Role**: EMPLOYEE only
@@ -284,37 +311,41 @@ queryClient.invalidateQueries({ queryKey: ['employee/tasks'] })
 
 ## COMPLETE DASHBOARD QUERY KEYS LIST
 
-| Component | Query Key | API Endpoint | Role | Enabled | staleTime | gcTime | retry |
-|-----------|-----------|--------------|------|---------|-----------|--------|-------|
-| Dashboard.tsx | `['tickets']` | `/my-tickets` | All | accessToken | 5 min | default | default |
-| Dashboard.tsx | `['analytics-dashboard']` | `/analytics/dashboard` | MANAGER | accessToken + MANAGER | 5 min | default | default |
-| useTickets() | `['tickets', 'list']` | `/my-tickets` | All | isAuthenticated | 5 min | 10 min | 2 |
-| useTicket() | `['tickets', 'detail', id]` | `/tickets/:id` | All | isAuthenticated + id | 5 min | 10 min | 2 |
-| useTicketComments() | `['comments', 'list', ticketId]` | `/tickets/:id/comments` | All | isAuthenticated + ticketId | 30 sec | 5 min | 2 |
-| useEmployeeTasks() | `['tickets', 'tasks']` | `/employee/tasks` | EMPLOYEE | isAuthenticated + isEmployee | 5 min | 10 min | 2 |
-| useAnalyticsDashboard() | `['tickets', 'analytics']` | `/analytics/dashboard` | MANAGER | isAuthenticated + isManager | 15 min | 30 min | 1 |
+| Component               | Query Key                        | API Endpoint            | Role     | Enabled                      | staleTime | gcTime  | retry   |
+| ----------------------- | -------------------------------- | ----------------------- | -------- | ---------------------------- | --------- | ------- | ------- |
+| Dashboard.tsx           | `['tickets']`                    | `/my-tickets`           | All      | accessToken                  | 5 min     | default | default |
+| Dashboard.tsx           | `['analytics-dashboard']`        | `/analytics/dashboard`  | MANAGER  | accessToken + MANAGER        | 5 min     | default | default |
+| useTickets()            | `['tickets', 'list']`            | `/my-tickets`           | All      | isAuthenticated              | 5 min     | 10 min  | 2       |
+| useTicket()             | `['tickets', 'detail', id]`      | `/tickets/:id`          | All      | isAuthenticated + id         | 5 min     | 10 min  | 2       |
+| useTicketComments()     | `['comments', 'list', ticketId]` | `/tickets/:id/comments` | All      | isAuthenticated + ticketId   | 30 sec    | 5 min   | 2       |
+| useEmployeeTasks()      | `['tickets', 'tasks']`           | `/employee/tasks`       | EMPLOYEE | isAuthenticated + isEmployee | 5 min     | 10 min  | 2       |
+| useAnalyticsDashboard() | `['tickets', 'analytics']`       | `/analytics/dashboard`  | MANAGER  | isAuthenticated + isManager  | 15 min    | 30 min  | 1       |
 
 ---
 
 ## SUMMARY FINDINGS
 
 ✅ **Used in Dashboard:**
+
 1. `['tickets']` - Direct query for ticket list
 2. `['analytics-dashboard']` - Direct query for manager analytics
 3. Calculated stats from tickets (no separate queries)
 4. Charts data computed from analytics data
 
 ⚠️ **Issues Found:**
+
 1. Dashboard uses `['tickets']` but centralized hooks use `['tickets', 'list']`
 2. WebSocket invalidates `['my-tickets']` but queries use `['tickets']`
 3. Unused query key: `queryKeys.tickets.myTickets()` = `['tickets', 'my']`
 4. Dashboard namespace keys are defined but NOT used in Dashboard.tsx
 
 ✅ **No Child Components:**
+
 - No StatCard or other child components with their own queries
 - All calculations done inline with useMemo()
 
 ✅ **Employee Tasks Queries:**
+
 - Separate from dashboard, available via `useEmployeeTasks()`
 - Query key: `['tickets', 'tasks']`
 - Endpoint: `/employee/tasks`

@@ -165,7 +165,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
             queryClient.invalidateQueries({ queryKey: ['tickets'], exact: false })    // Dashboard & all ticket queries
             queryClient.invalidateQueries({ queryKey: ['ticket'], exact: false })     // Specific ticket details
             queryClient.invalidateQueries({ queryKey: ['analytics-dashboard'] })      // Manager analytics
-            
+
             if (data.ticketId) {
               queryClient.invalidateQueries({
                 queryKey: ['ticket', data.ticketId],
