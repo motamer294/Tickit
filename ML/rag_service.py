@@ -119,12 +119,13 @@ Solution: [Your Solution]
             "stream": False,
             "options": {
                 "temperature": 0.1,  
-                "num_predict": 150   
+                "num_predict": 80,
+                "num_thread": 4   
             }
         }
         
         try:
-            response = requests.post(url, json=payload, timeout=30)
+            response = requests.post(url, json=payload, timeout=90)
             if response.status_code == 200:
                 ai_text = response.json().get("response", "").strip()
                 
