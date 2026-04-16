@@ -124,6 +124,7 @@ export default function TicketDetail() {
     queryKey: ['ticket-comments', ticketIdNum],
     queryFn: () => fetchTicketComments(ticketIdNum),
     enabled: !!ticketIdNum,
+    staleTime: 0, // Keep comments always stale to ensure fresh data
   })
 
   const updateStatusMutation = useMutation({
@@ -160,7 +161,6 @@ export default function TicketDetail() {
       })
       // ✅ REMOVED: Client-side notification (server sends via WebSocket)
       // This prevents duplicate notifications
-      console.log('[Comment] Posted - server will broadcast via WebSocket')
       queryClient.invalidateQueries({
         queryKey: ['ticket-comments', ticketIdNum],
       })
@@ -553,16 +553,16 @@ export default function TicketDetail() {
                 {comments.length > 0 ? (
                   <Timeline active={comments.length} bulletSize={24} lineWidth={2}>
                     {comments.map((comment: any) => (
-                      <Timeline.Item
-                        key={comment.id}
-                        bullet={
-                          <Avatar
-                            name={comment.author_username}
-                            size={24}
-                            radius="xl"
-                          />
-                        }
-                      >
+                        <Timeline.Item
+                          key={comment.id}
+                          bullet={
+                            <Avatar
+                              name={comment.author_username}
+                              size={24}
+                              radius="xl"
+                            />
+                          }
+                        >
                         <Group justify="space-between" mb="xs">
                           <div>
                             <Text fw={500} size="sm">

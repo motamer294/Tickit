@@ -22,6 +22,7 @@ const NOTIFICATION_TYPES: Array<{ type: NotificationType | 'ALL'; label: string;
   { type: 'TICKET_CREATED', label: 'Created', icon: 'solar:document-add-bold-duotone' },
   { type: 'TICKET_ASSIGNED', label: 'Assigned', icon: 'solar:briefcase-bold-duotone' },
   { type: 'TICKET_UPDATED', label: 'Updated', icon: 'solar:pen-bold-duotone' },
+  { type: 'TICKET_DELETED', label: 'Deleted', icon: 'solar:trash-bin-minimalistic-bold-duotone' },
   { type: 'COMMENT_ADDED', label: 'Comments', icon: 'solar:chat-round-bold-duotone' },
   { type: 'TICKET_RESOLVED', label: 'Resolved', icon: 'solar:check-circle-bold-duotone' },
   { type: 'MANAGER_ACTIVITY', label: 'Activity', icon: 'solar:pulse-bold-duotone' },

@@ -89,6 +89,7 @@ export default function CreateTicket() {
       return createTicketApi(payload)
     },
     onSuccess: (data) => {
+      console.log('✅ CreateTicket: Ticket created successfully:', data)
       setCreatedTicket(data)
       const assignmentText =
         data.assigned_to_username && data.assigned_to_username !== 'Unassigned'
@@ -101,6 +102,7 @@ export default function CreateTicket() {
       })
     },
     onError: (error: any) => {
+      console.error('❌ CreateTicket: Failed to create:', error)
       notifications.show({
         title: 'Error',
         message: error.message || 'Failed to create ticket',

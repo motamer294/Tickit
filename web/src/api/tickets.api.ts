@@ -64,7 +64,13 @@ export async function fetchTickets(): Promise<Ticket[]> {
   try {
     const client = getAxiosInstance()
     const response = await client.get<Ticket[]>('/my-tickets')
-    return response.data
+    // Ensure response.data is always an array
+    const data = response.data
+    if (!Array.isArray(data)) {
+      console.warn('[API] fetchTickets returned non-array data:', data)
+      return []
+    }
+    return data
   } catch (error) {
     if (error instanceof APIError && error.statusCode === 401) {
       throw new Error('Session expired. Please login again.')
@@ -356,7 +362,7 @@ export interface ChatMessage {
   sender_id: number
   sender_username: string
   message: string
-  created_at: string
+  timestamp: string
 }
 
 /**
@@ -367,7 +373,7 @@ export async function fetchChatMessages(ticketId: number): Promise<ChatMessage[]
   try {
     const client = getAxiosInstance()
     const response = await client.get<ChatMessage[]>(
-      `/tickets/${ticketId}/chat/`,
+      `/tickets/${ticketId}/chat`,
     )
     return response.data
   } catch (error) {
@@ -379,5 +385,41 @@ export async function fetchChatMessages(ticketId: number): Promise<ChatMessage[]
       }
     }
     throw error
+  }
+}
+
+// ============================================
+// Notifications Operations
+// ============================================
+
+export interface NotificationData {
+  id: number
+  type: string
+  title: string
+  message: string
+  ticket_id?: number
+  read: boolean
+  created_at: string
+}
+
+/**
+ * Fetch user's notifications
+ * Loads recent notification history
+ */
+export async function fetchNotifications(limit: number = 20): Promise<NotificationData[]> {
+  try {
+    const client = getAxiosInstance()
+    const response = await client.get<NotificationData[]>(
+      `/notifications/?limit=${limit}`,
+    )
+    return Array.isArray(response.data) ? response.data : []
+  } catch (error) {
+    if (error instanceof APIError) {
+      if (error.statusCode === 404) {
+        return []
+      }
+    }
+    console.warn('Failed to fetch notifications:', error)
+    return []
   }
 }

@@ -82,13 +82,36 @@ export function validateUsername(username: string): {
 export function validatePassword(password: string): {
   valid: boolean
   error?: string
+  details?: string[]
 } {
-  const rule = VALIDATION_RULES.password
+  const errors: string[] = []
 
-  if (password.length < rule.min) {
+  // Required password requirements
+  if (!password) {
+    return { valid: false, error: 'Password is required' }
+  }
+
+  if (password.length < 8) {
+    errors.push('at least 8 characters')
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    errors.push('one uppercase letter (A-Z)')
+  }
+
+  if (!/[0-9]/.test(password)) {
+    errors.push('one number (0-9)')
+  }
+
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    errors.push('one special character (!@#$%^&*)')
+  }
+
+  if (errors.length > 0) {
     return {
       valid: false,
-      error: rule.message,
+      error: `Password must contain: ${errors.join(', ')}`,
+      details: errors,
     }
   }
 

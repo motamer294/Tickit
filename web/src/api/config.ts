@@ -19,7 +19,38 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from 'axios'
 
-export const API_BASE_URL = 'http://127.0.0.1:8000/api'
+// Get API URL from environment or use default
+const getApiUrl = () => {
+  // Try Vite environment variable first (highest priority)
+  const viteUrl = import.meta.env.VITE_API_URL
+  if (viteUrl) return viteUrl
+
+  // For development: redirect dev server ports to backend
+  if (typeof window !== 'undefined') {
+    const protocol = window.location.protocol
+    const hostname = window.location.hostname
+
+    // Map dev server ports to backend
+    const port = window.location.port
+    if (port === '5173' || port === '3000') {
+      // Vite dev server - backend is on 8000
+      return `${protocol}//${hostname}:8000/api`
+    }
+
+    // Production or custom port
+    if (port) {
+      return `${protocol}//${hostname}:${port}/api`
+    }
+
+    // No port specified (production on standard ports)
+    return `${protocol}//${hostname}/api`
+  }
+
+  // Server-side rendering default
+  return 'http://127.0.0.1:8000/api'
+}
+
+export const API_BASE_URL = getApiUrl()
 
 // ============================================
 // Error Types
@@ -122,11 +153,18 @@ export function createApiClient(
         }
 
         try {
-          // In a real app, you'd call refresh endpoint here
-          // For now, trigger logout
+          // Immediately logout on 401
           onUnauthorized?.()
           isRefreshing = false
           processQueue('', error)
+
+          // Redirect to login page
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              window.location.href = '/auth/login'
+            }, 500)
+          }
+
           return Promise.reject(error)
         } catch (err) {
           isRefreshing = false

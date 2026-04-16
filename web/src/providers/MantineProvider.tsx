@@ -1,4 +1,4 @@
-import { MantineProvider as BaseProvider, createTheme } from '@mantine/core'
+import { MantineProvider as BaseProvider, createTheme, ColorSchemeScript } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
 import { ModalsProvider } from '@mantine/modals'
 import { useThemeStore } from '@/store/theme.store'
@@ -20,13 +20,16 @@ export function MantineProvider({ children }: Props) {
   const mode = useThemeStore((s) => s.mode)
 
   return (
-    <BaseProvider
-      theme={theme}
-      forceColorScheme={mode}
-      defaultColorScheme="light"
-    >
-      <Notifications position="top-right" zIndex={2000} />
-      <ModalsProvider>{children}</ModalsProvider>
-    </BaseProvider>
+    <>
+      <ColorSchemeScript defaultColorScheme="auto" />
+      <BaseProvider
+        theme={theme}
+        forceColorScheme={mode}
+        defaultColorScheme="light"
+      >
+        <Notifications position="top-right" zIndex={2000} />
+        <ModalsProvider>{children}</ModalsProvider>
+      </BaseProvider>
+    </>
   )
 }

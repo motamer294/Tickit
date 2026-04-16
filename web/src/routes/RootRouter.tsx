@@ -20,10 +20,13 @@ import AuthLayout from '@/layouts/AuthLayout'
 import Login from '@/pages/auth/Login'
 import Signup from '@/pages/auth/Signup'
 
+/* debug */
+import Debug from '@/pages/Debug'
+
 import { useAuth } from '@/hooks/useAuth'
 
 export default function RootRouter() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
 
   return (
     <Routes>
@@ -63,21 +66,26 @@ export default function RootRouter() {
         {/* Profile - Accessible by all authenticated users */}
         <Route path="profile" element={<UserProfile />} />
 
+{/* Debug - Only accessible to managers */}
+          {user?.role === 'MANAGER' && (
+            <Route path="debug" element={<Debug />} />
+          )}
+
         {/* Tickets - Role-based access control */}
         <Route path="tickets">
           {/* View tickets - all authenticated users */}
           <Route index element={<TicketsList />} />
-          
-          {/* Create ticket - CUSTOMER and EMPLOYEE only */}
+
+          {/* Create ticket - CUSTOMER, EMPLOYEE, and MANAGER */}
           <Route
             path="create"
             element={
-              <ProtectedRoute requiredRoles={['CUSTOMER', 'EMPLOYEE']}>
+              <ProtectedRoute requiredRoles={['CUSTOMER', 'EMPLOYEE', 'MANAGER']}>
                 <CreateTicket />
               </ProtectedRoute>
             }
           />
-          
+
           {/* View/Edit ticket - all can view, only assignee/manager can edit */}
           <Route path=":ticketId" element={<TicketDetail />} />
         </Route>

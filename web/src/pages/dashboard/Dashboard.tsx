@@ -110,10 +110,10 @@ const Dashboard = () => {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['tickets', accessToken],
+    queryKey: ['tickets'],  // ✅ Match WebSocket invalidation - no accessToken
     queryFn: () => fetchTickets(),
     enabled: !!accessToken,
-    staleTime: Infinity, // Don't auto-refresh; rely on WebSocket invalidation
+    staleTime: 5 * 60 * 1000,  // 5 minute fallback in case WebSocket fails
   })
 
   // Fetch analytics for managers only
@@ -124,19 +124,24 @@ const Dashboard = () => {
     queryKey: ['analytics-dashboard'],
     queryFn: () => fetchAnalyticsDashboard(),
     enabled: !!accessToken && user?.role === 'MANAGER',
-    staleTime: Infinity, // Don't auto-refresh; rely on WebSocket invalidation
+    staleTime: 5 * 60 * 1000,  // 5 minute fallback in case WebSocket fails
   })
 
   // Calculate stats with memoization to prevent unnecessary recalculation
   const stats = useMemo(
-    () => ({
-      total: tickets.length,
-      open: tickets.filter((t: Ticket) => t.status === 'OPEN').length,
-      inProgress: tickets.filter((t: Ticket) => t.status === 'IN_PROGRESS')
-        .length,
-      resolved: tickets.filter((t: Ticket) => t.status === 'RESOLVED').length,
-      closed: tickets.filter((t: Ticket) => t.status === 'CLOSED').length,
-    }),
+    () => {
+      // Defensive check: ensure tickets is an array
+      const ticketList = Array.isArray(tickets) ? tickets : []
+      return {
+        total: ticketList.length,
+        open: ticketList.filter((t: Ticket) => t.status === 'OPEN').length,
+        inProgress: ticketList.filter((t: Ticket) => t.status === 'IN_PROGRESS')
+          .length,
+        resolved: ticketList.filter((t: Ticket) => t.status === 'RESOLVED')
+          .length,
+        closed: ticketList.filter((t: Ticket) => t.status === 'CLOSED').length,
+      }
+    },
     [tickets],
   )
 
@@ -184,13 +189,16 @@ const Dashboard = () => {
 
   // Recent tickets (last 5) with memoization
   const recentTickets = useMemo(
-    () =>
-      tickets
+    () => {
+      // Defensive check: ensure tickets is an array
+      const ticketList = Array.isArray(tickets) ? tickets : []
+      return ticketList
         .sort(
           (a: Ticket, b: Ticket) =>
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
         )
-        .slice(0, 5),
+        .slice(0, 5)
+    },
     [tickets],
   )
 
@@ -711,7 +719,7 @@ const Dashboard = () => {
                             />
                           </Group>
                           <Text size="lg" fw={700}>
-                            {analytics.avg_resolution_time_hours.toFixed(2)}h
+                            {analytics?.avg_resolution_time_hours?.toFixed(2) ?? '0.00'}h
                           </Text>
                           <Text size="xs" c="dimmed">
                             Per ticket

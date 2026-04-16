@@ -7,6 +7,7 @@ from django.contrib.auth.hashers import make_password
 from typing import List
 from django.shortcuts import get_object_or_404
 from django.db.models import Count, Avg, F
+from django.db import transaction
 from tickets.schemas import DashboardStatsSchema
 from accounts.models import User
 from accounts.schemas import UserProfileSchema, UserUpdateSchema, PasswordChangeSchema, UserStatsSchema
@@ -177,6 +178,21 @@ def list_employee_tasks(request):
 # 3. Create Ticket (Open to Customers & Employees)
 @api.post("/tickets", response=TicketOutSchema)
 def create_ticket(request, data: TicketCreateSchema):
+    # Input validation
+    if not data.title or len(data.title) < 3 or len(data.title) > 500:
+        return api.create_response(
+            request,
+            {"message": "Title must be between 3 and 500 characters"},
+            status=400
+        )
+
+    if not data.description or len(data.description) < 10 or len(data.description) > 5000:
+        return api.create_response(
+            request,
+            {"message": "Description must be between 10 and 5000 characters"},
+            status=400
+        )
+
     # Option A + C: Pass assignment parameters to service
     ticket = create_ticket_with_ai(
         title=data.title,
@@ -251,8 +267,17 @@ def get_ticket_comments(request, ticket_id: int):
 
 # 5. Add Comment Endpoint
 @api.post("/tickets/{ticket_id}/comments", response=CommentOutSchema)
+@transaction.atomic
 def add_comment(request, ticket_id: int, data: CommentSchema):
     ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    # --- INPUT VALIDATION ---
+    if not data.text or len(data.text) < 1 or len(data.text) > 2000:
+        return api.create_response(
+            request,
+            {"message": "Comment must be between 1 and 2000 characters"},
+            status=400
+        )
 
     # --- SECURITY/AUTHORIZATION CHECK ---
     # Determine if the user has rights to this specific ticket
@@ -283,15 +308,6 @@ def add_comment(request, ticket_id: int, data: CommentSchema):
     realtime_service.broadcast_comment_added(ticket.id, comment.id, request.user.username)
 
     return comment
-    # Calling both caused duplicate notifications in frontend
-
-    # Return properly formatted response with author_username
-    return {
-        'id': comment.id,
-        'text': comment.text,
-        'author_username': request.user.username,
-        'created_at': comment.created_at,
-    }
 
 # 5.5 Get Chat Messages for a Ticket
 @api.get("/tickets/{ticket_id}/chat", response=List[dict])
