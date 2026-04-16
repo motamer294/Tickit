@@ -141,7 +141,11 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
               isGlobal: data.isGlobal,
               fromUser: data.fromUser,
             })
-            // Invalidate query for this ticket if available
+            // Invalidate all ticket and dashboard queries to reflect changes
+            queryClient.invalidateQueries({ queryKey: ['my-tickets'] })
+            queryClient.invalidateQueries({ queryKey: ['tickets'] })
+            queryClient.invalidateQueries({ queryKey: ['analytics-dashboard'] })
+            // Also invalidate specific ticket if available
             if (data.ticket_id) {
               queryClient.invalidateQueries({
                 queryKey: ['ticket', data.ticket_id],
@@ -152,9 +156,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
           // Handle real-time data changes (triggers React Query invalidation)
           if (data.type === 'data_changed') {
-            // Invalidate all ticket queries to reflect changes
+            // Invalidate all ticket-related queries
             queryClient.invalidateQueries({ queryKey: ['my-tickets'] })
             queryClient.invalidateQueries({ queryKey: ['employee/tasks'] })
+            // Dashboard queries (match any tickets query regardless of accessToken)
+            queryClient.invalidateQueries({ queryKey: ['tickets'] })
+            // Analytics dashboard for managers
+            queryClient.invalidateQueries({ queryKey: ['analytics-dashboard'] })
+            
             if (data.ticketId) {
               queryClient.invalidateQueries({
                 queryKey: ['ticket', data.ticketId],
