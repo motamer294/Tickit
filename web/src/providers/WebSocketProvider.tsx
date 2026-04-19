@@ -82,11 +82,20 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
     console.log('[WebSocket DEBUG] Current port:', port, '| Protocol:', protocol)
 
-    // Fix: Dev server ports (5173, 3000) should connect to backend (8000)
+    // Get WebSocket configuration from environment variables
+    const configuredWsPort = import.meta.env.VITE_WS_PORT || import.meta.env.VITE_API_PORT || '8000'
+    const configuredWsHost = import.meta.env.VITE_WS_HOST || hostname
+    const devServerPorts = (import.meta.env.VITE_DEV_SERVER_PORTS || '5173,3000').split(',')
+
+    // Determine WebSocket host
     let wsHost = window.location.host
-    if (port === '5173' || port === '3000') {
-      wsHost = `${hostname}:8000`
-      console.log('[WebSocket DEBUG] Dev server detected, rerouting to backend at', wsHost)
+    if (devServerPorts.includes(port)) {
+      // Dev server detected - use configured backend
+      wsHost = `${configuredWsHost}:${configuredWsPort}`
+      console.log('[WebSocket DEBUG] Dev server detected, using configured backend at', wsHost)
+    } else if (configuredWsPort !== '80' && configuredWsPort !== '443') {
+      // Use configured port (if not standard HTTP/HTTPS)
+      wsHost = `${configuredWsHost}:${configuredWsPort}`
     }
 
     const wsUrl = `${protocol}//${wsHost}/ws/unified/`

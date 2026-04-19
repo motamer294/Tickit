@@ -19,7 +19,7 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from 'axios'
 
-// Get API URL from environment or use default
+// Get API URL from environment or use smart defaults
 const getApiUrl = () => {
   // Try Vite environment variable first (highest priority)
   const viteUrl = import.meta.env.VITE_API_URL
@@ -29,16 +29,20 @@ const getApiUrl = () => {
   if (typeof window !== 'undefined') {
     const protocol = window.location.protocol
     const hostname = window.location.hostname
-
-    // Map dev server ports to backend
     const port = window.location.port
-    if (port === '5173' || port === '3000') {
-      // Vite dev server - backend is on 8000
-      return `${protocol}//${hostname}:8000/api`
+
+    // Get configured backend port/host from env
+    const configuredApiPort = import.meta.env.VITE_API_PORT || '8000'
+    const configuredApiHost = import.meta.env.VITE_API_HOST || hostname
+    const devServerPorts = (import.meta.env.VITE_DEV_SERVER_PORTS || '5173,3000').split(',')
+
+    // Dev server ports should redirect to configured backend
+    if (devServerPorts.includes(port)) {
+      return `${protocol}//${configuredApiHost}:${configuredApiPort}/api`
     }
 
     // Production or custom port
-    if (port) {
+    if (port && port !== '80' && port !== '443') {
       return `${protocol}//${hostname}:${port}/api`
     }
 
@@ -46,8 +50,10 @@ const getApiUrl = () => {
     return `${protocol}//${hostname}/api`
   }
 
-  // Server-side rendering default
-  return 'http://127.0.0.1:8000/api'
+  // Server-side rendering fallback (uses env var or localhost)
+  const fallbackHost = import.meta.env.VITE_API_HOST || 'localhost'
+  const fallbackPort = import.meta.env.VITE_API_PORT || '8000'
+  return `http://${fallbackHost}:${fallbackPort}/api`
 }
 
 export const API_BASE_URL = getApiUrl()

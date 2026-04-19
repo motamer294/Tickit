@@ -10,37 +10,51 @@ services:
     env_file:
       - .env
     environment:
-      - POSTGRES_DB=helpdesk_db
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=password123
+      - POSTGRES_DB=${DB_NAME:-helpdesk_db}
+      - POSTGRES_USER=${DB_USER:-admin}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-password123}
     ports:
       - "5432:5432"
 
   redis:
     image: redis:alpine
     container_name: helpdesk_redis
+    restart: always
     ports:
       - "6379:6379"
+    command: redis-server --appendonly yes
 
   web:
     build: .
     container_name: helpdesk_django_app
-    command: daphne -b 0.0.0.0 -p 8000 core.asgi:application
+    command: daphne -b 0.0.0.0 -p ${WEBSOCKET_PORT:-8000} core.asgi:application
     volumes:
       - .:/app
     ports:
-      - "8000:8000"
+      - "${WEBSOCKET_PORT:-8000}:${WEBSOCKET_PORT:-8000}"
     env_file:
       - .env
     environment:
-      # Django database settings
-      - DB_HOST=db
-      - DB_NAME=helpdesk_db
-      - DB_USER=admin
-      - DB_PASSWORD=password123
+      # Django settings
+      - DEBUG=${DEBUG:-True}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      # Database configuration
+      - DB_ENGINE=${DB_ENGINE:-django.db.backends.postgresql}
+      - DB_HOST=${DB_HOST:-db}
+      - DB_NAME=${DB_NAME:-helpdesk_db}
+      - DB_USER=${DB_USER:-admin}
+      - DB_PASSWORD=${DB_PASSWORD:-password123}
+      - DB_PORT=${DB_PORT:-5432}
       # Redis settings for Channel Layers
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_DB=${REDIS_DB:-0}
+      # WebSocket configuration
+      - CHANNEL_CAPACITY=${CHANNEL_CAPACITY:-5000}
+      - CHANNEL_EXPIRY=${CHANNEL_EXPIRY:-300}
+      # ML Service
+      - ML_SERVICE_URL=${ML_SERVICE_URL:-http://host.docker.internal:8001/ticket}
+      - ML_SERVICE_TIMEOUT=${ML_SERVICE_TIMEOUT:-45}
     depends_on:
       - db
       - redis

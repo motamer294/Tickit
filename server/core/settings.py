@@ -116,15 +116,20 @@ NINJA_JWT = {
 # Use environment-specific host: 'redis' for Docker, 'localhost' for local dev
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')  # Defaults to localhost for development
 REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
+REDIS_DB = int(os.environ.get('REDIS_DB', 0))
 
-# Try to use Redis, fallback to in-memory if Redis is not available
+# Channel layer configuration (from environment variables)
+CHANNEL_CAPACITY = int(os.environ.get('CHANNEL_CAPACITY', 5000))  # Messages to buffer per channel
+CHANNEL_EXPIRY = int(os.environ.get('CHANNEL_EXPIRY', 300))  # Seconds to keep messages (5 minutes default)
+
+# Channels-Redis configuration
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [(REDIS_HOST, REDIS_PORT)],
-            "capacity": 1500,
-            "expiry": 10,
+            "capacity": CHANNEL_CAPACITY,
+            "expiry": CHANNEL_EXPIRY,
         },
     },
 }
