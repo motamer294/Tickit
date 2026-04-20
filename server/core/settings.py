@@ -18,7 +18,41 @@ DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = ['*']
 
-# Application definition
+# ============================================
+# Nginx Reverse Proxy Configuration
+# ============================================
+# Enable proxy header support for Nginx reverse proxy
+# These headers are set by Nginx and contain original client info
+SECURE_PROXY_HEADER_ENVIRON = os.environ.get('SECURE_PROXY_HEADER_ENVIRON', 'HTTP_X_FORWARDED_FOR')
+SECURE_PROXY_HEADER = os.environ.get('SECURE_PROXY_HEADER', 'HTTP_X_FORWARDED_PROTO')
+
+# Trusted proxies (IPs allowed to set X-Forwarded-* headers)
+# In Docker: 'nginx' service name resolves internally
+# Format: comma-separated list (e.g., "127.0.0.1,nginx,172.0.0.0/8")
+TRUSTED_PROXIES_STR = os.environ.get('TRUSTED_PROXIES', '127.0.0.1,nginx,172.17.0.0/12')
+TRUSTED_PROXIES = [ip.strip() for ip in TRUSTED_PROXIES_STR.split(',')]
+
+# Updated CORS settings for proxy through Nginx
+# Allow requests from frontend at https://localhost (through Nginx HTTPS)
+CORS_TRUSTED_ORIGINS = [
+    "http://localhost:5173",      # Vite dev server (local)
+    "http://localhost:3000",      # Alternative dev port
+    "http://127.0.0.1:5173",
+    "https://localhost",          # Production through Nginx
+    "https://localhost:443",
+    "https://127.0.0.1",
+    # Add production domain when available:
+    # "https://api.example.com",
+    # "https://example.com",
+]
+
+# Security headers when behind proxy
+SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'false').lower() == 'true'
+SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'false').lower() == 'true'
+CSRF_COOKIE_SECURE = os.environ.get('CSRF_COOKIE_SECURE', 'false').lower() == 'true'
+
+# Set these to True in production (behind HTTPS Nginx proxy)
+# Development: Keep False to work with http://localhost through Nginx redirect
 INSTALLED_APPS = [
     "daphne",
     'django.contrib.admin',
@@ -38,15 +72,20 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS Configuration
+# Use CORS_TRUSTED_ORIGINS instead of allowing all origins in production
+CORS_ALLOW_CREDENTIALS = True
+# CORS_ALLOW_ALL_ORIGINS = True  # ⚠️ Only for development! Set to False in production
+
+# Use the CORS_TRUSTED_ORIGINS defined in proxy section above
 
 ROOT_URLCONF = 'core.urls'
 

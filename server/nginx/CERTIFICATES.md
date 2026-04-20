@@ -6,10 +6,10 @@ This guide covers SSL/TLS certificate setup for both **development** and **produ
 
 ### Quick Reference
 
-| Environment | Certificate Type | Tool | Renewal | Path |
-|---|---|---|---|---|
-| **Development** | Self-signed | OpenSSL | Manual (~1/year) | `nginx/certs/` |
-| **Production** | Let's Encrypt | Certbot | Automatic | `/etc/letsencrypt/live/` |
+| Environment     | Certificate Type | Tool    | Renewal          | Path                     |
+| --------------- | ---------------- | ------- | ---------------- | ------------------------ |
+| **Development** | Self-signed      | OpenSSL | Manual (~1/year) | `nginx/certs/`           |
+| **Production**  | Let's Encrypt    | Certbot | Automatic        | `/etc/letsencrypt/live/` |
 
 ---
 
@@ -18,6 +18,7 @@ This guide covers SSL/TLS certificate setup for both **development** and **produ
 ### Current Status
 
 ✅ **Already generated** in `nginx/certs/`:
+
 - `fullchain.pem` - Certificate (self-signed)
 - `privkey.pem` - Private key
 
@@ -39,16 +40,19 @@ Certificate is not trusted (Firefox)
 ### How to Accept the Certificate
 
 #### Chrome/Edge
+
 1. Click "Advanced"
 2. Click "Proceed to localhost (unsafe)"
 3. Continue normally
 
 #### Firefox
+
 1. Click "Advanced"
 2. Click "Accept the Risk and Continue"
 3. Continue normally
 
 #### macOS Safari
+
 1. Click "Show Details"
 2. Click "Visit this website"
 3. Enter your password when prompted
@@ -90,6 +94,7 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 ```
 
 **Common fields:**
+
 - `C` = Country code (e.g., US, EG)
 - `ST` = State/Province
 - `L` = City/Locality
@@ -136,7 +141,7 @@ brew install certbot
 # Standalone mode (stop Nginx temporarily)
 sudo certbot certonly --standalone -d api.example.com -d example.com
 
-# - or - 
+# - or -
 
 # Nginx mode (recommended - no downtime)
 sudo certbot --nginx -d api.example.com -d example.com
@@ -178,8 +183,8 @@ nginx:
   image: nginx:alpine
   volumes:
     - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-    - /etc/letsencrypt:/etc/letsencrypt:ro  # ← Add this
-    - ./nginx/certs:/etc/nginx/certs:ro     # Dev fallback
+    - /etc/letsencrypt:/etc/letsencrypt:ro # ← Add this
+    - ./nginx/certs:/etc/nginx/certs:ro # Dev fallback
 ```
 
 #### Step 5: Enable Automatic Renewal
@@ -200,7 +205,7 @@ sudo certbot renew
 ### Docker Compose Production Template
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   nginx:
@@ -260,6 +265,7 @@ sudo certbot renew --cert-name api.example.com
 ### Renewal Notifications
 
 Certbot sends email notifications:
+
 - 20 days before expiry: Renewal reminder
 - At renewal failure: Error notification
 
