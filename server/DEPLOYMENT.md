@@ -16,6 +16,7 @@
 ## Overview
 
 This guide covers deploying the HelpDesk application using:
+
 - **Docker Compose** for container orchestration
 - **Nginx** as a reverse proxy (HTTP/HTTPS gateway)
 - **Django + Channels** for backend (WebSocket + REST API)
@@ -158,7 +159,7 @@ cd web
 # Install dependencies
 npm install
 
-# Start Vite dev server  
+# Start Vite dev server
 npm run dev
 
 # App runs at http://localhost:5173
@@ -274,7 +275,7 @@ nginx:
     - NGINX_CERT_PATH=/etc/letsencrypt/live/api.example.com/fullchain.pem
     - NGINX_KEY_PATH=/etc/letsencrypt/live/api.example.com/privkey.pem
   volumes:
-    - /etc/letsencrypt:/etc/letsencrypt:ro  # Let's Encrypt certs
+    - /etc/letsencrypt:/etc/letsencrypt:ro # Let's Encrypt certs
     - /opt/helpdesk/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
 ```
 

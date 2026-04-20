@@ -197,7 +197,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     // ============================================
     // Determine WebSocket Protocol & URL
     // ============================================
-    
+
     // Check if we should use WSS (WebSocket Secure) for HTTPS
     const useHttps = import.meta.env.VITE_USE_HTTPS === 'true'
     let protocol: 'wss:' | 'ws:'
@@ -218,7 +218,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     // ============================================
     // Construct WebSocket URL
     // ============================================
-    
+
     let wsUrl: string
 
     // Production HTTPS configuration (through Nginx reverse proxy)
@@ -234,7 +234,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       }
     } else {
       // Development mode (HTTP/WS)
-      
+
       // Get WebSocket configuration from environment variables
       const configuredWsPort = import.meta.env.VITE_WS_PORT || import.meta.env.VITE_API_PORT || '8000'
       const configuredWsHost = import.meta.env.VITE_WS_HOST || hostname
