@@ -194,30 +194,67 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       }
     })
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    // ============================================
+    // Determine WebSocket Protocol & URL
+    // ============================================
+    
+    // Check if we should use WSS (WebSocket Secure) for HTTPS
+    const useHttps = import.meta.env.VITE_USE_HTTPS === 'true'
+    let protocol: 'wss:' | 'ws:'
+
+    if (useHttps) {
+      // Production: Always use WSS (secure websocket) when HTTPS is enabled
+      protocol = 'wss:'
+    } else {
+      // Development: Detect protocol from current window location
+      protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    }
+
     const hostname = window.location.hostname
     const port = window.location.port
 
     console.log('[WebSocket DEBUG] Current port:', port, '| Protocol:', protocol)
 
-    // Get WebSocket configuration from environment variables
-    const configuredWsPort = import.meta.env.VITE_WS_PORT || import.meta.env.VITE_API_PORT || '8000'
-    const configuredWsHost = import.meta.env.VITE_WS_HOST || hostname
-    const devServerPorts = (import.meta.env.VITE_DEV_SERVER_PORTS || '5173,3000').split(',')
+    // ============================================
+    // Construct WebSocket URL
+    // ============================================
+    
+    let wsUrl: string
 
-    // Determine WebSocket host
-    let wsHost = window.location.host
-    if (devServerPorts.includes(port)) {
-      // Dev server detected - use configured backend
-      wsHost = `${configuredWsHost}:${configuredWsPort}`
-      console.log('[WebSocket DEBUG] Dev server detected, using configured backend at', wsHost)
-    } else if (configuredWsPort !== '80' && configuredWsPort !== '443') {
-      // Use configured port (if not standard HTTP/HTTPS)
-      wsHost = `${configuredWsHost}:${configuredWsPort}`
+    // Production HTTPS configuration (through Nginx reverse proxy)
+    if (useHttps) {
+      const httpsWsUrl = import.meta.env.VITE_WS_URL_HTTPS
+      if (httpsWsUrl) {
+        wsUrl = `${httpsWsUrl}/ws/unified/`
+        console.log('[WebSocket DEBUG] Using HTTPS WSS URL:', wsUrl)
+      } else {
+        // Fallback: Use current domain for WSS
+        wsUrl = `wss://${hostname}/ws/unified/`
+        console.log('[WebSocket DEBUG] HTTPS enabled, using current domain for WSS:', wsUrl)
+      }
+    } else {
+      // Development mode (HTTP/WS)
+      
+      // Get WebSocket configuration from environment variables
+      const configuredWsPort = import.meta.env.VITE_WS_PORT || import.meta.env.VITE_API_PORT || '8000'
+      const configuredWsHost = import.meta.env.VITE_WS_HOST || hostname
+      const devServerPorts = (import.meta.env.VITE_DEV_SERVER_PORTS || '5173,3000').split(',')
+
+      // Determine WebSocket host
+      let wsHost = window.location.host
+      if (devServerPorts.includes(port)) {
+        // Dev server detected - use configured backend
+        wsHost = `${configuredWsHost}:${configuredWsPort}`
+        console.log('[WebSocket DEBUG] Dev server detected, using configured backend at', wsHost)
+      } else if (configuredWsPort !== '80' && configuredWsPort !== '443') {
+        // Use configured port (if not standard HTTP/HTTPS)
+        wsHost = `${configuredWsHost}:${configuredWsPort}`
+      }
+
+      wsUrl = `${protocol}//${wsHost}/ws/unified/`
+      console.log('[WebSocket DEBUG] Connecting to:', wsUrl)
     }
 
-    const wsUrl = `${protocol}//${wsHost}/ws/unified/`
-    console.log('[WebSocket DEBUG] Connecting to:', wsUrl)
     logger.info(`[WebSocket] Attempting connection to ${wsUrl}`)
 
     try {

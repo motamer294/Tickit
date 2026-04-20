@@ -21,6 +21,25 @@ import axios, {
 
 // Get API URL from environment or use smart defaults
 const getApiUrl = () => {
+  // Check if we should use HTTPS (for production behind Nginx)
+  const useHttps = import.meta.env.VITE_USE_HTTPS === 'true'
+  
+  // Production HTTPS URLs (set when using Nginx reverse proxy)
+  if (useHttps) {
+    const httpsUrl = import.meta.env.VITE_API_URL_HTTPS
+    if (httpsUrl) return httpsUrl
+    
+    // Fallback: use current domain with HTTPS
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname
+      return `https://${hostname}/api`
+    }
+    // Server-side rendering with HTTPS
+    return `https://localhost/api`
+  }
+
+  // Development mode (HTTP through Nginx reverse proxy or direct connection)
+  
   // Try Vite environment variable first (highest priority)
   const viteUrl = import.meta.env.VITE_API_URL
   if (viteUrl) return viteUrl
