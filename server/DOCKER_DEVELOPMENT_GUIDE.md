@@ -19,6 +19,7 @@ Complete guide to run the HelpDesk backend with Docker for development and local
 ## Prerequisites
 
 ### Required
+
 - **Docker** (version 20.10+)
   ```bash
   docker --version  # Should show Docker 20.10 or higher
@@ -29,10 +30,12 @@ Complete guide to run the HelpDesk backend with Docker for development and local
   ```
 
 ### Recommended
+
 - **Git** (for version control)
 - **curl** (for testing endpoints)
 
 ### Verify Installation
+
 ```bash
 # Test Docker installation
 docker run hello-world
@@ -46,11 +49,13 @@ docker-compose --version
 ## Quick Start (5 minutes)
 
 ### 1️⃣ Clone/Navigate to Project
+
 ```bash
 cd /home/essam/graduation_project/server
 ```
 
 ### 2️⃣ Set Up Environment
+
 ```bash
 # Copy example env file
 cp .env.example .env
@@ -60,6 +65,7 @@ cp .env.example .env
 ```
 
 ### 3️⃣ Start All Services
+
 ```bash
 # Build and start all containers
 docker-compose up -d
@@ -72,6 +78,7 @@ docker-compose ps
 ```
 
 ### 4️⃣ Check Services Status
+
 ```bash
 # Expected output:
 # NAME                   IMAGE      STATUS
@@ -82,6 +89,7 @@ docker-compose ps
 ```
 
 ### 5️⃣ Test Backend Access
+
 ```bash
 # Test through Nginx (HTTPS)
 curl -k https://localhost/api/health
@@ -91,7 +99,9 @@ curl http://localhost:8000/api/health
 ```
 
 ### ✅ You're Ready!
+
 Backend is running:
+
 - **Frontend API:** `https://localhost/api`
 - **Admin Panel:** `https://localhost/admin`
 - **WebSocket:** `wss://localhost/ws`
@@ -104,6 +114,7 @@ Backend is running:
 ### Daily Development
 
 #### Start Containers
+
 ```bash
 cd /home/essam/graduation_project/server
 
@@ -115,6 +126,7 @@ docker-compose up
 ```
 
 #### View Live Logs
+
 ```bash
 # Backend logs (follow updates)
 docker-compose logs -f backend
@@ -130,7 +142,9 @@ docker-compose logs -f
 ```
 
 #### Make Code Changes
+
 The backend volume is mounted at `/app`, so changes are reflected immediately:
+
 ```bash
 # Edit files locally (e.g., src/backend/views.py)
 # Changes auto-reload in running container (Daphne watches files)
@@ -138,6 +152,7 @@ nano accounts/views.py
 ```
 
 #### Database Migration
+
 ```bash
 # Apply pending migrations
 docker-compose exec backend python manage.py migrate
@@ -150,6 +165,7 @@ docker-compose exec backend python manage.py showmigrations
 ```
 
 #### Create Admin User
+
 ```bash
 # Interactive admin setup
 docker-compose exec backend python manage.py createsuperuser
@@ -167,6 +183,7 @@ else:
 ```
 
 #### Run Tests
+
 ```bash
 # All tests
 docker-compose exec backend python manage.py test
@@ -183,6 +200,7 @@ docker-compose exec backend coverage report
 ```
 
 #### Database Shell
+
 ```bash
 # Access Django ORM shell
 docker-compose exec backend python manage.py shell
@@ -193,6 +211,7 @@ docker-compose exec backend python manage.py shell
 ```
 
 #### PostgreSQL Shell
+
 ```bash
 # Direct database access
 docker-compose exec db psql -U admin -d helpdesk_db
@@ -204,6 +223,7 @@ docker-compose exec db psql -U admin -d helpdesk_db
 ```
 
 #### Redis Shell
+
 ```bash
 # Access Redis CLI
 docker-compose exec redis redis-cli
@@ -219,6 +239,7 @@ docker-compose exec redis redis-cli
 ## Environment Configuration
 
 ### Development Environment (.env)
+
 ```bash
 # Django Settings
 SECRET_KEY=your-secret-key-here
@@ -253,6 +274,7 @@ SECURE_PROXY_HEADER=HTTP_X_FORWARDED_PROTO
 ```
 
 ### Production Environment (Optional)
+
 ```bash
 # Enable production mode
 DEBUG=False
@@ -370,6 +392,7 @@ docker system prune -a
 ### Issue: "Connection refused" on localhost:8000
 
 **Solution:** Backend may not be fully started
+
 ```bash
 # Wait a bit longer
 sleep 10
@@ -385,7 +408,8 @@ docker-compose restart backend
 
 **Error:** `could not translate host name "db" to address`
 
-**Solution:** 
+**Solution:**
+
 ```bash
 # Containers not on same network
 docker-compose down
@@ -401,6 +425,7 @@ docker-compose exec backend ping redis
 **Error:** `Error response from daemon: Bind for 0.0.0.0:5432 failed`
 
 **Solution:**
+
 ```bash
 # Stop other PostgreSQL instances
 sudo systemctl stop postgresql
@@ -413,6 +438,7 @@ sudo systemctl stop postgresql
 ### Issue: Disk space full
 
 **Solution:**
+
 ```bash
 # Clean up Docker resources
 docker system prune -a
@@ -429,6 +455,7 @@ df -h
 **Error:** Database errors on first run
 
 **Solution:**
+
 ```bash
 # Apply migrations manually
 docker-compose exec backend python manage.py migrate
@@ -441,7 +468,8 @@ docker-compose exec backend python manage.py createsuperuser
 
 **Expected behavior:** Browser shows certificate warning for self-signed cert
 
-**Solution:** 
+**Solution:**
+
 ```bash
 # For testing, click "Advanced" → "Proceed anyway"
 # For production, use Let's Encrypt (see CERTIFICATES.md)
@@ -520,6 +548,7 @@ curl https://yourdomain.com/api/health
 ## Common Development Tasks
 
 ### Running Tests with Coverage
+
 ```bash
 docker-compose exec backend bash -c "
 coverage run --source='.' manage.py test
@@ -529,6 +558,7 @@ coverage html  # Generate HTML report
 ```
 
 ### Database Reset (⚠️ Development Only)
+
 ```bash
 # WARNING: Deletes all data
 docker-compose down -v
@@ -538,16 +568,19 @@ docker-compose exec backend python manage.py createsuperuser
 ```
 
 ### Backup Database
+
 ```bash
 docker-compose exec db pg_dump -U admin helpdesk_db > backup.sql
 ```
 
 ### Restore Database
+
 ```bash
 docker-compose exec -T db psql -U admin helpdesk_db < backup.sql
 ```
 
 ### Monitor Resources
+
 ```bash
 # View real-time container stats
 docker stats
@@ -560,18 +593,18 @@ docker stats helpdesk_django_app
 
 ## Quick Reference Card
 
-| Task | Command |
-|------|---------|
-| Start all | `docker-compose up -d` |
-| Stop all | `docker-compose stop` |
-| View logs | `docker-compose logs -f backend` |
-| Run migration | `docker-compose exec backend python manage.py migrate` |
-| Create admin | `docker-compose exec backend python manage.py createsuperuser` |
-| Run tests | `docker-compose exec backend python manage.py test` |
-| Django shell | `docker-compose exec backend python manage.py shell` |
-| DB shell | `docker-compose exec db psql -U admin helpdesk_db` |
-| Rebuild | `docker-compose up -d --build` |
-| Clean restart | `docker-compose down -v && docker-compose up -d` |
+| Task          | Command                                                        |
+| ------------- | -------------------------------------------------------------- |
+| Start all     | `docker-compose up -d`                                         |
+| Stop all      | `docker-compose stop`                                          |
+| View logs     | `docker-compose logs -f backend`                               |
+| Run migration | `docker-compose exec backend python manage.py migrate`         |
+| Create admin  | `docker-compose exec backend python manage.py createsuperuser` |
+| Run tests     | `docker-compose exec backend python manage.py test`            |
+| Django shell  | `docker-compose exec backend python manage.py shell`           |
+| DB shell      | `docker-compose exec db psql -U admin helpdesk_db`             |
+| Rebuild       | `docker-compose up -d --build`                                 |
+| Clean restart | `docker-compose down -v && docker-compose up -d`               |
 
 ---
 
@@ -600,5 +633,5 @@ docker stats helpdesk_django_app
 
 ---
 
-**Last Updated:** April 20, 2026  
+**Last Updated:** April 20, 2026
 **Status:** Production-Ready ✅

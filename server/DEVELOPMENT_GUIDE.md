@@ -118,6 +118,7 @@ GRANT ALL PRIVILEGES ON DATABASE helpdesk_db TO admin;
 ```
 
 **Verify connection:**
+
 ```bash
 psql -h localhost -U admin -d helpdesk_db -c "\dt"
 ```
@@ -159,6 +160,7 @@ python manage.py runserver 0.0.0.0:8000
 ```
 
 **Output should show:**
+
 ```
 Starting development server at http://0.0.0.0:8000/
 ```
@@ -177,6 +179,7 @@ daphne -b 0.0.0.0 -p 8000 core.asgi:application
 ```
 
 **Output should show:**
+
 ```
 Listening on TCP address 0.0.0.0:8000
 ```
@@ -201,6 +204,7 @@ docker-compose logs -f backend
 ```
 
 **Expected output from `docker-compose ps`:**
+
 ```
 NAME                   IMAGE            STATUS
 helpdesk_nginx         nginx:alpine     Up (healthy)
@@ -438,12 +442,14 @@ print("✓ Database connected")
 ### Enable Debug Logging
 
 **In `.env`:**
+
 ```env
 DEBUG=True
 LOG_LEVEL=DEBUG
 ```
 
 **In Django settings:**
+
 ```python
 LOGGING = {
     'version': 1,
@@ -471,6 +477,7 @@ django.db.utils.OperationalError: connection to server at "localhost" (127.0.0.1
 ```
 
 **Solution:**
+
 - Ensure PostgreSQL is running: `postgres -D /usr/local/var/postgres`
 - Or use Docker: `docker run -d -p 5432:5432 postgres:15`
 - Check `.env` has correct `DB_HOST` and `DB_PORT`
@@ -506,6 +513,7 @@ ConnectionError: Error 61 connecting to localhost:6379
 ```
 
 **Solution:**
+
 - Start Redis locally: `redis-server`
 - Or use Docker: `docker run -d -p 6379:6379 redis:alpine`
 - Check `.env` has correct `REDIS_HOST`
@@ -513,6 +521,7 @@ ConnectionError: Error 61 connecting to localhost:6379
 ### Issue 5: WebSocket connection fails
 
 **Reason:** Using Django development server instead of Daphne
+
 ```bash
 # Use Daphne instead:
 daphne -b 0.0.0.0 -p 8000 core.asgi:application
@@ -636,16 +645,16 @@ coverage report
 
 ## 📝 Environment Variables Reference
 
-| Variable | Local | Docker | Purpose |
-|----------|-------|--------|---------|
-| `DB_HOST` | `localhost` | `db` | PostgreSQL hostname |
-| `DB_PORT` | `5432` | `5432` | PostgreSQL port |
-| `REDIS_HOST` | `localhost` | `redis` | Redis hostname |
-| `REDIS_PORT` | `6379` | `6379` | Redis port |
-| `DEBUG` | `True` | `True/False` | Django debug mode |
-| `WEBSOCKET_PORT` | `8000` | `8000` | Daphne listen port |
-| `SECURE_SSL_REDIRECT` | `False` | `False` | Force HTTPS redirect |
-| `SESSION_COOKIE_SECURE` | `False` | `False/True` | HTTPS-only cookies |
+| Variable                | Local       | Docker       | Purpose              |
+| ----------------------- | ----------- | ------------ | -------------------- |
+| `DB_HOST`               | `localhost` | `db`         | PostgreSQL hostname  |
+| `DB_PORT`               | `5432`      | `5432`       | PostgreSQL port      |
+| `REDIS_HOST`            | `localhost` | `redis`      | Redis hostname       |
+| `REDIS_PORT`            | `6379`      | `6379`       | Redis port           |
+| `DEBUG`                 | `True`      | `True/False` | Django debug mode    |
+| `WEBSOCKET_PORT`        | `8000`      | `8000`       | Daphne listen port   |
+| `SECURE_SSL_REDIRECT`   | `False`     | `False`      | Force HTTPS redirect |
+| `SESSION_COOKIE_SECURE` | `False`     | `False/True` | HTTPS-only cookies   |
 
 ---
 
@@ -718,5 +727,5 @@ docker-compose up -d
 
 ---
 
-**Last Updated:** April 20, 2026  
+**Last Updated:** April 20, 2026
 **Version:** 2.0 (Production-Ready)

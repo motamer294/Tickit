@@ -7,11 +7,13 @@ Complete step-by-step guide to deploy the HelpDesk application locally using Doc
 ## 🚀 Quick Start (10 minutes)
 
 ### Step 1: Navigate to Server Directory
+
 ```bash
 cd /home/essam/graduation_project/server
 ```
 
 ### Step 2: Configure Environment
+
 ```bash
 # Copy environment file
 cp .env.example .env
@@ -21,6 +23,7 @@ nano .env
 ```
 
 **Recommended .env for Local Deployment:**
+
 ```bash
 # Django Settings
 SECRET_KEY=django-insecure-test-key-change-in-production
@@ -51,6 +54,7 @@ CSRF_COOKIE_SECURE=False
 ```
 
 ### Step 3: Deploy with Docker
+
 ```bash
 # Build and start all services
 docker-compose up -d --build
@@ -63,6 +67,7 @@ docker-compose ps
 ```
 
 ### Step 4: Initialize Database
+
 ```bash
 # Apply migrations
 docker-compose exec backend python manage.py migrate
@@ -84,6 +89,7 @@ docker-compose exec backend python manage.py shell -c \
 ```
 
 ### Step 5: Verify Deployment
+
 ```bash
 # Test backend health
 curl -k https://localhost/api/health
@@ -96,7 +102,9 @@ curl -k https://localhost/api/health
 ```
 
 ### ✅ Deployment Complete!
+
 Access points:
+
 - **Frontend:** https://localhost
 - **API:** https://localhost/api
 - **Admin Panel:** https://localhost/admin
@@ -121,6 +129,7 @@ Access points:
 ## 🔧 Service Status & Monitoring
 
 ### Check All Services
+
 ```bash
 # Detailed status
 docker-compose ps
@@ -134,6 +143,7 @@ docker-compose ps
 ```
 
 ### Monitor Logs
+
 ```bash
 # Live logs (all services)
 docker-compose logs -f
@@ -148,6 +158,7 @@ docker-compose logs -f redis
 ```
 
 ### Check Container Resource Usage
+
 ```bash
 # Real-time resource monitoring
 docker stats
@@ -160,6 +171,7 @@ docker stats
 While backend is running:
 
 ### 1. Configure Frontend (.env.local)
+
 ```bash
 cd ../web
 
@@ -189,11 +201,13 @@ EOF
 ```
 
 ### 2. Install Dependencies
+
 ```bash
 npm install
 ```
 
 ### 3. Start Frontend Dev Server
+
 ```bash
 npm run dev
 
@@ -251,6 +265,7 @@ lsof -i :443   # HTTPS
 **Expected:** Browser shows "Not Secure" warning for self-signed certificate
 
 **Solution:**
+
 - Click "Advanced" → "Proceed anyway" (development mode)
 - For production, use CERTIFICATES.md guide for Let's Encrypt
 
@@ -292,6 +307,7 @@ docker-compose logs backend --tail 100
 ## 🔄 Common Operations
 
 ### Restart Services
+
 ```bash
 # Restart all
 docker-compose restart
@@ -301,6 +317,7 @@ docker-compose restart backend
 ```
 
 ### Update Code & Restart
+
 ```bash
 # Backend code changes
 # (Daphne auto-reloads in development)
@@ -312,18 +329,21 @@ docker-compose restart backend
 ### Database Operations
 
 **Backup:**
+
 ```bash
 docker-compose exec db pg_dump -U admin helpdesk_db > backup.sql
 echo "✅ Backup saved to backup.sql"
 ```
 
 **Restore:**
+
 ```bash
 docker-compose exec -T db psql -U admin helpdesk_db < backup.sql
 echo "✅ Database restored from backup.sql"
 ```
 
 **Reset (⚠️ WARNING: Deletes all data):**
+
 ```bash
 docker-compose down -v
 docker-compose up -d
@@ -331,6 +351,7 @@ docker-compose exec backend python manage.py migrate
 ```
 
 ### Database Shell
+
 ```bash
 # Access PostgreSQL
 docker-compose exec db psql -U admin helpdesk_db
@@ -343,6 +364,7 @@ docker-compose exec db psql -U admin helpdesk_db
 ```
 
 ### Django Admin Commands
+
 ```bash
 # Create superuser
 docker-compose exec backend python manage.py createsuperuser
@@ -362,24 +384,28 @@ docker-compose exec backend python manage.py shell
 ## 📊 Service Details
 
 ### Nginx (Reverse Proxy)
+
 - **Port:** 80 (redirects to 443), 443 (HTTPS)
 - **Role:** Public-facing, routes to backend
 - **Certificate:** Self-signed (see nginx/certs/)
 - **Config:** nginx/nginx.conf
 
 ### Django Backend
+
 - **Port:** 8000 (internal only, not exposed)
 - **Role:** API, WebSocket, Admin panel
 - **Server:** Daphne (ASGI)
 - **Database:** PostgreSQL
 
 ### PostgreSQL Database
+
 - **Port:** 5432
 - **Database:** helpdesk_db
 - **User:** admin (change password in production!)
 - **Data:** Persisted in docker volume
 
 ### Redis Cache
+
 - **Port:** 6379
 - **Role:** Channel layer, caching
 - **Data:** Persisted in docker volume
@@ -389,12 +415,14 @@ docker-compose exec backend python manage.py shell
 ## 🔐 Security Notes for Local Deployment
 
 ### ✅ Already Configured
+
 - HTTPS/TLS encryption (self-signed cert)
 - Database inside Docker network (not exposed)
 - Redis inside Docker network (not exposed)
 - Backend inside Docker network (only via Nginx)
 
 ### ⚠️ For Production (Not local)
+
 - Replace self-signed cert with Let's Encrypt
 - Change all default passwords
 - Set `DEBUG=False`
@@ -403,7 +431,9 @@ docker-compose exec backend python manage.py shell
 - Enable `SESSION_COOKIE_SECURE=True`
 
 ### 🔒 Local Development Only
+
 Current setup is suitable for:
+
 - Development testing
 - Graduation project demo
 - Local CI/CD pipeline
@@ -428,6 +458,7 @@ See DEPLOYMENT.md for production guide.
 ## 🆘 Support & Debugging
 
 ### Enable Debug Mode (Temporary)
+
 ```bash
 # Update .env
 DEBUG=True
@@ -441,6 +472,7 @@ docker-compose logs backend -f
 ```
 
 ### Get Container Shell
+
 ```bash
 # Backend bash shell
 docker-compose exec backend bash
@@ -450,6 +482,7 @@ docker-compose exec backend python manage.py <command>
 ```
 
 ### Container Disk Usage
+
 ```bash
 # Check Docker disk space
 docker system df
@@ -488,17 +521,17 @@ docker-compose logs nginx --tail 5
 
 ## 📞 Quick Reference
 
-| Task | Command |
-|------|---------|
-| Deploy | `docker-compose up -d --build` |
-| Stop | `docker-compose stop` |
-| Status | `docker-compose ps` |
-| Logs | `docker-compose logs -f backend` |
-| Migrate | `docker-compose exec backend python manage.py migrate` |
-| Create admin | `docker-compose exec backend python manage.py createsuperuser` |
-| Test API | `curl -k https://localhost/api/health` |
-| DB shell | `docker-compose exec db psql -U admin helpdesk_db` |
-| Clean restart | `docker-compose down -v && docker-compose up -d` |
+| Task          | Command                                                        |
+| ------------- | -------------------------------------------------------------- |
+| Deploy        | `docker-compose up -d --build`                                 |
+| Stop          | `docker-compose stop`                                          |
+| Status        | `docker-compose ps`                                            |
+| Logs          | `docker-compose logs -f backend`                               |
+| Migrate       | `docker-compose exec backend python manage.py migrate`         |
+| Create admin  | `docker-compose exec backend python manage.py createsuperuser` |
+| Test API      | `curl -k https://localhost/api/health`                         |
+| DB shell      | `docker-compose exec db psql -U admin helpdesk_db`             |
+| Clean restart | `docker-compose down -v && docker-compose up -d`               |
 
 ---
 
@@ -527,6 +560,6 @@ After successful local deployment:
 
 ---
 
-**Last Updated:** April 20, 2026  
-**Version:** 1.0  
+**Last Updated:** April 20, 2026
+**Version:** 1.0
 **Status:** Production-Ready ✅
