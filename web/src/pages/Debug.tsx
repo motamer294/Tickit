@@ -26,14 +26,14 @@ export default function DebugPage() {
     // Get token from auth store
     const authStore = useAuthStore.getState()
     const t = authStore.accessToken
-    
+
     // Get configured URLs from environment or use defaults
     const apiHost = import.meta.env.VITE_API_HOST || window.location.hostname
     const apiPort = import.meta.env.VITE_API_PORT || '8000'
     const wsHost = import.meta.env.VITE_WS_HOST || apiHost
     const wsPort = import.meta.env.VITE_WS_PORT || apiPort
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    
+
     const apiUrl = `http://${apiHost}:${apiPort}/api`
     const wsUrl = `${protocol}//${wsHost}:${wsPort}/ws/unified/`
 
@@ -67,7 +67,7 @@ export default function DebugPage() {
     const wsHost = import.meta.env.VITE_WS_HOST || import.meta.env.VITE_API_HOST || window.location.hostname
     const wsPort = import.meta.env.VITE_WS_PORT || import.meta.env.VITE_API_PORT || '8000'
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    
+
     const wsUrl = `${protocol}//${wsHost}:${wsPort}/ws/unified/`
     addLog(`📡 Connecting to: ${wsUrl}`)
 

@@ -577,3 +577,172 @@ def change_user_password(request, data: PasswordChangeSchema):
             status=400
         )
 
+
+# ====== AJAX LONG POLLING FALLBACK ENDPOINTS ======
+# These endpoints provide a fallback when WebSocket is unavailable
+
+from django.views.decorators.http import require_http_methods
+from django.http import JsonResponse
+from django.utils import timezone
+import asyncio
+import json
+import time
+from channels.layers import get_channel_layer
+
+
+class MessageQueueSchema(Schema):
+    """Schema for queueing a message"""
+    message_type: str
+    data: dict
+
+
+class PollResponseSchema(Schema):
+    """Schema for polling response"""
+    messages: List[dict]
+    has_more: bool = False
+
+
+def get_message_queue_key(user_id: int) -> str:
+    """Generate Redis key for user message queue"""
+    return f"message_queue:{user_id}"
+
+
+def get_message_buffer_key(user_id: int) -> str:
+    """Generate Redis key for message buffer (in-memory during poll)"""
+    return f"message_buffer:{user_id}"
+
+
+@api.post("/message_queue/send", response=dict)
+def queue_message_for_polling(request, data: MessageQueueSchema):
+    """
+    Queue a message for a user (for polling fallback).
+    This is primarily used internally when WebSocket delivery fails.
+    
+    Args:
+        data: MessageQueueSchema with message_type and data
+    
+    Returns:
+        Confirmation that message was queued
+    """
+    try:
+        from django_redis import get_redis_connection
+        
+        redis_conn = get_redis_connection("default")
+        queue_key = get_message_queue_key(request.user.id)
+        
+        message = {
+            "type": data.message_type,
+            "data": data.data,
+            "timestamp": timezone.now().isoformat()
+        }
+        
+        # Push to Redis list (queue)
+        redis_conn.lpush(queue_key, json.dumps(message))
+        
+        # Set expiry: 1 hour (messages will be auto-deleted)
+        redis_conn.expire(queue_key, 3600)
+        
+        return {
+            "status": "queued",
+            "queue_length": redis_conn.llen(queue_key)
+        }
+    except Exception as e:
+        return api.create_response(
+            request,
+            {"message": f"Failed to queue message: {str(e)}"},
+            status=500
+        )
+
+
+@api.get("/message_queue/receive", response=PollResponseSchema)
+def poll_for_messages(request):
+    """
+    Long polling endpoint - returns messages queued for this user.
+    Blocks for up to 30 seconds waiting for messages.
+    
+    Query Parameters:
+        timeout: Number of seconds to wait (default: 30, max: 60)
+    
+    Returns:
+        List of messages and whether more are available
+    """
+    try:
+        from django_redis import get_redis_connection
+        
+        redis_conn = get_redis_connection("default")
+        queue_key = get_message_queue_key(request.user.id)
+        
+        # Get timeout from query params, default 30, max 60
+        timeout = min(int(request.query_params.get("timeout", 30)), 60)
+        timeout = max(timeout, 1)  # minimum 1 second
+        
+        messages = []
+        start_time = time.time()
+        poll_interval = 0.5  # Check every 500ms
+        
+        # Poll for messages with timeout
+        while time.time() - start_time < timeout:
+            # Try to get one message from the queue
+            message_data = redis_conn.rpop(queue_key)
+            
+            if message_data:
+                message = json.loads(message_data)
+                messages.append(message)
+                
+                # Check if there are more messages without waiting
+                while True:
+                    more_message = redis_conn.rpop(queue_key)
+                    if not more_message:
+                        break
+                    messages.append(json.loads(more_message))
+                
+                # If we got messages, return immediately
+                if messages:
+                    return {
+                        "messages": messages,
+                        "has_more": redis_conn.llen(queue_key) > 0
+                    }
+            
+            # Wait before next check (non-blocking)
+            time.sleep(poll_interval)
+        
+        # Return empty list if timeout reached
+        return {
+            "messages": [],
+            "has_more": redis_conn.llen(queue_key) > 0
+        }
+        
+    except Exception as e:
+        return api.create_response(
+            request,
+            {"message": f"Polling error: {str(e)}"},
+            status=500
+        )
+
+
+@api.delete("/message_queue/clear", response=dict)
+def clear_message_queue(request):
+    """
+    Clear all queued messages for current user.
+    Useful for cleanup when switching back to WebSocket.
+    """
+    try:
+        from django_redis import get_redis_connection
+        
+        redis_conn = get_redis_connection("default")
+        queue_key = get_message_queue_key(request.user.id)
+        
+        count = redis_conn.llen(queue_key)
+        redis_conn.delete(queue_key)
+        
+        return {
+            "status": "cleared",
+            "messages_removed": count
+        }
+    except Exception as e:
+        return api.create_response(
+            request,
+            {"message": f"Failed to clear queue: {str(e)}"},
+            status=500
+        )
+

@@ -3,15 +3,22 @@ import { useNotificationStore } from '@/store/notification.store'
 import { useAuthStore } from '@/store/auth.store'
 import { useQueryClient } from '@tanstack/react-query'
 import { logger } from '@/utils/logger'
+import { usePollingFallback } from '@/hooks/usePollingFallback'
 
 export interface WebSocketContextType {
   ws: WebSocket | null
   isConnected: boolean
+  isPollingFallback: boolean
+  enablePollingFallback: () => void
+  disablePollingFallback: () => void
 }
 
 export const WebSocketContext = createContext<WebSocketContextType>({
   ws: null,
   isConnected: false,
+  isPollingFallback: false,
+  enablePollingFallback: () => {},
+  disablePollingFallback: () => {},
 })
 
 // ⚠️ useWebSocketContext moved to: hooks/useWebSocketContext.ts
@@ -24,6 +31,7 @@ interface WebSocketProviderProps {
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }) => {
   const [ws, setWs] = useState<WebSocket | null>(null)
   const [isConnected, setIsConnected] = useState(false)
+  const [isPollingFallback, setIsPollingFallback] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
   const [shouldConnect, setShouldConnect] = useState(false)
   const queryClient = useQueryClient()
@@ -31,31 +39,133 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
   // Watch for token changes and trigger connection when token becomes available
   useEffect(() => {
+    let mounted = true;
+
     // Subscribe to all auth store changes
     const unsubscribe = useAuthStore.subscribe(
       (fullState) => {
         // This fires whenever auth state changes
         const token = fullState.accessToken
         console.log('[WebSocket] 👀 Auth store changed, token:', token ? '✅ present' : '❌ missing')
-        if (token && !wsRef.current) {
+        if (token && !wsRef.current && mounted) {
           console.log('[WebSocket] ✅ Token is now available! Triggering connection attempt...')
           setShouldConnect(true)
         }
       }
     )
 
-    // Check initial token on mount
-    const initialToken = useAuthStore.getState().accessToken
-    if (initialToken && !wsRef.current) {
-      console.log('[WebSocket] ✅ Token available on mount, will connect')
-      setShouldConnect(true)
+    // Check initial token on mount (in callback to avoid sync setState warning)
+    const checkToken = () => {
+      const initialToken = useAuthStore.getState().accessToken
+      if (initialToken && !wsRef.current && mounted) {
+        console.log('[WebSocket] ✅ Token available on mount, will connect')
+        setShouldConnect(true)
+      }
     }
 
-    return unsubscribe
+    // Use microtask to defer the check
+    Promise.resolve().then(checkToken)
+
+    return () => {
+      mounted = false
+      unsubscribe()
+    }
   }, [])
+
+  // Enable/disable polling fallback controls
+  const enablePollingFallback = () => {
+    console.log('[WebSocket] Enabling polling fallback (WebSocket unavailable)')
+    setIsPollingFallback(true)
+  }
+
+  const disablePollingFallback = () => {
+    console.log('[WebSocket] Disabling polling fallback (WebSocket recovered)')
+    setIsPollingFallback(false)
+  }
+
+  // Polling fallback hook - handles message delivery when WebSocket fails
+  // This hook manages its own polling logic based on isPollingFallback state
+  usePollingFallback({
+    enabled: isPollingFallback,
+    timeout: 30,
+    minBackoffInterval: 1000,
+    maxBackoffInterval: 30000,
+    onMessageReceived: (messages) => {
+      // Process polled messages the same way as WebSocket messages
+      console.log('[Polling] Processing', messages.length, 'messages')
+      messages.forEach(msg => {
+        try {
+          // Handle notifications from polling
+          if (
+            msg.type === 'TICKET_CREATED' ||
+            msg.type === 'TICKET_UPDATED' ||
+            msg.type === 'TICKET_ASSIGNED' ||
+            msg.type === 'TICKET_RESOLVED' ||
+            msg.type === 'TICKET_DELETED' ||
+            msg.type === 'COMMENT_ADDED'
+          ) {
+            const msgData = msg.data as Record<string, unknown>;
+            addNotification({
+              type: msg.type,
+              title: (msgData.title as string) || 'Notification',
+              message: (msgData.message as string) || '',
+              relatedTo: msgData.ticket_id ? { ticketId: msgData.ticket_id as number } : undefined,
+              data: msgData,
+              isGlobal: msgData.isGlobal as boolean,
+              fromUser: msgData.fromUser ? { id: 0, username: msgData.fromUser as string } : undefined,
+            })
+            // Invalidate queries
+            queryClient.invalidateQueries({ queryKey: ['my-tickets'] })
+            queryClient.invalidateQueries({ queryKey: ['tickets'], exact: false })
+            queryClient.invalidateQueries({ queryKey: ['ticket'], exact: false })
+            queryClient.invalidateQueries({ queryKey: ['analytics-dashboard'] })
+            if (msgData.ticket_id) {
+              queryClient.invalidateQueries({ queryKey: ['ticket', msgData.ticket_id] })
+            }
+          }
+
+          // Handle data_changed from polling
+          if (msg.type === 'data_changed') {
+            const msgData = msg.data as Record<string, unknown>;
+            queryClient.invalidateQueries({ queryKey: ['my-tickets'] })
+            queryClient.invalidateQueries({ queryKey: ['employee', 'tasks'], exact: false })
+            queryClient.invalidateQueries({ queryKey: ['tickets'], exact: false })
+            queryClient.invalidateQueries({ queryKey: ['ticket'], exact: false })
+            queryClient.invalidateQueries({ queryKey: ['analytics-dashboard'] })
+            if (msgData.ticketId) {
+              queryClient.invalidateQueries({ queryKey: ['ticket', msgData.ticketId] })
+              if (msgData.event === 'comment_added') {
+                queryClient.invalidateQueries({ queryKey: ['ticket-comments', msgData.ticketId] })
+              }
+            }
+          }
+
+          // Handle chat messages from polling
+          if (msg.type === 'chat_message') {
+            const msgData = msg.data as Record<string, unknown>;
+            const senderData = msgData.sender as Record<string, unknown>;
+            const normalizedMessage = {
+              ...msgData,
+              sender_id: senderData?.id || msgData.sender_id,
+              sender_username: senderData?.username || msgData.sender_username,
+            }
+            const event = new CustomEvent('ws_chat_message', { detail: normalizedMessage })
+            window.dispatchEvent(event)
+          }
+        } catch (error) {
+          console.error('[Polling] Error processing message:', error)
+        }
+      })
+    },
+    onError: (error) => {
+      console.warn('[Polling] Error occurred:', error.message)
+    }
+  })
 
   // Main WebSocket connection effect (triggered when token is available or reconnect flag changes)
   useEffect(() => {
+    let mounted = true;
+
     // Get current token
     const token = useAuthStore.getState().accessToken
 
@@ -64,17 +174,25 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       if (!token) {
         console.log('[WebSocket DEBUG] Skipping: Token status: ❌ missing')
       }
-      // Reset flag even if skipping
+      // Reset flag even if skipping (but defer to avoid sync warning)
       if (shouldConnect) {
-        setShouldConnect(false)
+        Promise.resolve().then(() => {
+          if (mounted) {
+            setShouldConnect(false)
+          }
+        })
       }
       return
     }
 
     console.log('[WebSocket DEBUG] Initiating connection (shouldConnect flag)')
 
-    // Reset the flag
-    setShouldConnect(false)
+    // Reset the flag (defer to avoid sync setState warning)
+    Promise.resolve().then(() => {
+      if (mounted) {
+        setShouldConnect(false)
+      }
+    })
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const hostname = window.location.hostname
@@ -109,6 +227,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         console.log('[WebSocket DEBUG] onopen fired')
         logger.info('[WebSocket] ✅ Connected')
         setIsConnected(true)
+        // Disable polling fallback when WebSocket connects
+        disablePollingFallback()
         const message = {
           type: 'authenticate',
           token: token,
@@ -221,11 +341,13 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         logger.warn('[WebSocket] ❌ Connection closed')
         setIsConnected(false)
         wsRef.current = null
+        // Enable polling fallback immediately on disconnect
+        enablePollingFallback()
         // Attempt reconnect after 3 seconds
         setTimeout(() => {
           if (!wsRef.current) {
             logger.debug('[WebSocket] Attempting reconnect...')
-            // Trigger reconnection by recreating
+            setShouldConnect(true)
           }
         }, 3000)
       }
@@ -237,16 +359,30 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         logger.error('[WebSocket] ❌ Connection error:', error)
         console.error('[WebSocket] Error details:', error)
         setIsConnected(false)
+        // Enable polling fallback on error
+        enablePollingFallback()
       }
 
       wsRef.current = newWs
-      setWs(newWs)
+      // Defer state update to avoid cascading renders
+      Promise.resolve().then(() => {
+        if (mounted) {
+          setWs(newWs)
+        }
+      })
     } catch (error) {
       logger.error('Failed to create WebSocket', error)
-      setIsConnected(false)
+      if (mounted) {
+        Promise.resolve().then(() => {
+          if (mounted) {
+            setIsConnected(false)
+          }
+        })
+      }
     }
 
     return () => {
+      mounted = false
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         wsRef.current.close()
       }
@@ -266,7 +402,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   }, [isConnected])
 
   return (
-    <WebSocketContext.Provider value={{ ws, isConnected }}>
+    <WebSocketContext.Provider value={{ ws, isConnected, isPollingFallback, enablePollingFallback, disablePollingFallback }}>
       {children}
     </WebSocketContext.Provider>
   )
