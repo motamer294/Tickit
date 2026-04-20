@@ -1,7 +1,24 @@
 from ninja import Schema
 from datetime import datetime
 from typing import Dict
-from typing import Optional, Literal
+from typing import Optional, Literal, List
+
+# ==========================
+# Category & Tag Schemas
+# ==========================
+
+class CategorySchema(Schema):
+    """Ticket category"""
+    id: int
+    name: str
+    description: str
+    color: str
+
+class TagSchema(Schema):
+    """Ticket tag"""
+    id: int
+    name: str
+    color: str
 
 # ==========================
 # Tickets Schemas
@@ -10,37 +27,47 @@ from typing import Optional, Literal
 class TicketCreateSchema(Schema):
     title: str
     description: str
-    assigned_to_id: Optional[int] = None  # Option A: Manual assignment by manager
-    auto_assign: bool = False  # Option C: Auto-assign by workload
+    priority: Literal["LOW", "MEDIUM", "HIGH", "URGENT"] = "MEDIUM"
+    category_id: Optional[int] = None
+    tag_ids: List[int] = []  # List of tag IDs to attach
+    assigned_to_id: Optional[int] = None
 
 class TicketOutSchema(Schema):
     id: int
     title: str
     description: str
     status: str
-
-    # 🤖 AI Fields (Strictly Required - No Optional)
-    category: str
     priority: str
-    sentiment: str
-    ai_suggested_solution: str
+    
+    category: Optional[CategorySchema] = None
+    tags: List[TagSchema] = []
+    
+    sentiment: Optional[str] = None
+    ai_suggested_solution: Optional[str] = None
 
     created_at: datetime
+    updated_at: datetime
 
-    # NEW: We need to pass the usernames to the frontend, not just raw database IDs!
-    # (Kept Optional here only because assigned_to can legitimately be empty/unassigned)
     creator_username: Optional[str] = None
     assigned_to_username: Optional[str] = None
 
     @staticmethod
     def resolve_creator_username(obj):
-        # Safely fetches the employee who created the ticket
         return obj.created_by.username if getattr(obj, "created_by", None) else "Unknown User"
 
     @staticmethod
     def resolve_assigned_to_username(obj):
-        # Safely fetches the IT Agent working on it. Returns "Unassigned" if it's new.
         return obj.assigned_to.username if getattr(obj, "assigned_to", None) else "Unassigned"
+
+class TicketUpdateSchema(Schema):
+    """Update ticket fields"""
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[Literal["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"]] = None
+    priority: Optional[Literal["LOW", "MEDIUM", "HIGH", "URGENT"]] = None
+    category_id: Optional[int] = None
+    tag_ids: Optional[List[int]] = None
+    assigned_to_id: Optional[int] = None
 
 class TicketStatusUpdateSchema(Schema):
     status: Literal["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"]

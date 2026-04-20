@@ -12,14 +12,17 @@ from tickets.schemas import DashboardStatsSchema
 from accounts.models import User
 from accounts.schemas import UserProfileSchema, UserUpdateSchema, PasswordChangeSchema, UserStatsSchema
 from accounts.services import get_user_stats, update_user_profile, change_password
-from tickets.models import Ticket, Comment
+from tickets.models import Ticket, Comment, Category, Tag
 from tickets.services import update_ticket_status, create_ticket_with_ai
 from tickets.schemas import (
     TicketCreateSchema,
     TicketOutSchema,
+    TicketUpdateSchema,
     CommentSchema,
     CommentOutSchema,
-    TicketStatusUpdateSchema
+    TicketStatusUpdateSchema,
+    CategorySchema,
+    TagSchema
 )
 from tickets.notification_service import notification_service
 from tickets.realtime_service import realtime_service
@@ -142,6 +145,72 @@ def list_employees(request):
     employees = User.objects.filter(role=User.Role.EMPLOYEE).order_by('username')
     return employees
 
+# ==========================================
+# 3. Categories Endpoints
+# ==========================================
+@api.get("/categories", response=List[CategorySchema])
+def list_categories(request):
+    """Get all ticket categories"""
+    categories = Category.objects.all().order_by('name')
+    return categories
+
+class CategoryCreateSchema(Schema):
+    name: str
+    description: str = ""
+    color: str = "#007bff"
+
+@api.post("/categories", response=CategorySchema)
+def create_category(request, data: CategoryCreateSchema):
+    """Create new ticket category (admin/manager only)"""
+    if request.user.role not in [User.Role.MANAGER]:
+        return api.create_response(request, {"message": "Permission denied"}, status=403)
+    
+    if Category.objects.filter(name=data.name).exists():
+        return api.create_response(
+            request,
+            {"message": f"Category '{data.name}' already exists"},
+            status=400
+        )
+    
+    category = Category.objects.create(
+        name=data.name,
+        description=data.description,
+        color=data.color
+    )
+    return category
+
+# ==========================================
+# 4. Tags Endpoints
+# ==========================================
+@api.get("/tags", response=List[TagSchema])
+def list_tags(request):
+    """Get all available tags"""
+    tags = Tag.objects.all().order_by('name')
+    return tags
+
+class TagCreateSchema(Schema):
+    name: str
+    color: str = "#6c757d"
+
+@api.post("/tags", response=TagSchema)
+def create_tag(request, data: TagCreateSchema):
+    """Create new tag (any authenticated user)"""
+    # Normalize tag name (lowercase, no spaces)
+    tag_name = data.name.lower().strip().replace(" ", "-")
+    
+    if Tag.objects.filter(name=tag_name).exists():
+        return api.create_response(
+            request,
+            {"message": f"Tag '#{tag_name}' already exists"},
+            status=400
+        )
+    
+    tag = Tag.objects.create(
+        name=tag_name,
+        color=data.color
+    )
+    return tag
+
 ####################
 #Tickets
 # 1. Assign Ticket (Strict Role Check)
@@ -193,13 +262,15 @@ def create_ticket(request, data: TicketCreateSchema):
             status=400
         )
 
-    # Option A + C: Pass assignment parameters to service
+    # Pass all parameters to service
     ticket = create_ticket_with_ai(
         title=data.title,
         description=data.description,
         user=request.user,
-        assigned_to_id=data.assigned_to_id,  # Option A: Manual assignment
-        auto_assign=data.auto_assign  # Option C: Auto-assign by workload
+        category_id=data.category_id,
+        tag_ids=data.tag_ids,
+        priority=data.priority,
+        assigned_to_id=data.assigned_to_id
     )
 
     # 🔔 Send real-time notifications to managers

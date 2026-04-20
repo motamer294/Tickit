@@ -4,7 +4,7 @@ import requests
 import logging
 from django.db import transaction
 from django.db.models import Count, Q
-from .models import Ticket, TicketHistory
+from .models import Ticket, TicketHistory, Category, Tag
 from django.utils import timezone
 from accounts.models import User
 
@@ -18,8 +18,6 @@ def get_employee_with_least_workload() -> 'User':
     Calculate which employee has the least open/in-progress tickets
     and return that employee for auto-assignment.
     """
-    # Removed the import Count from here because it's already imported above
-    
     employees = User.objects.filter(role=User.Role.EMPLOYEE).annotate(
         active_tickets=Count(
             'assigned_tickets',
@@ -99,11 +97,14 @@ def create_ticket_with_ai(
     title: str, 
     description: str, 
     user,
+    category_id: int = None,
+    tag_ids: list = None,
+    priority: str = None,
     assigned_to_id: int = None,
     auto_assign: bool = False
 ) -> Ticket:
     """
-    Creates a new ticket with AI analysis and optional assignment.
+    Creates a new ticket with AI analysis, category, tags, and optional assignment.
     """
     ai_data = analyze_ticket_with_ai(title, description)
     
@@ -123,17 +124,31 @@ def create_ticket_with_ai(
         if assigned_to:
             logger.info(f"Auto-assigned ticket to {assigned_to.username}")
     
+    # Get category if provided, otherwise try to create/get default
+    category = None
+    if category_id:
+        try:
+            category = Category.objects.get(id=category_id)
+        except Category.DoesNotExist:
+            logger.warning(f"Category with ID {category_id} not found")
+    
+    # Create ticket
     ticket = Ticket.objects.create(
         title=title,
         description=description,
         created_by=user,
         assigned_to=assigned_to,
+        category=category,
         status='IN_PROGRESS' if assigned_to else 'OPEN',
-        category=ai_data.get("category", "General IT"),
-        priority=ai_data.get("priority", "LOW"),
+        priority=priority or ai_data.get("priority", "MEDIUM"),
         sentiment=ai_data.get("sentiment", "Neutral"),
         ai_suggested_solution=ai_data.get("suggested_solution", "")
     )
+    
+    # Add tags
+    if tag_ids:
+        tags = Tag.objects.filter(id__in=tag_ids)
+        ticket.tags.set(tags)
     
     TicketHistory.objects.create(
         ticket=ticket,
