@@ -11,11 +11,11 @@ class Category(models.Model):
     description = models.TextField(blank=True)
     color = models.CharField(max_length=7, default="#007bff")  # Hex color for UI
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         ordering = ['name']
         verbose_name_plural = "Categories"
-    
+
     def __str__(self):
         return self.name
 
@@ -28,10 +28,10 @@ class Tag(models.Model):
     name = models.CharField(max_length=50, unique=True)
     color = models.CharField(max_length=7, default="#6c757d")  # Hex color for UI
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         ordering = ['name']
-    
+
     def __str__(self):
         return f"#{self.name}"
 
@@ -45,7 +45,7 @@ class Ticket(models.Model):
         IN_PROGRESS = "IN_PROGRESS", "In Progress"
         RESOLVED = "RESOLVED", "Resolved"
         CLOSED = "CLOSED", "Closed"
-    
+
     class Priority(models.TextChoices):
         LOW = "LOW", "Low"
         MEDIUM = "MEDIUM", "Medium"
@@ -54,14 +54,14 @@ class Ticket(models.Model):
 
     title = models.CharField(max_length=255)
     description = models.TextField()
-    
+
     status = models.CharField(
-        max_length=20, 
-        choices=Status.choices, 
+        max_length=20,
+        choices=Status.choices,
         default=Status.OPEN,
-        db_index=True  
+        db_index=True
     )
-    
+
     # Priority (now with choices instead of free-text)
     priority = models.CharField(
         max_length=10,
@@ -69,7 +69,7 @@ class Ticket(models.Model):
         default=Priority.MEDIUM,
         db_index=True
     )
-    
+
     # Category (ForeignKey to Category model)
     category = models.ForeignKey(
         Category,
@@ -79,20 +79,20 @@ class Ticket(models.Model):
         related_name="tickets",
         db_index=True
     )
-    
+
     # Tags (Many-to-Many)
     tags = models.ManyToManyField(
         Tag,
         blank=True,
         related_name="tickets"
     )
-    
+
     created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, 
-        on_delete=models.CASCADE, 
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
         related_name="created_tickets"
     )
-    
+
     assigned_to = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -100,13 +100,13 @@ class Ticket(models.Model):
         blank=True,
         related_name="assigned_tickets"
     )
-    
+
     # ==========================================
     # 🤖 AI Fields (Indexed for Dashboard Analytics)
     # ==========================================
     sentiment = models.CharField(max_length=50, blank=True, null=True)
     ai_suggested_solution = models.TextField(blank=True, null=True)
-    
+
     # ==========================================
     # ⏱️ Timestamps for SLA & Dashboard
     # ==========================================
@@ -119,12 +119,12 @@ class Ticket(models.Model):
 
 class Comment(models.Model):
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="comments")
-    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE) 
-    text = models.TextField() 
-    
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    text = models.TextField()
+
     # New: Allows IT agents to leave hidden notes for each other
-    is_internal = models.BooleanField(default=False) 
-    
+    is_internal = models.BooleanField(default=False)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

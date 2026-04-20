@@ -164,14 +164,14 @@ def create_category(request, data: CategoryCreateSchema):
     """Create new ticket category (admin/manager only)"""
     if request.user.role not in [User.Role.MANAGER]:
         return api.create_response(request, {"message": "Permission denied"}, status=403)
-    
+
     if Category.objects.filter(name=data.name).exists():
         return api.create_response(
             request,
             {"message": f"Category '{data.name}' already exists"},
             status=400
         )
-    
+
     category = Category.objects.create(
         name=data.name,
         description=data.description,
@@ -197,14 +197,14 @@ def create_tag(request, data: TagCreateSchema):
     """Create new tag (any authenticated user)"""
     # Normalize tag name (lowercase, no spaces)
     tag_name = data.name.lower().strip().replace(" ", "-")
-    
+
     if Tag.objects.filter(name=tag_name).exists():
         return api.create_response(
             request,
             {"message": f"Tag '#{tag_name}' already exists"},
             status=400
         )
-    
+
     tag = Tag.objects.create(
         name=tag_name,
         color=data.color

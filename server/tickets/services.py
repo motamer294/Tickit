@@ -24,7 +24,7 @@ def get_employee_with_least_workload() -> 'User':
             filter=Q(assigned_tickets__status__in=['OPEN', 'IN_PROGRESS'])
         )
     ).order_by('active_tickets')
-    
+
     if employees.exists():
         return employees.first()
     return None
@@ -39,20 +39,20 @@ def analyze_ticket_with_ai(title: str, description: str) -> dict:
         "title": title,
         "description": description
     }
-    
+
     try:
         response = requests.post(ML_SERVICE_URL, json=payload, timeout=45)
-        response.raise_for_status() 
-        
+        response.raise_for_status()
+
         data = response.json()
         # Standardize the data format for the frontend (e.g., High not high)
         if "priority" in data:
             data["priority"] = data["priority"].upper()
         if "sentiment" in data:
             data["sentiment"] = data["sentiment"].capitalize()
-            
+
         return data
-    
+
     except requests.exceptions.RequestException as e:
         logger.error(f"⚠️ ML Service connection failed: {e}")
         return {
@@ -72,10 +72,10 @@ def update_ticket_status(ticket: Ticket, new_status: str, user):
         return ticket
 
     old_status = ticket.status
-    
+
     with transaction.atomic():
         ticket.status = new_status
-        
+
         if new_status in [Ticket.Status.RESOLVED, Ticket.Status.CLOSED]:
             if not ticket.resolved_at:
                 ticket.resolved_at = timezone.now()
@@ -88,14 +88,14 @@ def update_ticket_status(ticket: Ticket, new_status: str, user):
             ticket=ticket,
             old_status=old_status,
             new_status=new_status,
-            changed_by=user 
+            changed_by=user
         )
-    
+
     return ticket
 
 def create_ticket_with_ai(
-    title: str, 
-    description: str, 
+    title: str,
+    description: str,
     user,
     category_id: int = None,
     tag_ids: list = None,
@@ -107,9 +107,9 @@ def create_ticket_with_ai(
     Creates a new ticket with AI analysis, category, tags, and optional assignment.
     """
     ai_data = analyze_ticket_with_ai(title, description)
-    
+
     assigned_to = None
-    
+
     if assigned_to_id:
         try:
             assigned_to = User.objects.get(
@@ -118,12 +118,12 @@ def create_ticket_with_ai(
             )
         except User.DoesNotExist:
             logger.warning(f"Employee with ID {assigned_to_id} not found")
-    
+
     elif auto_assign:
         assigned_to = get_employee_with_least_workload()
         if assigned_to:
             logger.info(f"Auto-assigned ticket to {assigned_to.username}")
-    
+
     # Get category if provided, otherwise try to create/get default
     category = None
     if category_id:
@@ -131,7 +131,7 @@ def create_ticket_with_ai(
             category = Category.objects.get(id=category_id)
         except Category.DoesNotExist:
             logger.warning(f"Category with ID {category_id} not found")
-    
+
     # Create ticket
     ticket = Ticket.objects.create(
         title=title,
@@ -144,17 +144,17 @@ def create_ticket_with_ai(
         sentiment=ai_data.get("sentiment", "Neutral"),
         ai_suggested_solution=ai_data.get("suggested_solution", "")
     )
-    
+
     # Add tags
     if tag_ids:
         tags = Tag.objects.filter(id__in=tag_ids)
         ticket.tags.set(tags)
-    
+
     TicketHistory.objects.create(
         ticket=ticket,
         old_status="NEW",
         new_status=ticket.status,
         changed_by=user
     )
-    
+
     return ticket

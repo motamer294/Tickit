@@ -38,10 +38,10 @@ class TicketOutSchema(Schema):
     description: str
     status: str
     priority: str
-    
+
     category: Optional[CategorySchema] = None
     tags: List[TagSchema] = []
-    
+
     sentiment: Optional[str] = None
     ai_suggested_solution: Optional[str] = None
 
