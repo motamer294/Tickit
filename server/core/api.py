@@ -617,31 +617,31 @@ def queue_message_for_polling(request, data: MessageQueueSchema):
     """
     Queue a message for a user (for polling fallback).
     This is primarily used internally when WebSocket delivery fails.
-    
+
     Args:
         data: MessageQueueSchema with message_type and data
-    
+
     Returns:
         Confirmation that message was queued
     """
     try:
         from django_redis import get_redis_connection
-        
+
         redis_conn = get_redis_connection("default")
         queue_key = get_message_queue_key(request.user.id)
-        
+
         message = {
             "type": data.message_type,
             "data": data.data,
             "timestamp": timezone.now().isoformat()
         }
-        
+
         # Push to Redis list (queue)
         redis_conn.lpush(queue_key, json.dumps(message))
-        
+
         # Set expiry: 1 hour (messages will be auto-deleted)
         redis_conn.expire(queue_key, 3600)
-        
+
         return {
             "status": "queued",
             "queue_length": redis_conn.llen(queue_key)
@@ -659,59 +659,59 @@ def poll_for_messages(request):
     """
     Long polling endpoint - returns messages queued for this user.
     Blocks for up to 30 seconds waiting for messages.
-    
+
     Query Parameters:
         timeout: Number of seconds to wait (default: 30, max: 60)
-    
+
     Returns:
         List of messages and whether more are available
     """
     try:
         from django_redis import get_redis_connection
-        
+
         redis_conn = get_redis_connection("default")
         queue_key = get_message_queue_key(request.user.id)
-        
+
         # Get timeout from query params, default 30, max 60
         timeout = min(int(request.query_params.get("timeout", 30)), 60)
         timeout = max(timeout, 1)  # minimum 1 second
-        
+
         messages = []
         start_time = time.time()
         poll_interval = 0.5  # Check every 500ms
-        
+
         # Poll for messages with timeout
         while time.time() - start_time < timeout:
             # Try to get one message from the queue
             message_data = redis_conn.rpop(queue_key)
-            
+
             if message_data:
                 message = json.loads(message_data)
                 messages.append(message)
-                
+
                 # Check if there are more messages without waiting
                 while True:
                     more_message = redis_conn.rpop(queue_key)
                     if not more_message:
                         break
                     messages.append(json.loads(more_message))
-                
+
                 # If we got messages, return immediately
                 if messages:
                     return {
                         "messages": messages,
                         "has_more": redis_conn.llen(queue_key) > 0
                     }
-            
+
             # Wait before next check (non-blocking)
             time.sleep(poll_interval)
-        
+
         # Return empty list if timeout reached
         return {
             "messages": [],
             "has_more": redis_conn.llen(queue_key) > 0
         }
-        
+
     except Exception as e:
         return api.create_response(
             request,
@@ -728,13 +728,13 @@ def clear_message_queue(request):
     """
     try:
         from django_redis import get_redis_connection
-        
+
         redis_conn = get_redis_connection("default")
         queue_key = get_message_queue_key(request.user.id)
-        
+
         count = redis_conn.llen(queue_key)
         redis_conn.delete(queue_key)
-        
+
         return {
             "status": "cleared",
             "messages_removed": count

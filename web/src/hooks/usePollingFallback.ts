@@ -94,7 +94,7 @@ export const usePollingFallback = (options: UsePollingFallbackOptions = {}) => {
       if (messages.length > 0) {
         // Reset backoff on successful message retrieval
         backoffRef.current = minBackoffInterval;
-        
+
         setMessageCount(c => c + messages.length);
 
         // Emit messages to callback
@@ -109,7 +109,7 @@ export const usePollingFallback = (options: UsePollingFallbackOptions = {}) => {
       if (!isMountedRef.current) return;
 
       const err = error instanceof Error ? error : new Error(String(error));
-      
+
       // Exponential backoff: increase wait time on consecutive failures
       backoffRef.current = Math.min(
         backoffRef.current * 1.5,
