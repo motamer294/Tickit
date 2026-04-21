@@ -37,6 +37,7 @@ import {
   updateTicketApi,
   uploadAttachmentApi,
   deleteAttachmentApi,
+  downloadAttachmentBlob,
 } from '@/api/tickets.api'
 import type { TicketStatus } from '@/types/ticket'
 
@@ -78,6 +79,8 @@ function AttachmentsSection({ ticket, queryClient }: { ticket: any; queryClient:
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [selectedAttachment, setSelectedAttachment] = useState<any>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -267,9 +270,23 @@ function AttachmentsSection({ ticket, queryClient }: { ticket: any; queryClient:
                   <ActionIcon
                     color="blue"
                     variant="subtle"
-                    onClick={() => {
+                    onClick={async () => {
                       setSelectedAttachment(attachment)
-                      setPreviewOpen(true)
+                      setPreviewLoading(true)
+                      try {
+                        const blob = await downloadAttachmentBlob(attachment.id)
+                        const url = URL.createObjectURL(blob)
+                        setPreviewUrl(url)
+                      } catch (error) {
+                        notifications.show({
+                          title: 'Preview failed',
+                          message: 'Could not load file preview',
+                          color: 'red',
+                        })
+                      } finally {
+                        setPreviewLoading(false)
+                        setPreviewOpen(true)
+                      }
                     }}
                     title="Preview file"
                   >
@@ -306,32 +323,51 @@ function AttachmentsSection({ ticket, queryClient }: { ticket: any; queryClient:
           opened={previewOpen}
           onClose={() => {
             setPreviewOpen(false)
+            // Clean up object URL
+            if (previewUrl) {
+              URL.revokeObjectURL(previewUrl)
+              setPreviewUrl(null)
+            }
             setSelectedAttachment(null)
           }}
           title={selectedAttachment.filename}
           size="lg"
           centered
         >
-          {/* Image Files */}
-          {['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(
-            selectedAttachment.filename.split('.').pop()?.toLowerCase() || ''
-          ) ? (
+          {previewLoading ? (
+            <Center py="xl">
+              <Loader />
+            </Center>
+          ) : ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(
+              selectedAttachment.filename.split('.').pop()?.toLowerCase() || ''
+            ) ? (
             <Stack align="center" gap="md">
-              <img
-                src={`/api/attachments/${selectedAttachment.id}/download?fileName=${encodeURIComponent(selectedAttachment.filename)}`}
-                alt={selectedAttachment.filename}
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: '500px',
-                  borderRadius: '8px',
-                  objectFit: 'contain',
-                }}
-              />
+              {previewUrl ? (
+                <img
+                  src={previewUrl}
+                  alt={selectedAttachment.filename}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '500px',
+                    borderRadius: '8px',
+                    objectFit: 'contain',
+                  }}
+                />
+              ) : (
+                <Text c="red">Failed to load image</Text>
+              )}
               <Group>
                 <Button
-                  component="a"
-                  href={`/api/attachments/${selectedAttachment.id}/download?fileName=${encodeURIComponent(selectedAttachment.filename)}`}
-                  download
+                  onClick={() => {
+                    if (previewUrl) {
+                      const link = document.createElement('a')
+                      link.href = previewUrl
+                      link.download = selectedAttachment.filename
+                      document.body.appendChild(link)
+                      link.click()
+                      document.body.removeChild(link)
+                    }
+                  }}
                   leftSection={<Icon icon="solar:download-bold-duotone" width={18} />}
                 >
                   Download
@@ -364,9 +400,16 @@ function AttachmentsSection({ ticket, queryClient }: { ticket: any; queryClient:
               </Card>
               <Group>
                 <Button
-                  component="a"
-                  href={`/api/attachments/${selectedAttachment.id}/download?fileName=${encodeURIComponent(selectedAttachment.filename)}`}
-                  download
+                  onClick={() => {
+                    if (previewUrl) {
+                      const link = document.createElement('a')
+                      link.href = previewUrl
+                      link.download = selectedAttachment.filename
+                      document.body.appendChild(link)
+                      link.click()
+                      document.body.removeChild(link)
+                    }
+                  }}
                   leftSection={<Icon icon="solar:download-bold-duotone" width={18} />}
                 >
                   Download File
@@ -397,9 +440,16 @@ function AttachmentsSection({ ticket, queryClient }: { ticket: any; queryClient:
               </Card>
               <Group>
                 <Button
-                  component="a"
-                  href={`/api/attachments/${selectedAttachment.id}/download?fileName=${encodeURIComponent(selectedAttachment.filename)}`}
-                  download
+                  onClick={() => {
+                    if (previewUrl) {
+                      const link = document.createElement('a')
+                      link.href = previewUrl
+                      link.download = selectedAttachment.filename
+                      document.body.appendChild(link)
+                      link.click()
+                      document.body.removeChild(link)
+                    }
+                  }}
                   leftSection={<Icon icon="solar:download-bold-duotone" width={18} />}
                 >
                   Download File

@@ -4,7 +4,7 @@
  */
 
 import { getAxiosInstance, APIError } from './config'
-import type { Ticket, TicketCreatePayload, TicketStatus } from '@/types/ticket'
+import type { Ticket, TicketCreatePayload, TicketStatus, Category, Tag } from '@/types/ticket'
 
 // ============================================
 // Type Definitions
@@ -13,8 +13,10 @@ import type { Ticket, TicketCreatePayload, TicketStatus } from '@/types/ticket'
 export interface TicketCreateRequest {
   title: string
   description: string
-  assigned_to_id?: number // Option A: Manual assignment
-  auto_assign?: boolean // Option C: Auto-assign by workload
+  priority?: string
+  category_id?: number | null
+  tag_ids?: number[]
+  assigned_to_id?: number
 }
 
 export interface TicketStatusUpdateRequest {
@@ -51,14 +53,43 @@ export interface DashboardStats {
 }
 
 // ============================================
+// Category & Tag Operations
+// ============================================
+
+/**
+ * Fetch all ticket categories
+ */
+export async function fetchCategoriesApi(): Promise<Category[]> {
+  try {
+    const client = getAxiosInstance()
+    const response = await client.get<Category[]>('/categories')
+    return response.data || []
+  } catch (error) {
+    console.error('Failed to fetch categories:', error)
+    return []
+  }
+}
+
+/**
+ * Fetch all tags
+ */
+export async function fetchTagsApi(): Promise<Tag[]> {
+  try {
+    const client = getAxiosInstance()
+    const response = await client.get<Tag[]>('/tags')
+    return response.data || []
+  } catch (error) {
+    console.error('Failed to fetch tags:', error)
+    return []
+  }
+}
+
+// ============================================
 // Ticket Operations
 // ============================================
 
 /**
  * Fetch all tickets visible to current user
- * - CUSTOMER: sees own tickets
- * - EMPLOYEE: sees all (filtered on backend)
- * - MANAGER: sees all
  */
 export async function fetchTickets(): Promise<Ticket[]> {
   try {
@@ -118,22 +149,19 @@ export async function fetchTicketById(ticketId: number): Promise<Ticket> {
 }
 
 /**
- * Create a new ticket
- * Calls AI service to analyze and categorize
- * Only CUSTOMER and EMPLOYEE can create
- *
- * @param autoAssign - Option C: Auto-assign to employee with lowest workload
- * @param assignedToId - Option A: Manually assign to specific employee
+ * Create a new ticket with category, priority, and tags
  */
 export async function createTicketApi(
-  data: TicketCreatePayload & { autoAssign?: boolean; assignedToId?: number },
+  data: TicketCreatePayload & { assignedToId?: number },
 ): Promise<Ticket> {
   try {
     const client = getAxiosInstance()
     const payload: TicketCreateRequest = {
       title: data.title,
       description: data.description,
-      auto_assign: data.autoAssign || false,
+      priority: data.priority,
+      category_id: data.category_id || undefined,
+      tag_ids: data.tag_ids || [],
       assigned_to_id: data.assignedToId,
     }
     const response = await client.post<Ticket>('/tickets', payload)
@@ -421,5 +449,64 @@ export async function fetchNotifications(limit: number = 20): Promise<Notificati
     }
     console.warn('Failed to fetch notifications:', error)
     return []
+  }
+}
+
+// ============================================
+// Attachment Operations
+// ============================================
+
+/**
+ * Upload a file to a ticket
+ */
+export async function uploadAttachmentApi(ticketId: number, file: File): Promise<any> {
+  try {
+    const client = getAxiosInstance()
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await client.post(
+      `/tickets/${ticketId}/attachments`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    )
+    return response.data
+  } catch (error) {
+    console.error('❌ Failed to upload attachment:', error)
+    throw error
+  }
+}
+
+/**
+ * Delete an attachment
+ */
+export async function deleteAttachmentApi(attachmentId: number): Promise<any> {
+  try {
+    const client = getAxiosInstance()
+    const response = await client.delete(`/attachments/${attachmentId}`)
+    return response.data
+  } catch (error) {
+    console.error('❌ Failed to delete attachment:', error)
+    throw error
+  }
+}
+
+/**
+ * Download attachment as blob (preserves authentication)
+ */
+export async function downloadAttachmentBlob(attachmentId: number): Promise<Blob> {
+  try {
+    const client = getAxiosInstance()
+    const response = await client.get(`/attachments/${attachmentId}/download`, {
+      responseType: 'blob',
+    })
+    return response.data
+  } catch (error) {
+    console.error('❌ Failed to download attachment:', error)
+    throw error
   }
 }
