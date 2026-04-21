@@ -20,6 +20,7 @@ import {
   SimpleGrid,
   TextInput,
   ActionIcon,
+  Progress,
 } from '@mantine/core'
 import { Icon } from '@iconify-icon/react'
 import { notifications } from '@mantine/notifications'
@@ -34,11 +35,14 @@ import {
   fetchEmployeesApi,
   deleteTicketApi,
   updateTicketApi,
+  uploadAttachmentApi,
+  deleteAttachmentApi,
 } from '@/api/tickets.api'
 import type { TicketStatus } from '@/types/ticket'
 
 const statusColors: Record<TicketStatus, string> = {
   OPEN: 'red',
+  PENDING: 'blue',
   IN_PROGRESS: 'yellow',
   RESOLVED: 'green',
   CLOSED: 'gray',
@@ -46,21 +50,242 @@ const statusColors: Record<TicketStatus, string> = {
 
 const statusLabels: Record<TicketStatus, string> = {
   OPEN: 'Open',
+  PENDING: 'Pending',
   IN_PROGRESS: 'In Progress',
   RESOLVED: 'Resolved',
   CLOSED: 'Closed',
 }
 
 const priorityColors: Record<string, string> = {
-  HIGH: 'red',
-  MEDIUM: 'yellow',
   LOW: 'green',
+  MEDIUM: 'yellow',
+  HIGH: 'red',
+  URGENT: 'violet',
 }
 
 const sentimentColors: Record<string, string> = {
   Positive: 'green',
   Neutral: 'blue',
   Negative: 'red',
+}
+
+// ============================================
+// Attachments Section Component
+// ============================================
+
+function AttachmentsSection({ ticket, queryClient }: { ticket: any; queryClient: any }) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
+
+  const uploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      // Simulate progress for demo (since axios doesn't show real progress in this setup)
+      setUploadProgress(0)
+      
+      // Create a progress interval
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev === null) return 10
+          if (prev >= 90) {
+            clearInterval(progressInterval)
+            return prev
+          }
+          return prev + Math.random() * 30
+        })
+      }, 300)
+
+      try {
+        const result = await uploadAttachmentApi(ticket.id, file)
+        clearInterval(progressInterval)
+        setUploadProgress(100)
+        return result
+      } catch (error) {
+        clearInterval(progressInterval)
+        throw error
+      }
+    },
+    onSuccess: () => {
+      notifications.show({
+        title: 'File uploaded',
+        message: 'Attachment uploaded successfully',
+        color: 'green',
+      })
+      queryClient.invalidateQueries({ queryKey: ['ticket', ticket.id] })
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+      // Reset progress after delay
+      setTimeout(() => setUploadProgress(null), 1000)
+    },
+    onError: (error: any) => {
+      notifications.show({
+        title: 'Upload failed',
+        message: error.message || 'Failed to upload attachment',
+        color: 'red',
+      })
+      setUploadProgress(null)
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (attachmentId: number) => deleteAttachmentApi(attachmentId),
+    onSuccess: () => {
+      notifications.show({
+        title: 'File deleted',
+        message: 'Attachment deleted successfully',
+        color: 'green',
+      })
+      queryClient.invalidateQueries({ queryKey: ['ticket', ticket.id] })
+    },
+    onError: (error: any) => {
+      notifications.show({
+        title: 'Delete failed',
+        message: error.message || 'Failed to delete attachment',
+        color: 'red',
+      })
+    },
+  })
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Validate file size (10MB max)
+      const maxSize = 10 * 1024 * 1024
+      if (file.size > maxSize) {
+        notifications.show({
+          title: 'File too large',
+          message: `File size exceeds 10MB limit (${(file.size / (1024 * 1024)).toFixed(1)}MB)`,
+          color: 'red',
+        })
+        return
+      }
+      uploadMutation.mutate(file)
+    }
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
+  }
+
+  return (
+    <Stack gap="md">
+      <Group justify="space-between" align="center">
+        <Group gap="xs">
+          <Icon icon="solar:file-pdf-bold-duotone" width={20} />
+          <Text size="lg" fw={700}>
+            Attachments ({ticket.attachments?.length || 0})
+          </Text>
+        </Group>
+      </Group>
+
+      {/* Upload Section */}
+      <Paper p="md" radius="md" withBorder style={{ borderStyle: 'dashed' }}>
+        <Stack gap="sm" align="center">
+          {uploadProgress !== null ? (
+            <>
+              <Icon icon="solar:upload-cloud-bold-duotone" width={40} color="blue" />
+              <div style={{ width: '100%', textAlign: 'center' }}>
+                <Text fw={500} size="sm">
+                  Uploading... {Math.round(uploadProgress)}%
+                </Text>
+                <Progress 
+                  value={uploadProgress} 
+                  color={uploadProgress === 100 ? 'green' : 'blue'}
+                  size="lg"
+                  style={{ marginTop: '10px' }}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <Icon icon="solar:upload-cloud-bold-duotone" width={40} color="blue" />
+              <div style={{ textAlign: 'center' }}>
+                <Text fw={500} size="sm">
+                  Click to upload or drag and drop
+                </Text>
+                <Text size="xs" c="dimmed">
+                  Maximum file size: 10MB
+                </Text>
+              </div>
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                loading={uploadMutation.isPending}
+                disabled={uploadMutation.isPending}
+              >
+                Select File
+              </Button>
+            </>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            hidden
+            onChange={handleFileSelect}
+            disabled={uploadMutation.isPending || uploadProgress !== null}
+          />
+        </Stack>
+      </Paper>
+
+      {/* Files List */}
+      {ticket.attachments && ticket.attachments.length > 0 ? (
+        <Stack gap="xs">
+          {ticket.attachments.map((attachment: any) => (
+            <Paper key={attachment.id} p="md" radius="md" withBorder>
+              <Group justify="space-between" align="center">
+                <Group gap="xs">
+                  <Icon icon="solar:file-bold-duotone" width={24} color="blue" />
+                  <Stack gap={0}>
+                    <Text fw={500} size="sm">
+                      {attachment.filename}
+                    </Text>
+                    <Group gap="xs">
+                      <Text size="xs" c="dimmed">
+                        {formatFileSize(attachment.file_size)}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        •
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {new Date(attachment.uploaded_at).toLocaleString()}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        •
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        by {attachment.uploaded_by_username}
+                      </Text>
+                    </Group>
+                  </Stack>
+                </Group>
+                <ActionIcon
+                  color="red"
+                  variant="subtle"
+                  onClick={() => {
+                    if (confirm(`Delete "${attachment.filename}"?`)) {
+                      deleteMutation.mutate(attachment.id)
+                    }
+                  }}
+                  loading={deleteMutation.isPending}
+                  disabled={deleteMutation.isPending}
+                  title="Delete attachment"
+                >
+                  <Icon icon="solar:trash-bin-minimalistic-bold-duotone" width={18} />
+                </ActionIcon>
+              </Group>
+            </Paper>
+          ))}
+        </Stack>
+      ) : (
+        <Text c="dimmed" size="sm" style={{ textAlign: 'center' }}>
+          No attachments yet. Upload a file to get started.
+        </Text>
+      )}
+    </Stack>
+  )
 }
 
 export default function TicketDetail() {
@@ -419,7 +644,23 @@ export default function TicketDetail() {
                           </Text>
                           <Icon icon="solar:tag-bold-duotone" width={16} />
                         </Group>
-                        <Text fw={600}>{ticket.category}</Text>
+                        {ticket.category ? (
+                          <Group gap="xs">
+                            <div
+                              style={{
+                                width: 12,
+                                height: 12,
+                                borderRadius: '50%',
+                                backgroundColor: ticket.category.color || '#999',
+                              }}
+                            />
+                            <Text fw={600}>{ticket.category.name}</Text>
+                          </Group>
+                        ) : (
+                          <Text fw={600} c="dimmed">
+                            Unassigned
+                          </Text>
+                        )}
                       </Stack>
                     </Card>
 
@@ -452,7 +693,7 @@ export default function TicketDetail() {
                         </Group>
                         <Group justify="space-between" align="flex-end">
                           <Text fw={600}>{ticket.sentiment}</Text>
-                          <Badge color={sentimentColors[ticket.sentiment]}>
+                          <Badge color={sentimentColors[ticket.sentiment || 'Neutral']}>
                             {ticket.sentiment}
                           </Badge>
                         </Group>
@@ -477,6 +718,34 @@ export default function TicketDetail() {
                       </Stack>
                     </Card>
                   </SimpleGrid>
+
+                  {/* Tags */}
+                  {ticket.tags && ticket.tags.length > 0 && (
+                    <Card withBorder p="md" radius="md">
+                      <Stack gap="xs">
+                        <Group justify="space-between">
+                          <Text size="sm" fw={500} c="dimmed">
+                            Tags
+                          </Text>
+                          <Icon icon="solar:tag-linear" width={16} />
+                        </Group>
+                        <Group gap="xs">
+                          {ticket.tags.map((tag) => (
+                            <Badge
+                              key={tag.id}
+                              variant="dot"
+                              style={{
+                                backgroundColor: tag.color || '#999',
+                                color: '#fff',
+                              }}
+                            >
+                              #{tag.name}
+                            </Badge>
+                          ))}
+                        </Group>
+                      </Stack>
+                    </Card>
+                  )}
 
                   {/* Suggested Solution */}
                   {ticket.ai_suggested_solution && (
@@ -504,32 +773,36 @@ export default function TicketDetail() {
                     <Text size="sm" fw={500} c="dimmed">
                       Update Status
                     </Text>
-                    <Group>
-                      <Select
-                        placeholder="Select new status"
-                        data={[
-                          { value: 'OPEN', label: 'Open' },
-                          { value: 'IN_PROGRESS', label: 'In Progress' },
-                          { value: 'RESOLVED', label: 'Resolved' },
-                          { value: 'CLOSED', label: 'Closed' },
-                        ]}
-                        value={newStatus}
-                        onChange={(value) => setNewStatus(value as TicketStatus)}
-                        clearable
-                        searchable
-                      />
-                      <Button
-                        onClick={() => {
-                          if (newStatus) {
-                            updateStatusMutation.mutate(newStatus)
-                          }
-                        }}
-                        loading={updateStatusMutation.isPending}
-                        disabled={!newStatus}
-                      >
-                        Update
-                      </Button>
-                    </Group>
+                    {ticket.available_transitions && ticket.available_transitions.length > 0 ? (
+                      <Group>
+                        <Select
+                          placeholder="Select new status"
+                          data={ticket.available_transitions.map((t: any) => ({
+                            value: t.status,
+                            label: t.label,
+                          }))}
+                          value={newStatus}
+                          onChange={(value) => setNewStatus(value as TicketStatus)}
+                          clearable
+                          searchable
+                        />
+                        <Button
+                          onClick={() => {
+                            if (newStatus) {
+                              updateStatusMutation.mutate(newStatus)
+                            }
+                          }}
+                          loading={updateStatusMutation.isPending}
+                          disabled={!newStatus}
+                        >
+                          Update
+                        </Button>
+                      </Group>
+                    ) : (
+                      <Text size="sm" c="dimmed" fw={500}>
+                        ✓ No status transitions available for this ticket
+                      </Text>
+                    )}
                   </Stack>
                 </Paper>
               )}
@@ -605,6 +878,9 @@ export default function TicketDetail() {
                     </Button>
                   </Stack>
                 </Paper>
+
+                {/* Attachments Section */}
+                <AttachmentsSection ticket={ticket} queryClient={queryClient} />
               </Stack>
       </Stack>
 
