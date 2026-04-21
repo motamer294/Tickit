@@ -76,6 +76,8 @@ const sentimentColors: Record<string, string> = {
 function AttachmentsSection({ ticket, queryClient }: { ticket: any; queryClient: any }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [selectedAttachment, setSelectedAttachment] = useState<any>(null)
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -266,15 +268,12 @@ function AttachmentsSection({ ticket, queryClient }: { ticket: any; queryClient:
                     color="blue"
                     variant="subtle"
                     onClick={() => {
-                      // Download file by opening the download URL
-                      window.open(
-                        `/api/attachments/${attachment.id}/download?fileName=${encodeURIComponent(attachment.filename)}`,
-                        '_blank'
-                      )
+                      setSelectedAttachment(attachment)
+                      setPreviewOpen(true)
                     }}
-                    title="Download file"
+                    title="Preview file"
                   >
-                    <Icon icon="solar:download-bold-duotone" width={18} />
+                    <Icon icon="solar:eye-bold-duotone" width={18} />
                   </ActionIcon>
                   <ActionIcon
                     color="red"
@@ -299,6 +298,116 @@ function AttachmentsSection({ ticket, queryClient }: { ticket: any; queryClient:
         <Text c="dimmed" size="sm" style={{ textAlign: 'center' }}>
           No attachments yet. Upload a file to get started.
         </Text>
+      )}
+
+      {/* Preview Modal */}
+      {selectedAttachment && (
+        <Modal
+          opened={previewOpen}
+          onClose={() => {
+            setPreviewOpen(false)
+            setSelectedAttachment(null)
+          }}
+          title={selectedAttachment.filename}
+          size="lg"
+          centered
+        >
+          {/* Image Files */}
+          {['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(
+            selectedAttachment.filename.split('.').pop()?.toLowerCase() || ''
+          ) ? (
+            <Stack align="center" gap="md">
+              <img
+                src={`/api/attachments/${selectedAttachment.id}/download?fileName=${encodeURIComponent(selectedAttachment.filename)}`}
+                alt={selectedAttachment.filename}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '500px',
+                  borderRadius: '8px',
+                  objectFit: 'contain',
+                }}
+              />
+              <Group>
+                <Button
+                  component="a"
+                  href={`/api/attachments/${selectedAttachment.id}/download?fileName=${encodeURIComponent(selectedAttachment.filename)}`}
+                  download
+                  leftSection={<Icon icon="solar:download-bold-duotone" width={18} />}
+                >
+                  Download
+                </Button>
+              </Group>
+            </Stack>
+          ) : ['pdf', 'txt', 'doc', 'docx', 'xls', 'xlsx'].includes(
+              selectedAttachment.filename.split('.').pop()?.toLowerCase() || ''
+            ) ? (
+            // Document Files
+            <Stack gap="md">
+              <Card withBorder p="md" radius="md" bg="gray.0">
+                <Stack gap="sm">
+                  <Group gap="xs">
+                    <Icon icon="solar:file-document-bold-duotone" width={40} color="blue" />
+                    <Stack gap={0}>
+                      <Text fw={500}>{selectedAttachment.filename}</Text>
+                      <Text size="sm" c="dimmed">
+                        {formatFileSize(selectedAttachment.file_size)}
+                      </Text>
+                    </Stack>
+                  </Group>
+                  <Text size="sm" c="dimmed">
+                    Uploaded: {new Date(selectedAttachment.uploaded_at).toLocaleString()}
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    By: {selectedAttachment.uploaded_by_username}
+                  </Text>
+                </Stack>
+              </Card>
+              <Group>
+                <Button
+                  component="a"
+                  href={`/api/attachments/${selectedAttachment.id}/download?fileName=${encodeURIComponent(selectedAttachment.filename)}`}
+                  download
+                  leftSection={<Icon icon="solar:download-bold-duotone" width={18} />}
+                >
+                  Download File
+                </Button>
+              </Group>
+            </Stack>
+          ) : (
+            // Other Files
+            <Stack gap="md">
+              <Card withBorder p="md" radius="md" bg="gray.0">
+                <Stack gap="sm">
+                  <Group gap="xs">
+                    <Icon icon="solar:file-bold-duotone" width={40} color="orange" />
+                    <Stack gap={0}>
+                      <Text fw={500}>{selectedAttachment.filename}</Text>
+                      <Text size="sm" c="dimmed">
+                        {formatFileSize(selectedAttachment.file_size)}
+                      </Text>
+                    </Stack>
+                  </Group>
+                  <Text size="sm" c="dimmed">
+                    Uploaded: {new Date(selectedAttachment.uploaded_at).toLocaleString()}
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    By: {selectedAttachment.uploaded_by_username}
+                  </Text>
+                </Stack>
+              </Card>
+              <Group>
+                <Button
+                  component="a"
+                  href={`/api/attachments/${selectedAttachment.id}/download?fileName=${encodeURIComponent(selectedAttachment.filename)}`}
+                  download
+                  leftSection={<Icon icon="solar:download-bold-duotone" width={18} />}
+                >
+                  Download File
+                </Button>
+              </Group>
+            </Stack>
+          )}
+        </Modal>
       )}
     </Stack>
   )
