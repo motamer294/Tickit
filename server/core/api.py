@@ -4,15 +4,16 @@ from ninja_jwt.authentication import JWTAuth
 from ninja_jwt.tokens import AccessToken, RefreshToken
 from ninja import Schema
 from django.contrib.auth.hashers import make_password
-from typing import List
+from typing import List, Optional
+from datetime import datetime
 from django.shortcuts import get_object_or_404
-from django.db.models import Count, Avg, F
+from django.db.models import Count, Avg, F, Q
 from django.db import transaction
 from tickets.schemas import DashboardStatsSchema
 from accounts.models import User
 from accounts.schemas import UserProfileSchema, UserUpdateSchema, PasswordChangeSchema, UserStatsSchema
 from accounts.services import get_user_stats, update_user_profile, change_password
-from tickets.models import Ticket, Comment, Category, Tag
+from tickets.models import Ticket, Comment, Category, Tag, Attachment
 from tickets.services import update_ticket_status, create_ticket_with_ai
 from tickets.schemas import (
     TicketCreateSchema,
@@ -294,7 +295,90 @@ def list_my_tickets(request):
         # Customers see only tickets they created
         return Ticket.objects.filter(created_by=request.user)
 
-# 4.5 Get Single Ticket Details
+# 4.3 Search/Filter Tickets
+@api.get("/tickets/search", response=List[TicketOutSchema])
+def search_tickets(
+    request,
+    query: Optional[str] = None,
+    status: Optional[str] = None,
+    priority: Optional[str] = None,
+    category_id: Optional[int] = None,
+    tag_ids: Optional[str] = None,  # comma-separated IDs
+    assigned_to_id: Optional[int] = None,
+    created_from: Optional[str] = None,  # ISO format: 2024-01-01
+    created_to: Optional[str] = None,
+):
+    """
+    Search and filter tickets.
+    - query: Search in title + description
+    - status: Filter by status (OPEN, PENDING, IN_PROGRESS, RESOLVED, CLOSED)
+    - priority: Filter by priority (LOW, MEDIUM, HIGH, URGENT)
+    - category_id: Filter by category
+    - tag_ids: Filter by tags (comma-separated)
+    - assigned_to_id: Filter by assignee
+    - created_from: Date range start
+    - created_to: Date range end
+    """
+    # Base queryset with user permissions
+    if request.user.role == User.Role.MANAGER:
+        tickets = Ticket.objects.all()
+    elif request.user.role == User.Role.EMPLOYEE:
+        tickets = Ticket.objects.filter(assigned_to=request.user)
+    else:
+        tickets = Ticket.objects.filter(created_by=request.user)
+
+    # Apply filters
+    filters = Q()
+
+    # Text search
+    if query:
+        filters &= Q(title__icontains=query) | Q(description__icontains=query)
+
+    # Status filter
+    if status:
+        filters &= Q(status=status)
+
+    # Priority filter
+    if priority:
+        filters &= Q(priority=priority)
+
+    # Category filter
+    if category_id:
+        filters &= Q(category_id=category_id)
+
+    # Assigned to filter
+    if assigned_to_id:
+        filters &= Q(assigned_to_id=assigned_to_id)
+
+    # Date range filter
+    if created_from:
+        try:
+            from_date = datetime.fromisoformat(created_from)
+            filters &= Q(created_at__gte=from_date)
+        except ValueError:
+            pass
+
+    if created_to:
+        try:
+            to_date = datetime.fromisoformat(created_to)
+            filters &= Q(created_at__lte=to_date)
+        except ValueError:
+            pass
+
+    # Tag filter (many-to-many)
+    if tag_ids:
+        try:
+            tag_list = [int(t) for t in tag_ids.split(',')]
+            tickets = tickets.filter(tags__id__in=tag_list).distinct()
+        except (ValueError, AttributeError):
+            pass
+
+    tickets = tickets.filter(filters).distinct()
+
+    # Order by newest first
+    return tickets.order_by('-created_at')
+
+# 4.4 Get Single Ticket Details
 @api.get("/tickets/{ticket_id}", response=TicketOutSchema)
 def get_ticket_detail(request, ticket_id: int):
     ticket = get_object_or_404(Ticket, id=ticket_id)
@@ -448,7 +532,14 @@ def update_status(request, ticket_id: int, data: TicketStatusUpdateSchema):
     # --- EXECUTE BUSINESS LOGIC ---
     # This calls the service we already wrote in services.py
     # It safely updates the ticket AND generates the TicketHistory audit log in one transaction
-    update_ticket_status(ticket, data.status, request.user)
+    try:
+        update_ticket_status(ticket, data.status, request.user)
+    except ValueError as e:
+        return api.create_response(
+            request,
+            {"message": str(e), "available": ticket.get_available_transitions_display()},
+            status=400
+        )
 
     # 🔔 Send real-time notifications
     notification_service.ticket_updated(ticket, request.user, old_status, data.status)
@@ -816,4 +907,166 @@ def clear_message_queue(request):
             {"message": f"Failed to clear queue: {str(e)}"},
             status=500
         )
+
+
+# ==========================================
+# 8. Attachments (File Uploads/Downloads)
+# ==========================================
+
+# 8.1 Upload File to Ticket
+@api.post("/tickets/{ticket_id}/attachments", response=dict)
+def upload_attachment(request, ticket_id: int):
+    """Upload a file to a ticket"""
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    # --- SECURITY CHECK ---
+    is_manager = request.user.role == User.Role.MANAGER
+    is_creator = ticket.created_by == request.user
+    is_assignee = ticket.assigned_to == request.user
+
+    if not (is_manager or is_creator or is_assignee):
+        return api.create_response(
+            request,
+            {"message": "You do not have permission to upload files to this ticket."},
+            status=403
+        )
+
+    # Get uploaded file
+    uploaded_file = request.FILES.get('file')
+    if not uploaded_file:
+        return api.create_response(
+            request,
+            {"message": "No file provided"},
+            status=400
+        )
+
+    # Validate file size (max 10MB)
+    max_size = 10 * 1024 * 1024  # 10MB
+    if uploaded_file.size > max_size:
+        return api.create_response(
+            request,
+            {"message": f"File size exceeds 10MB limit (received {uploaded_file.size / (1024*1024):.1f}MB)"},
+            status=400
+        )
+
+    # Create attachment
+    attachment = Attachment.objects.create(
+        ticket=ticket,
+        file=uploaded_file,
+        filename=uploaded_file.name,
+        file_size=uploaded_file.size,
+        uploaded_by=request.user
+    )
+
+    # 🔄 Broadcast real-time data update
+    realtime_service.broadcast_ticket_updated(ticket, ['attachments'])
+
+    return {
+        'id': attachment.id,
+        'filename': attachment.filename,
+        'file_size': attachment.file_size,
+        'uploaded_at': attachment.uploaded_at.isoformat(),
+        'message': f'File "{attachment.filename}" uploaded successfully'
+    }
+
+
+# 8.2 Get Attachments for Ticket
+@api.get("/tickets/{ticket_id}/attachments", response=list)
+def get_attachments(request, ticket_id: int):
+    """Get all attachments for a ticket"""
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    # --- SECURITY CHECK ---
+    is_manager = request.user.role == User.Role.MANAGER
+    is_creator = ticket.created_by == request.user
+    is_assignee = ticket.assigned_to == request.user
+
+    if not (is_manager or is_creator or is_assignee):
+        return api.create_response(
+            request,
+            {"message": "You do not have permission to view attachments on this ticket."},
+            status=403
+        )
+
+    attachments = Attachment.objects.filter(ticket=ticket).values(
+        'id', 'filename', 'file_size', 'uploaded_at'
+    ).order_by('-uploaded_at')
+
+    return list(attachments)
+
+
+# 8.3 Download File
+@api.get("/attachments/{attachment_id}/download")
+def download_attachment(request, attachment_id: int):
+    """Download an attachment"""
+    attachment = get_object_or_404(Attachment, id=attachment_id)
+    ticket = attachment.ticket
+
+    # --- SECURITY CHECK ---
+    is_manager = request.user.role == User.Role.MANAGER
+    is_creator = ticket.created_by == request.user
+    is_assignee = ticket.assigned_to == request.user
+
+    if not (is_manager or is_creator or is_assignee):
+        return api.create_response(
+            request,
+            {"message": "You do not have permission to download this file."},
+            status=403
+        )
+
+    # Return file download response
+    from django.http import FileResponse
+    try:
+        response = FileResponse(attachment.file.open('rb'))
+        response['Content-Disposition'] = f'attachment; filename="{attachment.filename}"'
+        response['Content-Type'] = 'application/octet-stream'
+        return response
+    except Exception as e:
+        return api.create_response(
+            request,
+            {"message": f"Failed to download file: {str(e)}"},
+            status=500
+        )
+
+
+# 8.4 Delete Attachment
+@api.delete("/attachments/{attachment_id}", response=dict)
+def delete_attachment(request, attachment_id: int):
+    """Delete an attachment"""
+    attachment = get_object_or_404(Attachment, id=attachment_id)
+    ticket = attachment.ticket
+
+    # --- SECURITY CHECK ---
+    # Only manager, creator, or uploader can delete
+    is_manager = request.user.role == User.Role.MANAGER
+    is_creator = ticket.created_by == request.user
+    is_uploader = attachment.uploaded_by == request.user
+
+    if not (is_manager or is_creator or is_uploader):
+        return api.create_response(
+            request,
+            {"message": "You do not have permission to delete this file."},
+            status=403
+        )
+
+    filename = attachment.filename
+    ticket_id = ticket.id
+    
+    # Delete the file from storage
+    try:
+        if attachment.file:
+            attachment.file.delete()
+    except Exception as e:
+        logger.error(f"Failed to delete file from storage: {e}")
+
+    # Delete the attachment record
+    attachment.delete()
+
+    # 🔄 Broadcast real-time data update
+    realtime_service.broadcast_ticket_updated(ticket, ['attachments'])
+
+    return {
+        'message': f'Attachment "{filename}" deleted successfully'
+    }
+
 
