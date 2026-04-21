@@ -261,20 +261,36 @@ function AttachmentsSection({ ticket, queryClient }: { ticket: any; queryClient:
                     </Group>
                   </Stack>
                 </Group>
-                <ActionIcon
-                  color="red"
-                  variant="subtle"
-                  onClick={() => {
-                    if (confirm(`Delete "${attachment.filename}"?`)) {
-                      deleteMutation.mutate(attachment.id)
-                    }
-                  }}
-                  loading={deleteMutation.isPending}
-                  disabled={deleteMutation.isPending}
-                  title="Delete attachment"
-                >
-                  <Icon icon="solar:trash-bin-minimalistic-bold-duotone" width={18} />
-                </ActionIcon>
+                <Group gap="xs">
+                  <ActionIcon
+                    color="blue"
+                    variant="subtle"
+                    onClick={() => {
+                      // Download file by opening the download URL
+                      window.open(
+                        `/api/attachments/${attachment.id}/download?fileName=${encodeURIComponent(attachment.filename)}`,
+                        '_blank'
+                      )
+                    }}
+                    title="Download file"
+                  >
+                    <Icon icon="solar:download-bold-duotone" width={18} />
+                  </ActionIcon>
+                  <ActionIcon
+                    color="red"
+                    variant="subtle"
+                    onClick={() => {
+                      if (confirm(`Delete "${attachment.filename}"?`)) {
+                        deleteMutation.mutate(attachment.id)
+                      }
+                    }}
+                    loading={deleteMutation.isPending}
+                    disabled={deleteMutation.isPending}
+                    title="Delete attachment"
+                  >
+                    <Icon icon="solar:trash-bin-minimalistic-bold-duotone" width={18} />
+                  </ActionIcon>
+                </Group>
               </Group>
             </Paper>
           ))}
