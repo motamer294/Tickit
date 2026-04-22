@@ -8,7 +8,7 @@ from typing import List, Optional
 from datetime import datetime
 from django.shortcuts import get_object_or_404
 from django.db.models import Count, Avg, F, Q, Value, CharField
-from django.db.models.functions import Coalesce, TruncDate
+from django.db.models.functions import Coalesce, TruncDate, Upper
 from django.db import transaction
 from tickets.schemas import DashboardStatsSchema
 from accounts.models import User
@@ -667,9 +667,9 @@ def get_dashboard_stats(request):
         for item in categories_data
     }
 
-    # Priorities: Convert priority enum values to strings
+    # Priorities: Normalize to uppercase and aggregate
     priorities_data = tickets.annotate(
-        priority_name=Coalesce('priority', Value('None'), output_field=CharField())
+        priority_name=Upper(Coalesce('priority', Value('None'), output_field=CharField()))
     ).values('priority_name').annotate(count=Count('id')).order_by('priority_name')
     
     priorities = {
