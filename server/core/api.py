@@ -316,68 +316,75 @@ def search_tickets(
     - category_id: Filter by category
     - tag_ids: Filter by tags (comma-separated)
     - assigned_to_id: Filter by assignee
-    - created_from: Date range start
-    - created_to: Date range end
+    - created_from: Date range start (YYYY-MM-DD)
+    - created_to: Date range end (YYYY-MM-DD)
     """
-    # Base queryset with user permissions
-    if request.user.role == User.Role.MANAGER:
-        tickets = Ticket.objects.all()
-    elif request.user.role == User.Role.EMPLOYEE:
-        tickets = Ticket.objects.filter(assigned_to=request.user)
-    else:
-        tickets = Ticket.objects.filter(created_by=request.user)
+    try:
+        # Base queryset with user permissions
+        if request.user.role == User.Role.MANAGER:
+            tickets = Ticket.objects.all()
+        elif request.user.role == User.Role.EMPLOYEE:
+            tickets = Ticket.objects.filter(assigned_to=request.user)
+        else:
+            tickets = Ticket.objects.filter(created_by=request.user)
 
-    # Apply filters
-    filters = Q()
+        # Apply filters
+        filters = Q()
 
-    # Text search
-    if query:
-        filters &= Q(title__icontains=query) | Q(description__icontains=query)
+        # Text search
+        if query:
+            filters &= Q(title__icontains=query) | Q(description__icontains=query)
 
-    # Status filter
-    if status:
-        filters &= Q(status=status)
+        # Status filter
+        if status:
+            filters &= Q(status=status)
 
-    # Priority filter
-    if priority:
-        filters &= Q(priority=priority)
+        # Priority filter
+        if priority:
+            filters &= Q(priority=priority)
 
-    # Category filter
-    if category_id:
-        filters &= Q(category_id=category_id)
+        # Category filter
+        if category_id:
+            filters &= Q(category_id=category_id)
 
-    # Assigned to filter
-    if assigned_to_id:
-        filters &= Q(assigned_to_id=assigned_to_id)
+        # Assigned to filter
+        if assigned_to_id:
+            filters &= Q(assigned_to_id=assigned_to_id)
 
-    # Date range filter
-    if created_from:
-        try:
-            from_date = datetime.fromisoformat(created_from)
-            filters &= Q(created_at__gte=from_date)
-        except ValueError:
-            pass
+        # Date range filter
+        if created_from:
+            try:
+                from_date = datetime.fromisoformat(created_from.strip())
+                filters &= Q(created_at__gte=from_date)
+            except (ValueError, AttributeError) as e:
+                print(f"⚠️ Invalid created_from date: {created_from} - {str(e)}")
 
-    if created_to:
-        try:
-            to_date = datetime.fromisoformat(created_to)
-            filters &= Q(created_at__lte=to_date)
-        except ValueError:
-            pass
+        if created_to:
+            try:
+                to_date = datetime.fromisoformat(created_to.strip())
+                filters &= Q(created_at__lte=to_date)
+            except (ValueError, AttributeError) as e:
+                print(f"⚠️ Invalid created_to date: {created_to} - {str(e)}")
 
-    # Tag filter (many-to-many)
-    if tag_ids:
-        try:
-            tag_list = [int(t) for t in tag_ids.split(',')]
-            tickets = tickets.filter(tags__id__in=tag_list).distinct()
-        except (ValueError, AttributeError):
-            pass
+        # Tag filter (many-to-many)
+        if tag_ids:
+            try:
+                tag_list = [int(t) for t in tag_ids.split(',') if t.strip()]
+                if tag_list:
+                    tickets = tickets.filter(tags__id__in=tag_list).distinct()
+            except (ValueError, AttributeError) as e:
+                print(f"⚠️ Invalid tag_ids: {tag_ids} - {str(e)}")
 
-    tickets = tickets.filter(filters).distinct()
+        tickets = tickets.filter(filters).distinct()
 
-    # Order by newest first
-    return tickets.order_by('-created_at')
-
+        # Order by newest first
+        return tickets.order_by('-created_at')
+    except Exception as e:
+        print(f"❌ Error in search_tickets: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        # Return empty list on error
+        return []
 # 4.4 Get Single Ticket Details
 @api.get("/tickets/{ticket_id}", response=TicketOutSchema)
 def get_ticket_detail(request, ticket_id: int):

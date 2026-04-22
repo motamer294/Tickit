@@ -543,11 +543,17 @@ export async function searchTicketsApi(filters: SearchFilters): Promise<Ticket[]
       ...(filters.created_to && { created_to: filters.created_to }),
     }
 
+    console.log('🔍 Searching with params:', params)
     const response = await client.get<Ticket[]>('/tickets/search', { params })
     const data = response.data
+    console.log('✅ Search results:', data)
     return Array.isArray(data) ? data : []
-  } catch (error) {
-    console.error('❌ Failed to search tickets:', error)
+  } catch (error: any) {
+    console.error('❌ Failed to search tickets:')
+    console.error('   Error:', error.message)
+    console.error('   Status:', error.response?.status)
+    console.error('   Response:', error.response?.data)
+    console.error('   Full error:', error)
     return []
   }
 }
