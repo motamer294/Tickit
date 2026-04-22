@@ -52,6 +52,20 @@ export interface DashboardStats {
   sentiment_analysis: Record<string, number>
 }
 
+export interface TrendDataPoint {
+  date: string
+  count: number
+}
+
+export interface TeamMemberWorkload {
+  employee_id: number
+  employee_name: string
+  open_tickets: number
+  resolved_tickets: number
+  total_tickets: number
+  avg_resolution_hours: number
+}
+
 // ============================================
 // Category & Tag Operations
 // ============================================
@@ -376,6 +390,33 @@ export async function fetchAnalyticsDashboard(): Promise<DashboardStats> {
         throw new Error('Only managers can view analytics')
       }
     }
+    throw error
+  }
+}
+
+export async function fetchDashboardTrends(): Promise<TrendDataPoint[]> {
+  try {
+    const client = getAxiosInstance()
+    const response = await client.get<TrendDataPoint[]>('/analytics/trends')
+    return response.data
+  } catch (error) {
+    console.error('❌ Failed to fetch trends:', error)
+    throw error
+  }
+}
+
+export async function fetchTeamWorkload(): Promise<TeamMemberWorkload[]> {
+  try {
+    const client = getAxiosInstance()
+    const response = await client.get<TeamMemberWorkload[]>('/analytics/team-workload')
+    return response.data
+  } catch (error) {
+    if (error instanceof APIError) {
+      if (error.statusCode === 403) {
+        throw new Error('Only managers can view team workload')
+      }
+    }
+    console.error('❌ Failed to fetch team workload:', error)
     throw error
   }
 }

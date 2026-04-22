@@ -23,6 +23,8 @@ import {
   Bar,
   PieChart,
   Pie,
+  LineChart,
+  Line,
   Cell,
   XAxis,
   YAxis,
@@ -32,13 +34,14 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useAuth } from '@/hooks/useAuth'
-import { fetchTickets, fetchAnalyticsDashboard } from '@/api/tickets.api'
+import { fetchTickets, fetchAnalyticsDashboard, fetchDashboardTrends, fetchTeamWorkload } from '@/api/tickets.api'
 import { notificationService } from '@/hooks/useNotifications'
 import { DashboardErrorAlert } from '@/components/DashboardErrorAlert'
 import type { Ticket, TicketStatus } from '@/types/ticket'
 
 const statusColors: Record<TicketStatus, string> = {
   OPEN: 'red',
+  PENDING: 'blue',
   IN_PROGRESS: 'yellow',
   RESOLVED: 'green',
   CLOSED: 'gray',
@@ -46,6 +49,7 @@ const statusColors: Record<TicketStatus, string> = {
 
 const statusLabels: Record<TicketStatus, string> = {
   OPEN: 'Open',
+  PENDING: 'Pending',
   IN_PROGRESS: 'In Progress',
   RESOLVED: 'Resolved',
   CLOSED: 'Closed',
@@ -125,6 +129,28 @@ const Dashboard = () => {
     queryFn: () => fetchAnalyticsDashboard(),
     enabled: !!accessToken && user?.role === 'MANAGER',
     staleTime: 5 * 60 * 1000,  // 5 minute fallback in case WebSocket fails
+  })
+
+  // Fetch trends data for managers only
+  const {
+    data: trends = [],
+    isLoading: trendsLoading,
+  } = useQuery({
+    queryKey: ['analytics-trends'],
+    queryFn: () => fetchDashboardTrends(),
+    enabled: !!accessToken && user?.role === 'MANAGER',
+    staleTime: 5 * 60 * 1000,
+  })
+
+  // Fetch team workload data for managers only
+  const {
+    data: teamWorkload = [],
+    isLoading: workloadLoading,
+  } = useQuery({
+    queryKey: ['analytics-team-workload'],
+    queryFn: () => fetchTeamWorkload(),
+    enabled: !!accessToken && user?.role === 'MANAGER',
+    staleTime: 5 * 60 * 1000,
   })
 
   // Calculate stats with memoization to prevent unnecessary recalculation
@@ -381,6 +407,12 @@ const Dashboard = () => {
                     </Tabs.Tab>
                     <Tabs.Tab value="metrics" leftSection={<Icon icon="solar:graph-up-linear" width={16} />}>
                       Metrics
+                    </Tabs.Tab>
+                    <Tabs.Tab value="trends" leftSection={<Icon icon="solar:chart-2-linear" width={16} />}>
+                      Trends
+                    </Tabs.Tab>
+                    <Tabs.Tab value="workload" leftSection={<Icon icon="solar:users-group-two-rounded-bold-duotone" width={16} />}>
+                      Team Workload
                     </Tabs.Tab>
                   </Tabs.List>
 
@@ -781,6 +813,164 @@ const Dashboard = () => {
                         </Stack>
                       </Paper>
                     </SimpleGrid>
+                  </Tabs.Panel>
+
+                  <Tabs.Panel value="trends" pt="lg">
+                    <Paper p="md" radius="md" withBorder>
+                      <Stack gap="sm">
+                        <Group justify="space-between" align="center">
+                          <div>
+                            <Text fw={600} size="sm">
+                              Ticket Creation Trends (Last 30 Days)
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              Daily ticket volume over time
+                            </Text>
+                          </div>
+                          {trendsLoading && <Loader size="sm" />}
+                        </Group>
+                        {trends.length > 0 ? (
+                          <ResponsiveContainer width="100%" height={350}>
+                            <LineChart
+                              data={trends}
+                              margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                              <XAxis
+                                dataKey="date"
+                                tick={{ fill: chartTextColor, fontSize: 12 }}
+                                angle={-45}
+                                textAnchor="end"
+                                height={80}
+                              />
+                              <YAxis tick={{ fill: chartTextColor }} />
+                              <Tooltip
+                                contentStyle={{
+                                  backgroundColor: isDark ? '#25262B' : '#fff',
+                                  border: `1px solid ${isDark ? '#373A40' : '#ddd'}`,
+                                  borderRadius: '4px',
+                                  color: isDark ? '#C1C2C5' : '#333',
+                                }}
+                                formatter={(value: any) => `${value} tickets`}
+                              />
+                              <Legend wrapperStyle={{ color: chartTextColor }} />
+                              <Line
+                                type="monotone"
+                                dataKey="count"
+                                stroke="var(--mantine-color-blue-6)"
+                                strokeWidth={2}
+                                dot={{ fill: 'var(--mantine-color-blue-6)', r: 4 }}
+                                activeDot={{ r: 6 }}
+                                name="Tickets Created"
+                                isAnimationActive={true}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <Center h={300}>
+                            <Text c="dimmed">No trend data available</Text>
+                          </Center>
+                        )}
+                      </Stack>
+                    </Paper>
+                  </Tabs.Panel>
+
+                  <Tabs.Panel value="workload" pt="lg">
+                    <Paper p="md" radius="md" withBorder>
+                      <Stack gap="md">
+                        <Group justify="space-between" align="center">
+                          <div>
+                            <Text fw={600} size="sm">
+                              Team Workload Distribution
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              Ticket assignments and performance by team member
+                            </Text>
+                          </div>
+                          {workloadLoading && <Loader size="sm" />}
+                        </Group>
+
+                        {teamWorkload.length > 0 ? (
+                          <>
+                            {/* Workload Bar Chart */}
+                            <ResponsiveContainer width="100%" height={300}>
+                              <BarChart data={teamWorkload}>
+                                <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+                                <XAxis
+                                  dataKey="employee_name"
+                                  tick={{ fill: chartTextColor, fontSize: 12 }}
+                                  angle={-45}
+                                  textAnchor="end"
+                                  height={80}
+                                />
+                                <YAxis tick={{ fill: chartTextColor }} />
+                                <Tooltip
+                                  contentStyle={{
+                                    backgroundColor: isDark ? '#25262B' : '#fff',
+                                    border: `1px solid ${isDark ? '#373A40' : '#ddd'}`,
+                                    borderRadius: '4px',
+                                    color: isDark ? '#C1C2C5' : '#333',
+                                  }}
+                                />
+                                <Legend wrapperStyle={{ color: chartTextColor }} />
+                                <Bar
+                                  dataKey="open_tickets"
+                                  fill="var(--mantine-color-red-6)"
+                                  name="Open Tickets"
+                                  radius={[8, 8, 0, 0]}
+                                />
+                                <Bar
+                                  dataKey="resolved_tickets"
+                                  fill="var(--mantine-color-green-6)"
+                                  name="Resolved Tickets"
+                                  radius={[8, 8, 0, 0]}
+                                />
+                              </BarChart>
+                            </ResponsiveContainer>
+
+                            {/* Detailed Table */}
+                            <div style={{ overflowX: 'auto', marginTop: '1rem' }}>
+                              <Table striped highlightOnHover>
+                                <Table.Thead>
+                                  <Table.Tr>
+                                    <Table.Th>Team Member</Table.Th>
+                                    <Table.Th>Open</Table.Th>
+                                    <Table.Th>Resolved</Table.Th>
+                                    <Table.Th>Total</Table.Th>
+                                    <Table.Th>Avg Resolution Time</Table.Th>
+                                  </Table.Tr>
+                                </Table.Thead>
+                                <Table.Tbody>
+                                  {teamWorkload.map((member) => (
+                                    <Table.Tr key={member.employee_id}>
+                                      <Table.Td fw={500}>{member.employee_name}</Table.Td>
+                                      <Table.Td>
+                                        <Badge color="red" variant="light">
+                                          {member.open_tickets}
+                                        </Badge>
+                                      </Table.Td>
+                                      <Table.Td>
+                                        <Badge color="green" variant="light">
+                                          {member.resolved_tickets}
+                                        </Badge>
+                                      </Table.Td>
+                                      <Table.Td fw={600}>{member.total_tickets}</Table.Td>
+                                      <Table.Td>
+                                        {member.avg_resolution_hours.toFixed(2)}h
+                                      </Table.Td>
+                                    </Table.Tr>
+                                  ))}
+                                </Table.Tbody>
+                              </Table>
+                            </div>
+                          </>
+                        ) : (
+                          <Center h={300}>
+                            <Text c="dimmed">No team workload data available</Text>
+                          </Center>
+                        )}
+                      </Stack>
+                    </Paper>
                   </Tabs.Panel>
                 </Tabs>
               ) : (

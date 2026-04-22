@@ -74,6 +74,12 @@ class NotificationService:
 
     def ticket_created(self, ticket, created_by):
         """Notify managers when a new ticket is created"""
+        # Serialize category to dict for msgpack serialization
+        category_data = {
+            'id': ticket.category.id,
+            'name': ticket.category.name,
+        } if ticket.category else None
+
         self.send_to_managers(
             'ticket_created',
             'New Ticket Created',
@@ -86,7 +92,7 @@ class NotificationService:
                 'created_by_name': created_by.get_full_name() or created_by.username,
                 'created_at': ticket.created_at.isoformat(),
                 'priority': ticket.priority,
-                'category': ticket.category,
+                'category': category_data,
             }
         )
 

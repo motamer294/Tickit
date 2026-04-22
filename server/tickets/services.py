@@ -66,10 +66,21 @@ def analyze_ticket_with_ai(title: str, description: str) -> dict:
 def update_ticket_status(ticket: Ticket, new_status: str, user):
     """
     Updates a ticket's status and records the history in one atomic transaction.
+    Validates state transitions according to VALID_TRANSITIONS.
     Automatically handles the 'resolved_at' timestamp for dashboard analytics.
+    
+    Raises ValueError if transition is not allowed.
     """
     if ticket.status == new_status:
         return ticket
+
+    # Validate transition
+    if not ticket.can_transition_to(new_status):
+        available = ticket.get_available_transitions()
+        raise ValueError(
+            f"Cannot transition from {ticket.status} to {new_status}. "
+            f"Valid transitions: {available}"
+        )
 
     old_status = ticket.status
 

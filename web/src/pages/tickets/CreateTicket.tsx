@@ -16,19 +16,21 @@ import {
   Card,
   SimpleGrid,
   Select,
+  MultiSelect,
 } from '@mantine/core'
 import { useForm } from '@mantine/form'
 import { Icon } from '@iconify-icon/react'
 import { notifications } from '@mantine/notifications'
-import { createTicketApi, fetchEmployeesApi } from '@/api/tickets.api'
+import { createTicketApi, fetchEmployeesApi, fetchCategoriesApi, fetchTagsApi } from '@/api/tickets.api'
 import { useAuth } from '@/hooks/useAuth'
 import type { Ticket } from '@/types/ticket'
 import { useState } from 'react'
 
 const priorityColors: Record<string, string> = {
-  HIGH: 'red',
-  MEDIUM: 'yellow',
-  LOW: 'green',
+  URGENT: '#FF1493',
+  HIGH: '#FF6B6B',
+  MEDIUM: '#FFA500',
+  LOW: '#90EE90',
 }
 
 const sentimentColors: Record<string, string> = {
@@ -55,13 +57,28 @@ export default function CreateTicket() {
   const { data: employees = [], isLoading: employeesLoading } = useQuery({
     queryKey: ['employees'],
     queryFn: fetchEmployeesApi,
-    enabled: user?.role === 'MANAGER', // Only fetch if manager
+    enabled: user?.role === 'MANAGER',
+  })
+
+  // Fetch categories
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: fetchCategoriesApi,
+  })
+
+  // Fetch tags
+  const { data: tags = [], isLoading: tagsLoading } = useQuery({
+    queryKey: ['tags'],
+    queryFn: fetchTagsApi,
   })
 
   const form = useForm({
     initialValues: {
       title: '',
       description: '',
+      priority: 'MEDIUM',
+      category_id: null as number | null,
+      tag_ids: [] as number[],
     },
     validate: {
       title: (val) =>
@@ -73,18 +90,18 @@ export default function CreateTicket() {
 
   const createMutation = useMutation({
     mutationFn: (data: typeof form.values) => {
-      const payload: any = { ...data }
+      const payload: any = {
+        title: data.title,
+        description: data.description,
+        priority: data.priority,
+        category_id: data.category_id,
+        tag_ids: data.tag_ids,
+      }
 
-      // For managers: use manual assignment if selected, otherwise leave unassigned
+      // For managers: use manual assignment if selected
       if (user?.role === 'MANAGER' && selectedEmployeeId) {
-        payload.autoAssign = false
         payload.assignedToId = Number(selectedEmployeeId)
       }
-      // For employees/customers: auto-assign by workload
-      else if (user?.role !== 'MANAGER') {
-        payload.autoAssign = true
-      }
-      // For managers with no selection: leave unassigned (no autoAssign or assignedToId)
 
       return createTicketApi(payload)
     },
@@ -165,9 +182,25 @@ export default function CreateTicket() {
                         color="blue"
                       />
                     </Group>
-                    <Text fw={600} size="lg">
-                      {createdTicket.category}
-                    </Text>
+                    {createdTicket.category ? (
+                      <Group gap="xs">
+                        <div
+                          style={{
+                            width: 12,
+                            height: 12,
+                            borderRadius: '50%',
+                            backgroundColor: createdTicket.category.color || '#999',
+                          }}
+                        />
+                        <Text fw={600} size="lg">
+                          {createdTicket.category.name}
+                        </Text>
+                      </Group>
+                    ) : (
+                      <Text fw={600} size="lg" c="dimmed">
+                        Unassigned
+                      </Text>
+                    )}
                   </Stack>
                 </Card>
 
@@ -181,7 +214,7 @@ export default function CreateTicket() {
                       <Icon
                         icon="solar:bolt-bold-duotone"
                         width={16}
-                        color={priorityColors[createdTicket.priority] || 'gray'}
+                        color={priorityColors[createdTicket.priority || 'MEDIUM'] || 'gray'}
                       />
                     </Group>
                     <Group justify="space-between" align="flex-end">
@@ -189,7 +222,7 @@ export default function CreateTicket() {
                         {createdTicket.priority}
                       </Text>
                       <Badge
-                        color={priorityColors[createdTicket.priority]}
+                        color={priorityColors[createdTicket.priority || 'MEDIUM']}
                         variant="light"
                       >
                         {createdTicket.priority}
@@ -206,9 +239,9 @@ export default function CreateTicket() {
                         Sentiment
                       </Text>
                       <Icon
-                        icon={sentimentIcons[createdTicket.sentiment]}
+                        icon={sentimentIcons[createdTicket.sentiment || 'Neutral']}
                         width={16}
-                        color={sentimentColors[createdTicket.sentiment]}
+                        color={sentimentColors[createdTicket.sentiment || 'Neutral']}
                       />
                     </Group>
                     <Group justify="space-between" align="flex-end">
@@ -216,7 +249,7 @@ export default function CreateTicket() {
                         {createdTicket.sentiment}
                       </Text>
                       <Badge
-                        color={sentimentColors[createdTicket.sentiment]}
+                        color={sentimentColors[createdTicket.sentiment || 'Neutral']}
                         variant="light"
                       >
                         {createdTicket.sentiment}
@@ -249,6 +282,37 @@ export default function CreateTicket() {
                   </Stack>
                 </Card>
               </SimpleGrid>
+
+              {/* Tags */}
+              {createdTicket.tags && createdTicket.tags.length > 0 && (
+                <>
+                  <Divider />
+                  <Card withBorder p="md" radius="md">
+                    <Stack gap="xs">
+                      <Group justify="space-between">
+                        <Text size="sm" fw={500} c="dimmed">
+                          Tags
+                        </Text>
+                        <Icon icon="solar:tag-linear" width={16} />
+                      </Group>
+                      <Group gap="xs">
+                        {createdTicket.tags.map((tag) => (
+                          <Badge
+                            key={tag.id}
+                            variant="dot"
+                            style={{
+                              backgroundColor: tag.color || '#999',
+                              color: '#fff',
+                            }}
+                          >
+                            #{tag.name}
+                          </Badge>
+                        ))}
+                      </Group>
+                    </Stack>
+                  </Card>
+                </>
+              )}
 
               <Divider />
 
@@ -374,6 +438,55 @@ export default function CreateTicket() {
                   autoFocus
                   {...form.getInputProps('description')}
                 />
+
+                {/* Priority & Category Selection */}
+                <Paper p="md" radius="md" withBorder>
+                  <Stack gap="sm">
+                    <Group grow>
+                      {/* Priority */}
+                      <Select
+                        label="Priority"
+                        placeholder="Select priority level"
+                        data={[
+                          { value: 'LOW', label: '🟢 Low' },
+                          { value: 'MEDIUM', label: '🟡 Medium' },
+                          { value: 'HIGH', label: '🔴 High' },
+                          { value: 'URGENT', label: '🔥 Urgent' },
+                        ]}
+                        {...form.getInputProps('priority')}
+                        searchable
+                      />
+
+                      {/* Category */}
+                      <Select
+                        label="Category"
+                        placeholder="Select category"
+                        data={categories.map((cat) => ({
+                          value: cat.id.toString(),
+                          label: cat.name,
+                        }))}
+                        {...form.getInputProps('category_id')}
+                        searchable
+                        clearable
+                        disabled={categoriesLoading}
+                      />
+                    </Group>
+
+                    {/* Tags */}
+                    <MultiSelect
+                      label="Tags"
+                      placeholder="Add tags to organize this ticket"
+                      data={tags.map((tag) => ({
+                        value: tag.id.toString(),
+                        label: `#${tag.name}`,
+                      }))}
+                      searchable
+                      clearable
+                      disabled={tagsLoading}
+                      {...form.getInputProps('tag_ids')}
+                    />
+                  </Stack>
+                </Paper>
 
                 {/* Assignment Section (Managers Only) */}
                 {user?.role === 'MANAGER' && (

@@ -4,6 +4,23 @@ from typing import Dict
 from typing import Optional, Literal, List
 
 # ==========================
+# Attachment Schema
+# ==========================
+
+class AttachmentOutSchema(Schema):
+    """File attachment response"""
+    id: int
+    filename: str
+    file_size: int  # bytes
+    uploaded_by_username: Optional[str] = None
+    uploaded_at: datetime
+    file_url: Optional[str] = None  # Will be resolved in API
+
+    @staticmethod
+    def resolve_uploaded_by_username(obj):
+        return obj.uploaded_by.username if obj.uploaded_by else "Unknown User"
+
+# ==========================
 # Category & Tag Schemas
 # ==========================
 
@@ -41,6 +58,7 @@ class TicketOutSchema(Schema):
 
     category: Optional[CategorySchema] = None
     tags: List[TagSchema] = []
+    attachments: List[AttachmentOutSchema] = []
 
     sentiment: Optional[str] = None
     ai_suggested_solution: Optional[str] = None
@@ -50,6 +68,7 @@ class TicketOutSchema(Schema):
 
     creator_username: Optional[str] = None
     assigned_to_username: Optional[str] = None
+    available_transitions: Optional[List[dict]] = None  # [{'status': 'PENDING', 'label': 'Pending'}, ...]
 
     @staticmethod
     def resolve_creator_username(obj):
@@ -59,18 +78,22 @@ class TicketOutSchema(Schema):
     def resolve_assigned_to_username(obj):
         return obj.assigned_to.username if getattr(obj, "assigned_to", None) else "Unassigned"
 
+    @staticmethod
+    def resolve_available_transitions(obj):
+        return obj.get_available_transitions_display() if hasattr(obj, 'get_available_transitions_display') else []
+
 class TicketUpdateSchema(Schema):
     """Update ticket fields"""
     title: Optional[str] = None
     description: Optional[str] = None
-    status: Optional[Literal["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"]] = None
+    status: Optional[Literal["OPEN", "PENDING", "IN_PROGRESS", "RESOLVED", "CLOSED"]] = None
     priority: Optional[Literal["LOW", "MEDIUM", "HIGH", "URGENT"]] = None
     category_id: Optional[int] = None
     tag_ids: Optional[List[int]] = None
     assigned_to_id: Optional[int] = None
 
 class TicketStatusUpdateSchema(Schema):
-    status: Literal["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"]
+    status: Literal["OPEN", "PENDING", "IN_PROGRESS", "RESOLVED", "CLOSED"]
 
 # ==========================
 # Comments Schemas

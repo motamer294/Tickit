@@ -7,7 +7,8 @@ from django.contrib.auth.hashers import make_password
 from typing import List, Optional
 from datetime import datetime
 from django.shortcuts import get_object_or_404
-from django.db.models import Count, Avg, F, Q
+from django.db.models import Count, Avg, F, Q, Value, CharField
+from django.db.models.functions import Coalesce, TruncDate
 from django.db import transaction
 from tickets.schemas import DashboardStatsSchema
 from accounts.models import User
@@ -618,41 +619,72 @@ def update_ticket(request, ticket_id: int, data: TicketCreateSchema):
 # 7. Analytics Dashboard (Strictly for Managers)
 @api.get("/analytics/dashboard", response=DashboardStatsSchema)
 def get_dashboard_stats(request):
-    # حماية الـ API: المديرين بس هما اللي يشوفوا الإحصائيات
-    if request.user.role != User.Role.MANAGER:
-        return api.create_response(request, {"message": "Access Denied: Managers only."}, status=403)
+    """
+    Get dashboard statistics based on user role.
+    - MANAGER: All tickets
+    - EMPLOYEE: Assigned tickets + created tickets visible to them
+    - CUSTOMER: Created tickets + assigned tickets visible to them
+    """
+    
+    # Filter tickets based on user role
+    if request.user.role == User.Role.MANAGER:
+        tickets = Ticket.objects.all()
+    elif request.user.role == User.Role.EMPLOYEE:
+        # Employees see assigned tickets + tickets they created (if any)
+        from django.db.models import Q
+        tickets = Ticket.objects.filter(
+            Q(assigned_to=request.user) | Q(created_by=request.user)
+        ).distinct()
+    else:  # CUSTOMER
+        # Customers see only tickets they created
+        tickets = Ticket.objects.filter(created_by=request.user)
 
-    # 1. الأرقام الأساسية
-    total = Ticket.objects.count()
-    open_count = Ticket.objects.filter(status=Ticket.Status.OPEN).count()
-    resolved_count = Ticket.objects.filter(status__in=[Ticket.Status.RESOLVED, Ticket.Status.CLOSED]).count()
+    # 1. Basic counts
+    total = tickets.count()
+    open_count = tickets.filter(status=Ticket.Status.OPEN).count()
+    resolved_count = tickets.filter(
+        status__in=[Ticket.Status.RESOLVED, Ticket.Status.CLOSED]
+    ).count()
 
-    # 2. حساب متوسط وقت الحل (MTTR)
-    resolved_tickets = Ticket.objects.filter(resolved_at__isnull=False)
+    # 2. Calculate average resolution time (MTTR)
+    resolved_tickets = tickets.filter(resolved_at__isnull=False)
     mttr_delta = resolved_tickets.aggregate(
         mttr=Avg(F('resolved_at') - F('created_at'))
     )['mttr']
 
     mttr_hours = 0.0
     if mttr_delta:
-        # تحويل الوقت الكلي لساعات وتقريبه لرقمين عشريين
         mttr_hours = round(mttr_delta.total_seconds() / 3600, 2)
 
-    # 3. التجميع (Aggregations) للـ Charts
-    # بتجيب كل تصنيف وبتعد جواه كام تذكرة، وبنحولها لـ Dictionary
+    # 3. Aggregations for Charts - Use related field names for categories
+    # Categories: Get category names, with fallback to "Uncategorized" for NULL
+    categories_data = tickets.annotate(
+        category_name=Coalesce('category__name', Value('Uncategorized'), output_field=CharField())
+    ).values('category_name').annotate(count=Count('id')).order_by('category_name')
+    
     categories = {
-        item['category'] or "Uncategorized": item['count']
-        for item in Ticket.objects.values('category').annotate(count=Count('id'))
+        item['category_name']: item['count']
+        for item in categories_data
     }
 
+    # Priorities: Convert priority enum values to strings
+    priorities_data = tickets.annotate(
+        priority_name=Coalesce('priority', Value('None'), output_field=CharField())
+    ).values('priority_name').annotate(count=Count('id')).order_by('priority_name')
+    
     priorities = {
-        item['priority'] or "None": item['count']
-        for item in Ticket.objects.values('priority').annotate(count=Count('id'))
+        item['priority_name']: item['count']
+        for item in priorities_data
     }
 
+    # Sentiments: Get sentiment values with default
+    sentiments_data = tickets.annotate(
+        sentiment_name=Coalesce('sentiment', Value('Unknown'), output_field=CharField())
+    ).values('sentiment_name').annotate(count=Count('id')).order_by('sentiment_name')
+    
     sentiments = {
-        item['sentiment'] or "Unknown": item['count']
-        for item in Ticket.objects.values('sentiment').annotate(count=Count('id'))
+        item['sentiment_name']: item['count']
+        for item in sentiments_data
     }
 
     return {
@@ -664,6 +696,110 @@ def get_dashboard_stats(request):
         "tickets_by_priority": priorities,
         "sentiment_analysis": sentiments
     }
+
+
+@api.get("/analytics/trends")
+def get_dashboard_trends(request):
+    """
+    Get ticket creation trends for the last 30 days (grouped by day).
+    Returns data for line chart: date -> count
+    Accessible based on user role: managers see all, employees see their own
+    """
+    from datetime import timedelta
+    
+    # Calculate date range: last 30 days
+    end_date = datetime.now().date()
+    start_date = end_date - timedelta(days=30)
+    
+    # Base query based on user role
+    if request.user.role == User.Role.MANAGER:
+        query = Ticket.objects.all()
+    elif request.user.role == User.Role.EMPLOYEE:
+        query = Ticket.objects.filter(assigned_to=request.user)
+    else:  # CUSTOMER
+        query = Ticket.objects.filter(created_by=request.user)
+    
+    # Group by date and count
+    trends = (
+        query.filter(created_at__date__gte=start_date, created_at__date__lte=end_date)
+        .annotate(date=TruncDate('created_at'))
+        .values('date')
+        .annotate(count=Count('id'))
+        .order_by('date')
+    )
+    
+    # Convert to list of dicts for JSON serialization
+    # Fill in missing dates with 0 count
+    trend_dict = {item['date'].isoformat(): item['count'] for item in trends}
+    
+    # Generate all dates in range and fill gaps
+    current_date = start_date
+    result = []
+    while current_date <= end_date:
+        iso_date = current_date.isoformat()
+        result.append({
+            "date": iso_date,
+            "count": trend_dict.get(iso_date, 0)
+        })
+        current_date += timedelta(days=1)
+    
+    return result
+
+
+@api.get("/analytics/team-workload")
+def get_team_workload(request):
+    """
+    Get workload distribution across team members.
+    Returns: list of {employee_name, open_tickets, resolved_tickets, total_tickets, avg_resolution_time}
+    Manager only endpoint.
+    """
+    if request.user.role != User.Role.MANAGER:
+        return api.create_response(
+            request,
+            {"message": "Access Denied: Managers only."},
+            status=403
+        )
+    
+    from django.db.models import Count, Avg, Q, F
+    
+    # Get all employees
+    employees = User.objects.filter(role=User.Role.EMPLOYEE)
+    
+    workload_data = []
+    for employee in employees:
+        total_assigned = Ticket.objects.filter(assigned_to=employee).count()
+        open_assigned = Ticket.objects.filter(
+            assigned_to=employee,
+            status__in=[Ticket.Status.OPEN, Ticket.Status.IN_PROGRESS]
+        ).count()
+        resolved_assigned = Ticket.objects.filter(
+            assigned_to=employee,
+            status__in=[Ticket.Status.RESOLVED, Ticket.Status.CLOSED]
+        ).count()
+        
+        # Calculate avg resolution time for this employee
+        resolved_tickets = Ticket.objects.filter(
+            assigned_to=employee,
+            resolved_at__isnull=False
+        )
+        mttr_delta = resolved_tickets.aggregate(
+            mttr=Avg(F('resolved_at') - F('created_at'))
+        )['mttr']
+        
+        avg_resolution_hours = 0.0
+        if mttr_delta:
+            avg_resolution_hours = round(mttr_delta.total_seconds() / 3600, 2)
+        
+        workload_data.append({
+            "employee_id": employee.id,
+            "employee_name": f"{employee.first_name} {employee.last_name}".strip() or employee.username,
+            "open_tickets": open_assigned,
+            "resolved_tickets": resolved_assigned,
+            "total_tickets": total_assigned,
+            "avg_resolution_hours": avg_resolution_hours
+        })
+    
+    return workload_data
 
 
 # ============================================

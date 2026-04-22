@@ -4,6 +4,23 @@
  */
 
 // ============================================
+// Category & Tag Types
+// ============================================
+
+export interface Category {
+  id: number
+  name: string
+  description: string
+  color: string
+}
+
+export interface Tag {
+  id: number
+  name: string
+  color: string
+}
+
+// ============================================
 // User Types
 // ============================================
 
@@ -16,12 +33,25 @@ export interface User {
 }
 
 // ============================================
+// Attachment Types
+// ============================================
+
+export interface Attachment {
+  id: number
+  filename: string
+  file_size: number  // bytes
+  uploaded_by_username: string
+  uploaded_at: string  // ISO 8601
+  file_url?: string
+}
+
+// ============================================
 // Ticket Types
 // ============================================
 
-export type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
+export type TicketStatus = 'OPEN' | 'PENDING' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
 
-export type TicketPriority = 'HIGH' | 'MEDIUM' | 'LOW'
+export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
 
 export type TicketSentiment = 'Positive' | 'Neutral' | 'Negative'
 
@@ -31,11 +61,15 @@ export interface Ticket {
   description: string
   status: TicketStatus
 
-  // AI Fields (from backend AI service)
-  category: string
-  priority: string
-  sentiment: string
-  ai_suggested_solution: string
+  // Category & Priority
+  category: Category | null
+  priority: TicketPriority
+  tags: Tag[]
+  attachments?: Attachment[]
+
+  // Sentiment (from AI, if available)
+  sentiment?: string
+  ai_suggested_solution?: string
 
   // People involved
   created_by?: User | string
@@ -50,11 +84,17 @@ export interface Ticket {
   created_at: string // ISO 8601
   updated_at?: string
   resolved_at?: string | null
+
+  // Status transitions
+  available_transitions?: Array<{ status: TicketStatus; label: string }>
 }
 
 export interface TicketCreatePayload {
   title: string
   description: string
+  priority?: TicketPriority
+  category_id?: number | null
+  tag_ids?: number[]
 }
 
 export interface TicketStatusUpdatePayload {
