@@ -510,3 +510,44 @@ export async function downloadAttachmentBlob(attachmentId: number): Promise<Blob
     throw error
   }
 }
+
+// ============================================
+// Search & Filter Operations
+// ============================================
+
+export interface SearchFilters {
+  query?: string
+  status?: string
+  priority?: string
+  category_id?: number
+  tag_ids?: string // comma-separated
+  assigned_to_id?: number
+  created_from?: string // ISO date
+  created_to?: string // ISO date
+}
+
+/**
+ * Search tickets with filters
+ */
+export async function searchTicketsApi(filters: SearchFilters): Promise<Ticket[]> {
+  try {
+    const client = getAxiosInstance()
+    const params = {
+      ...(filters.query && { query: filters.query }),
+      ...(filters.status && { status: filters.status }),
+      ...(filters.priority && { priority: filters.priority }),
+      ...(filters.category_id && { category_id: filters.category_id }),
+      ...(filters.tag_ids && { tag_ids: filters.tag_ids }),
+      ...(filters.assigned_to_id && { assigned_to_id: filters.assigned_to_id }),
+      ...(filters.created_from && { created_from: filters.created_from }),
+      ...(filters.created_to && { created_to: filters.created_to }),
+    }
+
+    const response = await client.get<Ticket[]>('/tickets/search', { params })
+    const data = response.data
+    return Array.isArray(data) ? data : []
+  } catch (error) {
+    console.error('❌ Failed to search tickets:', error)
+    return []
+  }
+}
