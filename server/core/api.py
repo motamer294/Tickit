@@ -295,8 +295,8 @@ def list_my_tickets(request):
         # Customers see only tickets they created
         return Ticket.objects.filter(created_by=request.user)
 
-# 4.3 Search/Filter Tickets
-@api.get("/tickets/search", response=List[TicketOutSchema])
+# 4.3 Search/Filter Tickets (moved to a separate path to avoid route conflicts)
+@api.get("/search/tickets", response=List[TicketOutSchema])
 def search_tickets(
     request,
     query: Optional[str] = None,

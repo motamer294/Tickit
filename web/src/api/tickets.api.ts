@@ -544,7 +544,7 @@ export async function searchTicketsApi(filters: SearchFilters): Promise<Ticket[]
     }
 
     console.log('🔍 Searching with params:', params)
-    const response = await client.get<Ticket[]>('/tickets/search', { params })
+    const response = await client.get<Ticket[]>('/search/tickets', { params })
     const data = response.data
     console.log('✅ Search results:', data)
     return Array.isArray(data) ? data : []
