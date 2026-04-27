@@ -13,6 +13,11 @@ import TicketDetail from '@/pages/tickets/TicketDetail'
 /* Profile */
 import { UserProfile } from '@/pages/profile/UserProfile'
 
+/* Admin */
+import UserAdminPanel from '@/pages/admin/UserAdminPanel'
+import SLAManagement from '@/pages/admin/SLAManagement'
+import AuditLogViewer from '@/pages/admin/AuditLogViewer'
+
 /* layouts */
 import AuthLayout from '@/layouts/AuthLayout'
 
@@ -66,10 +71,18 @@ export default function RootRouter() {
         {/* Profile - Accessible by all authenticated users */}
         <Route path="profile" element={<UserProfile />} />
 
-{/* Debug - Only accessible to managers */}
-          {user?.role === 'MANAGER' && (
+        {/* Admin - Only accessible to managers */}
+        {user?.role === 'MANAGER' && (
+          <>
             <Route path="debug" element={<Debug />} />
-          )}
+            <Route path="admin">
+              <Route index element={<Navigate to="users" replace />} />
+              <Route path="users" element={<UserAdminPanel />} />
+              <Route path="slas" element={<SLAManagement />} />
+              <Route path="audit-logs" element={<AuditLogViewer />} />
+            </Route>
+          </>
+        )}
 
         {/* Tickets - Role-based access control */}
         <Route path="tickets">

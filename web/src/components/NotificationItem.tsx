@@ -185,25 +185,39 @@ export const NotificationItem = ({ notification }: NotificationItemProps) => {
         <Group gap={4} style={{ flexShrink: 0 }}>
           <Tooltip label={notification.read ? 'Mark as unread' : 'Mark as read'} withArrow>
             <ActionIcon
-              variant="subtle"
-              size="sm"
+              variant="light"
+              size="lg"
               onClick={handleToggleRead}
-              color="gray"
+              color="blue"
+              title={notification.read ? 'Mark as unread' : 'Mark as read'}
+              style={{
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
             >
               <Icon
                 icon={notification.read ? 'solar:mailbox-bold-duotone' : 'solar:mailbox-opened-bold-duotone'}
-                width={16}
+                width={18}
               />
             </ActionIcon>
           </Tooltip>
           <Tooltip label="Delete" withArrow>
             <ActionIcon
-              variant="subtle"
-              size="sm"
+              variant="light"
+              size="lg"
               onClick={() => deleteNotification(notification.id)}
-              color="gray"
+              color="red"
+              title="Delete"
+              style={{
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
             >
-              <Icon icon="solar:trash-bin-minimalistic-bold-duotone" width={16} />
+              <Icon icon="solar:trash-bin-minimalistic-bold-duotone" width={18} />
             </ActionIcon>
           </Tooltip>
         </Group>

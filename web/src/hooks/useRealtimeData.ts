@@ -98,6 +98,11 @@ export const useRealtimeData = () => {
               queryClient.invalidateQueries({ queryKey: ['ticket', data.ticketId] })
               break
 
+            case 'audit_log_created':
+              console.log('📌 Invalidating audit logs...')
+              queryClient.invalidateQueries({ queryKey: ['audit-logs'] })
+              break
+
             default:
               // Generic data change event
               queryClient.invalidateQueries()

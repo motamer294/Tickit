@@ -117,16 +117,14 @@ export function SearchBar({
           >
             Search
           </Button>
-          <ActionIcon
+          <Button
             variant="subtle"
             onClick={() => setExpanded(!expanded)}
-            title="Toggle advanced filters"
+            loading={isLoading}
+            leftSection={<Icon icon={expanded ? 'solar:chevron-up-bold-duotone' : 'solar:chevron-down-bold-duotone'} width={18} />}
           >
-            <Icon
-              icon={expanded ? 'solar:chevron-up-bold-duotone' : 'solar:chevron-down-bold-duotone'}
-              width={20}
-            />
-          </ActionIcon>
+            {expanded ? 'Hide' : 'Filter'}
+          </Button>
         </Group>
 
         {/* Active Filters Display */}

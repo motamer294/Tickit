@@ -8,6 +8,7 @@ import {
   Box,
   ScrollArea,
   Avatar, // Added for a better look
+  Divider,
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
@@ -26,6 +27,24 @@ const navData = [
     label: 'Tickets',
     icon: 'solar:bug-minimalistic-bold-duotone',
     path: '/app/tickets',
+  },
+]
+
+const adminNavData = [
+  {
+    label: 'Users',
+    icon: 'solar:users-group-rounded-bold-duotone',
+    path: '/app/admin/users',
+  },
+  {
+    label: 'SLAs',
+    icon: 'solar:stopwatch-bold-duotone',
+    path: '/app/admin/slas',
+  },
+  {
+    label: 'Audit Log',
+    icon: 'solar:history-bold-duotone',
+    path: '/app/admin/audit-logs',
   },
 ]
 
@@ -92,6 +111,31 @@ const DashboardLayout = () => {
                 styles={{ label: { fontWeight: 600 } }}
               />
             ))}
+
+            {/* Admin Section */}
+            {user?.role === 'MANAGER' && (
+              <>
+                <Divider my="sm" />
+                <Text size="xs" fw={700} c="dimmed" px="md" py="sm" tt="uppercase">
+                  Administration
+                </Text>
+                {adminNavData.map((item) => (
+                  <NavLink
+                    key={item.label}
+                    label={item.label}
+                    active={pathname.startsWith(item.path)}
+                    leftSection={<Icon icon={item.icon} width="22" />}
+                    onClick={() => {
+                      navigate(item.path)
+                      if (opened) toggle()
+                    }}
+                    variant="light"
+                    h={50}
+                    styles={{ label: { fontWeight: 600 } }}
+                  />
+                ))}
+              </>
+            )}
           </Stack>
         </AppShell.Section>
 

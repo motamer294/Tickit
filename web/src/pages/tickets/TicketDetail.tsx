@@ -86,7 +86,7 @@ function AttachmentsSection({ ticket, queryClient }: { ticket: any; queryClient:
     mutationFn: async (file: File) => {
       // Simulate progress for demo (since axios doesn't show real progress in this setup)
       setUploadProgress(0)
-      
+
       // Create a progress interval
       const progressInterval = setInterval(() => {
         setUploadProgress((prev) => {
@@ -197,8 +197,8 @@ function AttachmentsSection({ ticket, queryClient }: { ticket: any; queryClient:
                 <Text fw={500} size="sm">
                   Uploading... {Math.round(uploadProgress)}%
                 </Text>
-                <Progress 
-                  value={uploadProgress} 
+                <Progress
+                  value={uploadProgress}
                   color={uploadProgress === 100 ? 'green' : 'blue'}
                   size="lg"
                   style={{ marginTop: '10px' }}

@@ -81,14 +81,14 @@ const PRIORITY_COLORS_DARK: Record<string, string> = {
   LOW: '#69DB7C',
 }
 const SENTIMENT_COLORS_LIGHT: Record<string, string> = {
-  Positive: '#51CF66',
-  Neutral: '#4DABF7',
-  Negative: '#FF6B6B',
+  POSITIVE: '#51CF66',
+  NEUTRAL: '#4DABF7',
+  NEGATIVE: '#FF6B6B',
 }
 const SENTIMENT_COLORS_DARK: Record<string, string> = {
-  Positive: '#69DB7C',
-  Neutral: '#74C0FC',
-  Negative: '#FF8787',
+  POSITIVE: '#69DB7C',
+  NEUTRAL: '#74C0FC',
+  NEGATIVE: '#FF8787',
 }
 
 const Dashboard = () => {
@@ -205,10 +205,15 @@ const Dashboard = () => {
   const sentimentChartData = useMemo(
     () =>
       analytics
-        ? Object.entries(analytics.sentiment_analysis || {}).map(([name, value]) => ({
-            name,
-            value,
-          }))
+        ? Object.entries(analytics.sentiment_analysis || {}).map(([name, value]) => {
+            const sentimentKey = String(name || 'UNKNOWN').toUpperCase()
+            const displayName = sentimentKey.charAt(0) + sentimentKey.slice(1).toLowerCase()
+            return {
+              name: displayName,
+              sentimentKey,
+              value,
+            }
+          })
         : [],
     [analytics],
   )
@@ -660,7 +665,7 @@ const Dashboard = () => {
                                   <Cell
                                     key={`cell-${index}`}
                                     fill={
-                                      SENTIMENT_COLORS[entry.name] ||
+                                      SENTIMENT_COLORS[entry.sentimentKey] ||
                                       COLORS[index % COLORS.length]
                                     }
                                   />
@@ -689,9 +694,9 @@ const Dashboard = () => {
                             radius="md"
                             withBorder
                             bg={
-                              sentiment.name === 'Positive'
+                              sentiment.sentimentKey === 'POSITIVE'
                                 ? isDark ? 'rgba(81, 207, 102, 0.1)' : 'rgba(81, 207, 102, 0.05)'
-                                : sentiment.name === 'Negative'
+                                : sentiment.sentimentKey === 'NEGATIVE'
                                   ? isDark ? 'rgba(255, 107, 107, 0.1)' : 'rgba(255, 107, 107, 0.05)'
                                   : isDark ? 'rgba(74, 144, 226, 0.1)' : 'rgba(74, 144, 226, 0.05)'
                             }
@@ -710,18 +715,18 @@ const Dashboard = () => {
                                 radius="md"
                                 variant="light"
                                 color={
-                                  sentiment.name === 'Positive'
+                                  sentiment.sentimentKey === 'POSITIVE'
                                     ? 'green'
-                                    : sentiment.name === 'Negative'
+                                    : sentiment.sentimentKey === 'NEGATIVE'
                                       ? 'red'
                                       : 'blue'
                                 }
                               >
                                 <Icon
                                   icon={
-                                    sentiment.name === 'Positive'
+                                    sentiment.sentimentKey === 'POSITIVE'
                                       ? 'solar:smile-circle-bold-duotone'
-                                      : sentiment.name === 'Negative'
+                                      : sentiment.sentimentKey === 'NEGATIVE'
                                         ? 'solar:sad-circle-bold-duotone'
                                         : 'solar:face-id-bold-duotone'
                                   }
