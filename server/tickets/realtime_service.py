@@ -105,6 +105,24 @@ class RealtimeService:
             payload
         )
 
+    def broadcast_audit_log_created(self, audit_log):
+        """Broadcast when a new audit log is created"""
+        payload = {
+            'type': 'data_changed',
+            'event': 'audit_log_created',
+            'auditLogId': audit_log.id,
+            'actionType': audit_log.action_type,
+            'ticketId': audit_log.ticket_id,
+            'description': audit_log.description,
+            'timestamp': datetime.now().isoformat(),
+        }
+
+        async_to_sync(self.channel_layer.group_send)(
+            'realtime_updates',
+            payload
+        )
+        print(f"🔄 Broadcast: New audit log #{audit_log.id} - {audit_log.action_type}")
+
 
 # Global instance
 realtime_service = RealtimeService()

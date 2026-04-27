@@ -68,7 +68,7 @@ def update_ticket_status(ticket: Ticket, new_status: str, user):
     Updates a ticket's status and records the history in one atomic transaction.
     Validates state transitions according to VALID_TRANSITIONS.
     Automatically handles the 'resolved_at' timestamp for dashboard analytics.
-    
+
     Raises ValueError if transition is not allowed.
     """
     if ticket.status == new_status:

@@ -1,6 +1,6 @@
 from ninja import Schema
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Any
 from typing import Optional, Literal, List
 
 # ==========================
@@ -128,3 +128,80 @@ class DashboardStatsSchema(Schema):
     tickets_by_category: Dict[str, int]
     tickets_by_priority: Dict[str, int]
     sentiment_analysis: Dict[str, int]
+
+
+# ==========================
+# SLA Schemas
+# ==========================
+class SLASchema(Schema):
+    id: int
+    name: str
+    description: str
+    priority: str
+    category_id: Optional[int] = None
+    category_name: Optional[str] = None
+    response_time_hours: int
+    resolution_time_hours: int
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class SLACreateSchema(Schema):
+    name: str
+    description: str = ""
+    priority: str  # HIGH, MEDIUM, LOW
+    category_id: Optional[int] = None
+    response_time_hours: int = 4
+    resolution_time_hours: int = 24
+    is_active: bool = True
+
+
+# ==========================
+# AuditLog Schemas
+# ==========================
+class AuditLogSchema(Schema):
+    id: int
+    action_type: str
+    performed_by_username: Optional[str] = None
+    ticket_id: Optional[int] = None
+    user_id: Optional[int] = None
+    user_username: Optional[str] = None
+    description: str
+    old_value: Optional[str] = None
+    new_value: Optional[str] = None
+    metadata: Dict[str, Any] = {}
+    created_at: datetime
+    ip_address: Optional[str] = None
+
+
+# ==========================
+# User Admin Schemas
+# ==========================
+class UserDetailSchema(Schema):
+    id: int
+    username: str
+    email: str
+    first_name: str
+    last_name: str
+    role: str  # MANAGER, EMPLOYEE, CUSTOMER
+    is_active: bool
+    date_joined: datetime
+    created_at: datetime
+
+
+class UserCreateSchema(Schema):
+    username: str
+    email: str
+    password: str
+    first_name: str = ""
+    last_name: str = ""
+    role: str  # MANAGER, EMPLOYEE, CUSTOMER
+
+
+class UserUpdateSchema(Schema):
+    email: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    role: Optional[str] = None  # MANAGER, EMPLOYEE, CUSTOMER
+    is_active: Optional[bool] = None

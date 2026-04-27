@@ -4,7 +4,7 @@ from ninja_jwt.authentication import JWTAuth
 from ninja_jwt.tokens import AccessToken, RefreshToken
 from ninja import Schema
 from django.contrib.auth.hashers import make_password
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 from django.shortcuts import get_object_or_404
 from django.db.models import Count, Avg, F, Q, Value, CharField
@@ -24,10 +24,20 @@ from tickets.schemas import (
     CommentOutSchema,
     TicketStatusUpdateSchema,
     CategorySchema,
-    TagSchema
+    TagSchema,
+    DashboardStatsSchema,
+    SLASchema,
+    SLACreateSchema,
+    AuditLogSchema,
+    UserDetailSchema,
+    UserCreateSchema,
+    UserUpdateSchema,
 )
+# Import schemas module for typing
+import tickets.schemas as schemas
 from tickets.notification_service import notification_service
 from tickets.realtime_service import realtime_service
+from tickets.audit_service import audit_service
 
 
 # Custom AccessToken that includes user role
@@ -278,7 +288,10 @@ def create_ticket(request, data: TicketCreateSchema):
     # 🔔 Send real-time notifications to managers
     notification_service.ticket_created(ticket, request.user)
 
-    # 🔄 Broadcast real-time data update
+    # � Log audit trail
+    audit_service.log_ticket_created(ticket, request.user, request)
+
+    # �🔄 Broadcast real-time data update
     realtime_service.broadcast_ticket_created(ticket)
 
     return ticket
@@ -466,7 +479,10 @@ def add_comment(request, ticket_id: int, data: CommentSchema):
     # 🔔 Send real-time notifications to users subscribed to this ticket
     notification_service.comment_added(ticket, comment, request.user)
 
-    # 🔄 Broadcast real-time data update to trigger React Query invalidation
+    # � Log audit trail
+    audit_service.log_comment_added(ticket, request.user, request)
+
+    # �🔄 Broadcast real-time data update to trigger React Query invalidation
     # This ensures ALL users see the new comment immediately
     realtime_service.broadcast_comment_added(ticket.id, comment.id, request.user.username)
 
@@ -549,7 +565,10 @@ def update_status(request, ticket_id: int, data: TicketStatusUpdateSchema):
             status=400
         )
 
-    # 🔔 Send real-time notifications
+    # � Log audit trail
+    audit_service.log_status_changed(ticket, old_status, data.status, request.user, request)
+
+    # �🔔 Send real-time notifications
     notification_service.ticket_updated(ticket, request.user, old_status, data.status)
 
     # 🔄 Broadcast real-time data update
@@ -577,6 +596,9 @@ def delete_ticket(request, ticket_id: int):
 
     # 🔔 Send notification before deleting (so we still have ticket data)
     notification_service.ticket_deleted(ticket, request.user)
+
+    # 📝 Log audit trail
+    audit_service.log_ticket_deleted(ticket_id, ticket_title, request.user, request)
 
     # Delete the ticket
     ticket.delete()
@@ -613,6 +635,9 @@ def update_ticket(request, ticket_id: int, data: TicketCreateSchema):
 
     ticket.save()
 
+    # 📝 Log audit trail
+    audit_service.log_ticket_updated(ticket, request.user, request)
+
     return ticket
 
 
@@ -625,7 +650,7 @@ def get_dashboard_stats(request):
     - EMPLOYEE: Assigned tickets + created tickets visible to them
     - CUSTOMER: Created tickets + assigned tickets visible to them
     """
-    
+
     # Filter tickets based on user role
     if request.user.role == User.Role.MANAGER:
         tickets = Ticket.objects.all()
@@ -661,7 +686,7 @@ def get_dashboard_stats(request):
     categories_data = tickets.annotate(
         category_name=Coalesce('category__name', Value('Uncategorized'), output_field=CharField())
     ).values('category_name').annotate(count=Count('id')).order_by('category_name')
-    
+
     categories = {
         item['category_name']: item['count']
         for item in categories_data
@@ -671,17 +696,17 @@ def get_dashboard_stats(request):
     priorities_data = tickets.annotate(
         priority_name=Upper(Coalesce('priority', Value('None'), output_field=CharField()))
     ).values('priority_name').annotate(count=Count('id')).order_by('priority_name')
-    
+
     priorities = {
         item['priority_name']: item['count']
         for item in priorities_data
     }
 
-    # Sentiments: Get sentiment values with default
+    # Sentiments: Normalize to uppercase and aggregate
     sentiments_data = tickets.annotate(
-        sentiment_name=Coalesce('sentiment', Value('Unknown'), output_field=CharField())
+        sentiment_name=Upper(Coalesce('sentiment', Value('Unknown'), output_field=CharField()))
     ).values('sentiment_name').annotate(count=Count('id')).order_by('sentiment_name')
-    
+
     sentiments = {
         item['sentiment_name']: item['count']
         for item in sentiments_data
@@ -706,11 +731,11 @@ def get_dashboard_trends(request):
     Accessible based on user role: managers see all, employees see their own
     """
     from datetime import timedelta
-    
+
     # Calculate date range: last 30 days
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=30)
-    
+
     # Base query based on user role
     if request.user.role == User.Role.MANAGER:
         query = Ticket.objects.all()
@@ -718,7 +743,7 @@ def get_dashboard_trends(request):
         query = Ticket.objects.filter(assigned_to=request.user)
     else:  # CUSTOMER
         query = Ticket.objects.filter(created_by=request.user)
-    
+
     # Group by date and count
     trends = (
         query.filter(created_at__date__gte=start_date, created_at__date__lte=end_date)
@@ -727,11 +752,11 @@ def get_dashboard_trends(request):
         .annotate(count=Count('id'))
         .order_by('date')
     )
-    
+
     # Convert to list of dicts for JSON serialization
     # Fill in missing dates with 0 count
     trend_dict = {item['date'].isoformat(): item['count'] for item in trends}
-    
+
     # Generate all dates in range and fill gaps
     current_date = start_date
     result = []
@@ -742,7 +767,7 @@ def get_dashboard_trends(request):
             "count": trend_dict.get(iso_date, 0)
         })
         current_date += timedelta(days=1)
-    
+
     return result
 
 
@@ -759,12 +784,12 @@ def get_team_workload(request):
             {"message": "Access Denied: Managers only."},
             status=403
         )
-    
+
     from django.db.models import Count, Avg, Q, F
-    
+
     # Get all employees
     employees = User.objects.filter(role=User.Role.EMPLOYEE)
-    
+
     workload_data = []
     for employee in employees:
         total_assigned = Ticket.objects.filter(assigned_to=employee).count()
@@ -776,7 +801,7 @@ def get_team_workload(request):
             assigned_to=employee,
             status__in=[Ticket.Status.RESOLVED, Ticket.Status.CLOSED]
         ).count()
-        
+
         # Calculate avg resolution time for this employee
         resolved_tickets = Ticket.objects.filter(
             assigned_to=employee,
@@ -785,11 +810,11 @@ def get_team_workload(request):
         mttr_delta = resolved_tickets.aggregate(
             mttr=Avg(F('resolved_at') - F('created_at'))
         )['mttr']
-        
+
         avg_resolution_hours = 0.0
         if mttr_delta:
             avg_resolution_hours = round(mttr_delta.total_seconds() / 3600, 2)
-        
+
         workload_data.append({
             "employee_id": employee.id,
             "employee_name": f"{employee.first_name} {employee.last_name}".strip() or employee.username,
@@ -798,7 +823,7 @@ def get_team_workload(request):
             "total_tickets": total_assigned,
             "avg_resolution_hours": avg_resolution_hours
         })
-    
+
     return workload_data
 
 
@@ -1101,7 +1126,10 @@ def upload_attachment(request, ticket_id: int):
         uploaded_by=request.user
     )
 
-    # 🔄 Broadcast real-time data update
+    # � Log audit trail
+    audit_service.log_attachment_added(ticket, request.user, request)
+
+    # �🔄 Broadcast real-time data update
     realtime_service.broadcast_ticket_updated(ticket, ['attachments'])
 
     return {
@@ -1194,7 +1222,7 @@ def delete_attachment(request, attachment_id: int):
 
     filename = attachment.filename
     ticket_id = ticket.id
-    
+
     # Delete the file from storage
     try:
         if attachment.file:
@@ -1211,5 +1239,227 @@ def delete_attachment(request, attachment_id: int):
     return {
         'message': f'Attachment "{filename}" deleted successfully'
     }
+
+
+# ============================================
+# 9. USER ADMIN MANAGEMENT ENDPOINTS (MANAGER ONLY)
+# ============================================
+
+@api.get("/admin/users", response=List[schemas.UserDetailSchema])
+def list_all_users(request):
+    """
+    List all users in the system.
+    MANAGER ONLY
+    """
+    if request.user.role != User.Role.MANAGER:
+        return api.create_response(request, {"message": "Access Denied"}, status=403)
+
+    users = User.objects.all().order_by('created_at')
+    return users
+
+
+@api.post("/admin/users", response=schemas.UserDetailSchema)
+def create_user(request, data: schemas.UserCreateSchema):
+    """
+    Create a new user with specified role.
+    MANAGER ONLY
+    """
+    if request.user.role != User.Role.MANAGER:
+        return api.create_response(request, {"message": "Access Denied"}, status=403)
+
+    # Check if username already exists
+    if User.objects.filter(username=data.username).exists():
+        return api.create_response(request, {"message": "Username already exists"}, status=400)
+
+    # Create new user
+    user = User.objects.create_user(
+        username=data.username,
+        email=data.email,
+        password=data.password,
+        first_name=data.first_name,
+        last_name=data.last_name,
+        role=data.role,
+    )
+
+    # Log audit event
+    from tickets.audit_service import audit_service
+    audit_service.log_user_created(user, request.user, request)
+
+    return user
+
+
+@api.patch("/admin/users/{user_id}", response=schemas.UserDetailSchema)
+def update_user(request, user_id: int, data: schemas.UserUpdateSchema):
+    """
+    Update user details and/or role.
+    MANAGER ONLY
+    """
+    if request.user.role != User.Role.MANAGER:
+        return api.create_response(request, {"message": "Access Denied"}, status=403)
+
+    user = get_object_or_404(User, id=user_id)
+
+    # Log role changes
+    if data.role and data.role != user.role:
+        from tickets.audit_service import audit_service
+        audit_service.log_user_role_changed(user, user.role, data.role, request.user, request)
+
+    # Update fields
+    if data.email:
+        user.email = data.email
+    if data.first_name is not None:
+        user.first_name = data.first_name
+    if data.last_name is not None:
+        user.last_name = data.last_name
+    if data.role:
+        user.role = data.role
+    if data.is_active is not None:
+        user.is_active = data.is_active
+
+    user.save()
+    return user
+
+
+@api.delete("/admin/users/{user_id}")
+def delete_user(request, user_id: int):
+    """
+    Soft delete a user (set is_active=False).
+    MANAGER ONLY
+    """
+    if request.user.role != User.Role.MANAGER:
+        return api.create_response(request, {"message": "Access Denied"}, status=403)
+
+    # Prevent deleting yourself
+    if user_id == request.user.id:
+        return api.create_response(request, {"message": "Cannot delete your own account"}, status=400)
+
+    user = get_object_or_404(User, id=user_id)
+    user.is_active = False
+    user.save()
+
+    return {'message': f'User {user.username} deactivated'}
+
+
+# ============================================
+# 10. SLA MANAGEMENT ENDPOINTS
+# ============================================
+
+@api.get("/admin/slas", response=List[schemas.SLASchema])
+def list_slas(request):
+    """List all SLAs"""
+    from tickets.models import SLA
+    slas = SLA.objects.all().order_by('priority')
+    return slas
+
+
+@api.post("/admin/slas", response=schemas.SLASchema)
+def create_sla(request, data: schemas.SLACreateSchema):
+    """Create a new SLA (MANAGER ONLY)"""
+    if request.user.role != User.Role.MANAGER:
+        return api.create_response(request, {"message": "Access Denied"}, status=403)
+
+    from tickets.models import SLA
+    sla = SLA.objects.create(
+        name=data.name,
+        description=data.description,
+        priority=data.priority,
+        category_id=data.category_id,
+        response_time_hours=data.response_time_hours,
+        resolution_time_hours=data.resolution_time_hours,
+        is_active=data.is_active,
+    )
+    return sla
+
+
+@api.patch("/admin/slas/{sla_id}", response=schemas.SLASchema)
+def update_sla(request, sla_id: int, data: schemas.SLACreateSchema):
+    """Update an SLA (MANAGER ONLY)"""
+    if request.user.role != User.Role.MANAGER:
+        return api.create_response(request, {"message": "Access Denied"}, status=403)
+
+    from tickets.models import SLA
+    sla = get_object_or_404(SLA, id=sla_id)
+
+    sla.name = data.name
+    sla.description = data.description
+    sla.priority = data.priority
+    sla.category_id = data.category_id
+    sla.response_time_hours = data.response_time_hours
+    sla.resolution_time_hours = data.resolution_time_hours
+    sla.is_active = data.is_active
+    sla.save()
+
+    return sla
+
+
+@api.delete("/admin/slas/{sla_id}")
+def delete_sla(request, sla_id: int):
+    """Delete an SLA (MANAGER ONLY)"""
+    if request.user.role != User.Role.MANAGER:
+        return api.create_response(request, {"message": "Access Denied"}, status=403)
+
+    from tickets.models import SLA
+    sla = get_object_or_404(SLA, id=sla_id)
+    sla.delete()
+
+    return {'message': 'SLA deleted'}
+
+
+# ============================================
+# 11. AUDIT LOG ENDPOINTS
+# ============================================
+
+@api.get("/admin/audit-logs", response=List[schemas.AuditLogSchema])
+def list_audit_logs(
+    request,
+    ticket_id: Optional[int] = None,
+    action_type: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+):
+    """
+    List audit logs (MANAGER ONLY).
+    Can filter by ticket_id, action_type, with pagination.
+    """
+    if request.user.role != User.Role.MANAGER:
+        return api.create_response(request, {"message": "Access Denied"}, status=403)
+
+    from tickets.models import AuditLog
+
+    # Build query
+    query = AuditLog.objects.all()
+
+    if ticket_id:
+        query = query.filter(ticket_id=ticket_id)
+
+    if action_type:
+        query = query.filter(action_type=action_type)
+
+    # Order by most recent first
+    query = query.order_by('-created_at')
+
+    # Pagination
+    total_count = query.count()
+    logs = query[offset:offset+limit]
+
+    return list(logs)
+
+
+@api.get("/admin/audit-logs/ticket/{ticket_id}", response=List[schemas.AuditLogSchema])
+def get_ticket_audit_logs(request, ticket_id: int):
+    """Get audit logs for a specific ticket"""
+    from tickets.models import AuditLog
+
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    # Check permission
+    if not (request.user.role == User.Role.MANAGER or
+            request.user.id == ticket.created_by_id or
+            request.user.id == ticket.assigned_to_id):
+        return api.create_response(request, {"message": "Access Denied"}, status=403)
+
+    logs = AuditLog.objects.filter(ticket=ticket).order_by('-created_at')
+    return list(logs)
+
 
 
