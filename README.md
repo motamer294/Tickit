@@ -169,8 +169,6 @@ npm run type-check
 server/          - Django backend and API
 web/             - React frontend
 ML/              - Machine learning service
-INSTALLATION.md  - Full installation guide
-README.md        - This file
 ```
 
 ## API Documentation
@@ -213,7 +211,3 @@ Real-time: Django Channels + WebSocket
 - WebSocket requires backend to be running
 - Frontend build outputs to `dist/` directory
 - Static files collected during Docker build
-
-## Support
-
-For issues, check detailed documentation in INSTALLATION.md or individual README files in server/, web/, and ML/ directories.
