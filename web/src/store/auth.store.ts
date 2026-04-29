@@ -194,8 +194,14 @@ export const useAuthStore = create<AuthState>()(
       // Called when rehydration finishes
       onRehydrateStorage: () => (state) => {
         if (state) {
-          // After rehydration completes, set isLoading to false
-          state.isLoading = false
+          // ✅ Keep isLoading=true if there's a token to validate
+          // This prevents the router from rendering too early
+          // initializeAuth() will set isLoading=false after validation completes
+          if (!state.accessToken) {
+            // No token found - safe to render login page
+            state.isLoading = false
+          }
+          // If token exists, keep isLoading=true so initializeAuth can handle it
         }
       },
     },

@@ -19,16 +19,29 @@ createApiClient(
 
 // Validate stored token on startup
 const initializeAuth = async () => {
+  console.log('[INIT] Starting authentication initialization')
+  // ✅ Ensure isLoading is true while we validate
+  // This signals to ProtectedRoute to wait (show spinner)
+  useAuthStore.getState().setLoading(true)
+  console.log('[INIT] Set isLoading=true')
+
   try {
     const token = useAuthStore.getState().accessToken
+    console.log('[INIT] Retrieved token from store:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN')
+
     if (token) {
+      console.log('[INIT] Token found, validating...')
       const result = await validateTokenApi(token)
+      console.log('[INIT] Validation result:', result)
+
       if (!result.valid) {
         // Token is invalid, logout the user
+        console.log('[INIT] Token invalid, logging out')
         useAuthStore.getState().logout()
         return
       }
 
+      console.log('[INIT] Token valid! Loading notifications...')
       // Token is valid - load initial notifications
       try {
         const notifications = await fetchNotifications(20)
@@ -49,10 +62,17 @@ const initializeAuth = async () => {
         console.warn('Failed to load initial notifications:', notificationError)
         // Don't fail app startup if notifications fail
       }
+    } else {
+      console.log('[INIT] No token found in store, user will see login page')
     }
   } catch (error) {
     // On any error, treat as invalid token
+    console.error('[INIT] Error during initialization:', error)
     useAuthStore.getState().logout()
+  } finally {
+    // ✅ Signal that validation is complete so router can render
+    useAuthStore.getState().setLoading(false)
+    console.log('[INIT] Set isLoading=false, app ready to render')
   }
 }
 

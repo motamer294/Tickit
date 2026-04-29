@@ -106,16 +106,20 @@ export async function validateTokenApi(
 ): Promise<{ valid: boolean }> {
   try {
     const client = getAxiosInstance()
-    // This endpoint should exist on backend for token validation
-    // For now, we'll use a simple GET to a protected endpoint
-    const response = await client.get<{ id: number }>('/user/me', {
+    // Call /user/me endpoint to validate token
+    // This endpoint requires valid JWT and returns current user
+    const response = await client.get('/user/me', {
       headers: { Authorization: `Bearer ${token}` },
     })
+    console.log('[AUTH] Token validation successful:', response.data)
     return { valid: !!response.data }
   } catch (error) {
+    console.warn('[AUTH] Token validation failed:', error)
     if (error instanceof APIError && error.statusCode === 401) {
+      console.log('[AUTH] Token expired or invalid')
       return { valid: false }
     }
-    throw error
+    // Any other error, treat as invalid
+    return { valid: false }
   }
 }

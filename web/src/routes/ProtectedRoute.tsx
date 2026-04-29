@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth'
 import type { UserRole } from '@/types/ticket'
 import type { JSX } from 'react'
 import { hasAnyRole } from '@/utils/rbac'
+import { Center, Loader } from '@mantine/core'
 
 interface ProtectedRouteProps {
   children: JSX.Element
@@ -24,9 +25,13 @@ export default function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, userRole } = useAuth()
 
-  // Show nothing while checking auth state
+  // Show loading spinner while checking auth state (e.g., validating tokens after page refresh)
   if (isLoading) {
-    return null
+    return (
+      <Center style={{ height: '100vh' }}>
+        <Loader size="lg" />
+      </Center>
+    )
   }
 
   // Not authenticated -> redirect to login

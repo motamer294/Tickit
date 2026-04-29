@@ -142,6 +142,16 @@ def signup(request, data: UserSignupSchema):
         "refresh": str(refresh_token)
     }
 
+# 2.1 Validate Token / Get Current User
+@api.get("/user/me")
+def get_current_user(request):
+    """Get current authenticated user info - used for token validation"""
+    return {
+        "id": request.user.id,
+        "username": request.user.username,
+        "role": request.user.role,
+    }
+
 # 2.5 Get Employees List (for dropdown in CreateTicket - Option A)
 class EmployeeSchema(Schema):
     id: int
