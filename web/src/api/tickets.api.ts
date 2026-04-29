@@ -98,6 +98,120 @@ export async function fetchTagsApi(): Promise<Tag[]> {
   }
 }
 
+/**
+ * Create a new category
+ */
+export async function createCategoryApi(payload: {
+  name: string
+  description: string
+  color: string
+}): Promise<Category> {
+  try {
+    const client = getAxiosInstance()
+    const response = await client.post<Category>('/categories', payload)
+    return response.data
+  } catch (error) {
+    if (error instanceof APIError) {
+      throw new Error(error.message)
+    }
+    throw error
+  }
+}
+
+/**
+ * Update a category
+ */
+export async function updateCategoryApi(
+  categoryId: number,
+  payload: {
+    name?: string
+    description?: string
+    color?: string
+  },
+): Promise<Category> {
+  try {
+    const client = getAxiosInstance()
+    const response = await client.patch<Category>(`/categories/${categoryId}`, payload)
+    return response.data
+  } catch (error) {
+    if (error instanceof APIError) {
+      throw new Error(error.message)
+    }
+    throw error
+  }
+}
+
+/**
+ * Delete a category
+ */
+export async function deleteCategoryApi(categoryId: number): Promise<void> {
+  try {
+    const client = getAxiosInstance()
+    await client.delete(`/categories/${categoryId}`)
+  } catch (error) {
+    if (error instanceof APIError) {
+      throw new Error(error.message)
+    }
+    throw error
+  }
+}
+
+/**
+ * Create a new tag
+ */
+export async function createTagApi(payload: {
+  name: string
+  color: string
+}): Promise<Tag> {
+  try {
+    const client = getAxiosInstance()
+    const response = await client.post<Tag>('/tags', payload)
+    return response.data
+  } catch (error) {
+    if (error instanceof APIError) {
+      throw new Error(error.message)
+    }
+    throw error
+  }
+}
+
+/**
+ * Update a tag
+ */
+export async function updateTagApi(
+  tagId: number,
+  payload: {
+    name?: string
+    color?: string
+  },
+): Promise<Tag> {
+  try {
+    const client = getAxiosInstance()
+    const response = await client.patch<Tag>(`/tags/${tagId}`, payload)
+    return response.data
+  } catch (error) {
+    if (error instanceof APIError) {
+      throw new Error(error.message)
+    }
+    throw error
+  }
+}
+
+/**
+ * Delete a tag
+ */
+export async function deleteTagApi(tagId: number): Promise<void> {
+  try {
+    const client = getAxiosInstance()
+    await client.delete(`/tags/${tagId}`)
+  } catch (error) {
+    if (error instanceof APIError) {
+      throw new Error(error.message)
+    }
+    throw error
+  }
+}
+
 // ============================================
 // Ticket Operations
 // ============================================

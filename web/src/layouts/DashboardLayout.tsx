@@ -37,6 +37,16 @@ const adminNavData = [
     path: '/app/admin/users',
   },
   {
+    label: 'Categories',
+    icon: 'solar:folder-bold-duotone',
+    path: '/app/admin/categories',
+  },
+  {
+    label: 'Tags',
+    icon: 'solar:bookmark-bold-duotone',
+    path: '/app/admin/tags',
+  },
+  {
     label: 'SLAs',
     icon: 'solar:stopwatch-bold-duotone',
     path: '/app/admin/slas',

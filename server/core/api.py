@@ -201,6 +201,47 @@ def create_category(request, data: CategoryCreateSchema):
     )
     return category
 
+class CategoryUpdateSchema(Schema):
+    name: str = None
+    description: str = None
+    color: str = None
+
+@api.patch("/categories/{category_id}", response=CategorySchema)
+def update_category(request, category_id: int, data: CategoryUpdateSchema):
+    """Update a ticket category (admin/manager only)"""
+    if request.user.role not in [User.Role.MANAGER]:
+        return api.create_response(request, {"message": "Permission denied"}, status=403)
+
+    category = get_object_or_404(Category, id=category_id)
+
+    if data.name and data.name != category.name:
+        if Category.objects.filter(name=data.name).exists():
+            return api.create_response(
+                request,
+                {"message": f"Category '{data.name}' already exists"},
+                status=400
+            )
+        category.name = data.name
+
+    if data.description is not None:
+        category.description = data.description
+
+    if data.color is not None:
+        category.color = data.color
+
+    category.save()
+    return category
+
+@api.delete("/categories/{category_id}")
+def delete_category(request, category_id: int):
+    """Delete a ticket category (admin/manager only)"""
+    if request.user.role not in [User.Role.MANAGER]:
+        return api.create_response(request, {"message": "Permission denied"}, status=403)
+
+    category = get_object_or_404(Category, id=category_id)
+    category.delete()
+    return api.create_response(request, {"message": "Category deleted successfully"})
+
 # ==========================================
 # 4. Tags Endpoints
 # ==========================================
@@ -232,6 +273,45 @@ def create_tag(request, data: TagCreateSchema):
         color=data.color
     )
     return tag
+
+class TagUpdateSchema(Schema):
+    name: str = None
+    color: str = None
+
+@api.patch("/tags/{tag_id}", response=TagSchema)
+def update_tag(request, tag_id: int, data: TagUpdateSchema):
+    """Update a tag (admin/manager only)"""
+    if request.user.role not in [User.Role.MANAGER]:
+        return api.create_response(request, {"message": "Permission denied"}, status=403)
+
+    tag = get_object_or_404(Tag, id=tag_id)
+
+    if data.name:
+        # Normalize tag name (lowercase, no spaces)
+        tag_name = data.name.lower().strip().replace(" ", "-")
+        if tag_name != tag.name and Tag.objects.filter(name=tag_name).exists():
+            return api.create_response(
+                request,
+                {"message": f"Tag '#{tag_name}' already exists"},
+                status=400
+            )
+        tag.name = tag_name
+
+    if data.color is not None:
+        tag.color = data.color
+
+    tag.save()
+    return tag
+
+@api.delete("/tags/{tag_id}")
+def delete_tag(request, tag_id: int):
+    """Delete a tag (admin/manager only)"""
+    if request.user.role not in [User.Role.MANAGER]:
+        return api.create_response(request, {"message": "Permission denied"}, status=403)
+
+    tag = get_object_or_404(Tag, id=tag_id)
+    tag.delete()
+    return api.create_response(request, {"message": "Tag deleted successfully"})
 
 ####################
 #Tickets

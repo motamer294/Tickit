@@ -17,6 +17,8 @@ import { UserProfile } from '@/pages/profile/UserProfile'
 import UserAdminPanel from '@/pages/admin/UserAdminPanel'
 import SLAManagement from '@/pages/admin/SLAManagement'
 import AuditLogViewer from '@/pages/admin/AuditLogViewer'
+import CategoryAdminPanel from '@/pages/admin/CategoryAdminPanel'
+import TagAdminPanel from '@/pages/admin/TagAdminPanel'
 
 /* layouts */
 import AuthLayout from '@/layouts/AuthLayout'
@@ -78,6 +80,8 @@ export default function RootRouter() {
             <Route path="admin">
               <Route index element={<Navigate to="users" replace />} />
               <Route path="users" element={<UserAdminPanel />} />
+              <Route path="categories" element={<CategoryAdminPanel />} />
+              <Route path="tags" element={<TagAdminPanel />} />
               <Route path="slas" element={<SLAManagement />} />
               <Route path="audit-logs" element={<AuditLogViewer />} />
             </Route>
