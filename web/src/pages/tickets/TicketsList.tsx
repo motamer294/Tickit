@@ -48,7 +48,7 @@ export default function TicketsList() {
     isLoading: ticketsLoading,
     error,
   } = useQuery({
-    queryKey: ['tickets', accessToken],
+    queryKey: ['tickets'],
     queryFn: () => fetchTickets(),
     enabled: !!accessToken,
   })

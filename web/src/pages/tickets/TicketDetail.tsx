@@ -12,6 +12,7 @@ import {
   Text,
   Textarea,
   Select,
+  MultiSelect,
   Paper,
   Avatar,
   Timeline,
@@ -38,6 +39,8 @@ import {
   uploadAttachmentApi,
   deleteAttachmentApi,
   downloadAttachmentBlob,
+  fetchCategoriesApi,
+  fetchTagsApi,
 } from '@/api/tickets.api'
 import type { TicketStatus } from '@/types/ticket'
 
@@ -477,6 +480,14 @@ export default function TicketDetail() {
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
+  const [editPriority, setEditPriority] = useState<string | null>(null)
+  const [editCategoryId, setEditCategoryId] = useState<string | null>(null)
+  const [editTagIds, setEditTagIds] = useState<string[]>([])
+
+  // Track original values to detect changes
+  const [originalCategoryId, setOriginalCategoryId] = useState<string | null>(null)
+  const [originalTagIds, setOriginalTagIds] = useState<string[]>([])
+
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [chatModalOpen, setChatModalOpen] = useState(false)
 
@@ -488,6 +499,20 @@ export default function TicketDetail() {
     queryKey: ['employees'],
     queryFn: fetchEmployeesApi,
     enabled: user?.role === 'MANAGER', // Only fetch if manager
+  })
+
+  // Fetch categories for dropdown
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: fetchCategoriesApi,
+    enabled: user?.role === 'MANAGER',
+  })
+
+  // Fetch tags for dropdown
+  const { data: tags = [] } = useQuery({
+    queryKey: ['tags'],
+    queryFn: fetchTagsApi,
+    enabled: user?.role === 'MANAGER',
   })
 
   const ticketIdNum = parseInt(ticketId || '0')
@@ -586,7 +611,7 @@ export default function TicketDetail() {
       // ✅ REMOVED: Client-side notification (server sends via WebSocket)
       // This prevents duplicate notifications
       queryClient.invalidateQueries({ queryKey: ['ticket', ticketIdNum] })
-      queryClient.invalidateQueries({ queryKey: ['tickets'] })
+      queryClient.invalidateQueries({ queryKey: ['tickets'], exact: false })
       setAssignModalOpen(false)
       setSelectedEmployeeId(null)
     },
@@ -600,22 +625,48 @@ export default function TicketDetail() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: () =>
-      updateTicketApi(ticketIdNum, {
+    mutationFn: () => {
+      const updateData: any = {
         title: editTitle,
         description: editDescription,
-      }),
-    onSuccess: () => {
+      }
+
+      // Only include priority if it's set
+      if (editPriority) {
+        updateData.priority = editPriority
+      }
+
+      // Send category_id if it changed (including clearing it)
+      if (editCategoryId !== originalCategoryId) {
+        updateData.category_id = editCategoryId ? parseInt(editCategoryId) : null
+      }
+
+      // Send tag_ids if they changed (check actual array contents, not stringified)
+      const tagsChanged = editTagIds.length !== originalTagIds.length ||
+                         editTagIds.some((id, i) => id !== originalTagIds[i])
+      if (tagsChanged) {
+        updateData.tag_ids = editTagIds.map((id) => parseInt(id))
+      }
+
+      console.log('[UpdateMutation] Sending data:', updateData)
+      console.log('[UpdateMutation] Original category:', originalCategoryId, 'New category:', editCategoryId)
+      console.log('[UpdateMutation] Original tags:', originalTagIds, 'New tags:', editTagIds)
+
+      return updateTicketApi(ticketIdNum, updateData)
+    },
+    onSuccess: (updatedTicket) => {
       notifications.show({
         title: 'Updated',
         message: 'Ticket has been updated successfully',
         color: 'green',
       })
+      console.log('[UpdateMutation] Success, updated ticket:', updatedTicket)
       queryClient.invalidateQueries({ queryKey: ['ticket', ticketIdNum] })
-      queryClient.invalidateQueries({ queryKey: ['tickets'] })
+      queryClient.invalidateQueries({ queryKey: ['tickets'], exact: false })
       setEditModalOpen(false)
     },
     onError: (error: any) => {
+      console.error('[UpdateMutation] Error:', error)
       notifications.show({
         title: 'Error',
         message: error.message || 'Failed to update ticket',
@@ -764,6 +815,14 @@ export default function TicketDetail() {
                   onClick={() => {
                     setEditTitle(ticket.title)
                     setEditDescription(ticket.description)
+                    setEditPriority(ticket.priority)
+                    const catId = ticket.category?.id ? String(ticket.category.id) : null
+                    const tagIds = ticket.tags?.map((t: any) => String(t.id)) || []
+                    setEditCategoryId(catId)
+                    setEditTagIds(tagIds)
+                    // Store originals for change detection
+                    setOriginalCategoryId(catId)
+                    setOriginalTagIds(tagIds)
                     setEditModalOpen(true)
                   }}
                   title="Edit ticket"
@@ -948,7 +1007,7 @@ export default function TicketDetail() {
                     <Text size="sm" fw={500} c="dimmed">
                       Update Status
                     </Text>
-                    {ticket.available_transitions && ticket.available_transitions.length > 0 ? (
+                    {ticket?.available_transitions?.length ? (
                       <Group>
                         <Select
                           placeholder="Select new status"
@@ -974,9 +1033,17 @@ export default function TicketDetail() {
                         </Button>
                       </Group>
                     ) : (
-                      <Text size="sm" c="dimmed" fw={500}>
-                        ✓ No status transitions available for this ticket
-                      </Text>
+                      <Group>
+                        <Text size="sm" c="dimmed" fw={500}>
+                          ⚠️  Status transitions data not available
+                        </Text>
+                        {/* Debug info */}
+                        {ticket && (
+                          <Text size="xs" c="gray">
+                            (Status: {ticket.status}, Transitions: {JSON.stringify(ticket.available_transitions)})
+                          </Text>
+                        )}
+                      </Group>
                     )}
                   </Stack>
                 </Paper>
@@ -1111,6 +1178,7 @@ export default function TicketDetail() {
         onClose={() => setEditModalOpen(false)}
         title="Edit Ticket"
         centered
+        size="lg"
       >
         <Stack gap="md">
           <TextInput
@@ -1126,6 +1194,36 @@ export default function TicketDetail() {
             onChange={(e) => setEditDescription(e.currentTarget.value)}
             minRows={5}
             maxRows={10}
+          />
+          <Select
+            label="Priority"
+            placeholder="Select priority"
+            data={[
+              { value: 'LOW', label: 'Low' },
+              { value: 'MEDIUM', label: 'Medium' },
+              { value: 'HIGH', label: 'High' },
+              { value: 'URGENT', label: 'Urgent' },
+            ]}
+            value={editPriority}
+            onChange={setEditPriority}
+            clearable
+          />
+          <Select
+            label="Category"
+            placeholder="Select category"
+            data={categories.map((cat) => ({ value: String(cat.id), label: cat.name }))}
+            value={editCategoryId}
+            onChange={setEditCategoryId}
+            clearable
+          />
+          <MultiSelect
+            label="Tags"
+            placeholder="Select tags"
+            data={tags.map((tag) => ({ value: String(tag.id), label: tag.name }))}
+            value={editTagIds}
+            onChange={setEditTagIds}
+            clearable
+            searchable
           />
           <Group justify="flex-end" gap="sm">
             <Button variant="subtle" onClick={() => setEditModalOpen(false)}>

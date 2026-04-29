@@ -705,28 +705,79 @@ def delete_ticket(request, ticket_id: int):
 
 # 6.6 Update Ticket (Manager Only) - Edit title, description, category, priority
 @api.patch("/tickets/{ticket_id}", response=TicketOutSchema)
-def update_ticket(request, ticket_id: int, data: TicketCreateSchema):
+def update_ticket(request, ticket_id: int, data: TicketUpdateSchema):
     ticket = get_object_or_404(Ticket, id=ticket_id)
 
+    print(f"[UPDATE_TICKET] Received data: title={data.title}, description={data.description}, priority={data.priority}, category_id={data.category_id}, tag_ids={data.tag_ids}")
+
     # --- SECURITY CHECK ---
-    # Only managers can edit tickets
+    # Only managers can edit tickets (priority, category, tags, title, description)
     if request.user.role != User.Role.MANAGER:
         return api.create_response(
             request,
-            {"message": "Only managers can edit tickets."},
+            {"message": "Only managers can edit ticket details."},
             status=403
         )
 
-    # Update fields
-    if hasattr(data, 'title') and data.title:
+    # ✅ VALIDATE ALL FOREIGN KEYS BEFORE SAVING
+    fields_updated = []
+    category_obj = None
+    tag_objs = []
+
+    # Validate category if provided
+    if data.category_id is not None:
+        print(f"[UPDATE_TICKET] Validating category_id={data.category_id}")
+        category_obj = get_object_or_404(Category, id=data.category_id)
+        print(f"[UPDATE_TICKET] Category found: {category_obj.name}")
+    else:
+        print(f"[UPDATE_TICKET] No category_id provided, keeping existing")
+
+    # Validate all tags if provided
+    if data.tag_ids is not None:
+        print(f"[UPDATE_TICKET] Validating tag_ids={data.tag_ids}")
+        tag_objs = []
+        for tag_id in data.tag_ids:
+            tag = get_object_or_404(Tag, id=tag_id)
+            tag_objs.append(tag)
+        print(f"[UPDATE_TICKET] Tags found: {[t.name for t in tag_objs]}")
+    else:
+        print(f"[UPDATE_TICKET] No tag_ids provided, keeping existing")
+
+    # ✅ NOW UPDATE FIELDS (validation passed)
+    if data.title and data.title.strip():
         ticket.title = data.title
-    if hasattr(data, 'description') and data.description:
+        fields_updated.append('title')
+        print(f"[UPDATE_TICKET] Updated title: {data.title}")
+    if data.description and data.description.strip():
         ticket.description = data.description
+        fields_updated.append('description')
+        print(f"[UPDATE_TICKET] Updated description")
+    if data.priority:
+        ticket.priority = data.priority
+        fields_updated.append('priority')
+        print(f"[UPDATE_TICKET] Updated priority: {data.priority}")
+    if data.category_id is not None:
+        ticket.category = category_obj
+        fields_updated.append('category')
+        print(f"[UPDATE_TICKET] Updated category: {category_obj.name if category_obj else 'None'}")
+    if data.tag_ids is not None:
+        ticket.tags.clear()
+        for tag in tag_objs:
+            ticket.tags.add(tag)
+        fields_updated.append('tags')
+        print(f"[UPDATE_TICKET] Updated tags: {[t.name for t in tag_objs]}")
 
     ticket.save()
+    print(f"[UPDATE_TICKET] Ticket saved. Fields updated: {fields_updated}")
 
     # 📝 Log audit trail
     audit_service.log_ticket_updated(ticket, request.user, request)
+
+    # 🔔 Send real-time notifications
+    notification_service.ticket_updated(ticket, request.user, None, None)
+
+    # 🔄 Broadcast real-time data update
+    realtime_service.broadcast_ticket_updated(ticket, fields_updated)
 
     return ticket
 

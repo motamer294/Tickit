@@ -464,7 +464,13 @@ export async function deleteTicketApi(ticketId: number): Promise<void> {
  */
 export async function updateTicketApi(
   ticketId: number,
-  data: { title: string; description: string },
+  data: {
+    title?: string
+    description?: string
+    priority?: string
+    category_id?: number | null
+    tag_ids?: number[]
+  },
 ): Promise<Ticket> {
   try {
     const client = getAxiosInstance()

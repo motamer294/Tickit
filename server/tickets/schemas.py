@@ -68,7 +68,7 @@ class TicketOutSchema(Schema):
 
     creator_username: Optional[str] = None
     assigned_to_username: Optional[str] = None
-    available_transitions: Optional[List[dict]] = None  # [{'status': 'PENDING', 'label': 'Pending'}, ...]
+    available_transitions: List[dict] = []  # Always include, default to empty list
 
     @staticmethod
     def resolve_creator_username(obj):
