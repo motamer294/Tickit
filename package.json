@@ -1,0 +1,11 @@
+{
+  "name": "graduation-project-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "client": "npm run dev --prefix web",
+    "server": "cd server && . venv/bin/activate && docker compose up -d",
+    "stop": "docker compose -f server/docker-compose.yml down",
+    "dev": "npm run server && npm run client"
+  }
+}
