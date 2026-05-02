@@ -68,7 +68,17 @@ class TicketOutSchema(Schema):
 
     creator_username: Optional[str] = None
     assigned_to_username: Optional[str] = None
+    assigned_to_id: Optional[int] = None
+    creator_id: Optional[int] = None
     available_transitions: List[dict] = []  # Always include, default to empty list
+
+    @staticmethod
+    def resolve_creator_id(obj):
+        return obj.created_by.id if getattr(obj, "created_by", None) else None
+
+    @staticmethod
+    def resolve_assigned_to_id(obj):
+        return obj.assigned_to.id if getattr(obj, "assigned_to", None) else None
 
     @staticmethod
     def resolve_creator_username(obj):

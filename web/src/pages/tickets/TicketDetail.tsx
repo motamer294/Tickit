@@ -748,9 +748,9 @@ export default function TicketDetail() {
   console.log('[TicketDetail] Ticket loaded:', ticket)
 
   const canUpdateStatus =
-    user?.role === 'MANAGER' || ticket.assigned_to_id === user?.id
+    user?.role === 'MANAGER' || ticket?.assigned_to_id === user?.id
   const isManager = user?.role === 'MANAGER'
-
+  
   return (
     <Container size="xl" py="lg">
       <Stack gap="lg">
@@ -1001,7 +1001,7 @@ export default function TicketDetail() {
               </Paper>
 
               {/* Status Update (if allowed) */}
-              {canUpdateStatus && (
+              {canUpdateStatus ? (
                 <Paper p="md" radius="md" withBorder>
                   <Stack gap="sm">
                     <Text size="sm" fw={500} c="dimmed">
@@ -1035,18 +1035,20 @@ export default function TicketDetail() {
                     ) : (
                       <Group>
                         <Text size="sm" c="dimmed" fw={500}>
-                          ⚠️  Status transitions data not available
+                          ⚠️ No transitions available for current status: {ticket?.status}
                         </Text>
                         {/* Debug info */}
                         {ticket && (
                           <Text size="xs" c="gray">
-                            (Status: {ticket.status}, Transitions: {JSON.stringify(ticket.available_transitions)})
+                            (Transitions: {JSON.stringify(ticket.available_transitions)})
                           </Text>
                         )}
                       </Group>
                     )}
                   </Stack>
                 </Paper>
+              ) : (
+                <></>
               )}
 
               {/* Comments Section */}
