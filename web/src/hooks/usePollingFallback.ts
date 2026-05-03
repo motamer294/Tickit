@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { apiClient } from '../api/config';
+import { useAuthStore } from '@/store/auth.store';
 
 interface PolledMessage {
   type: string;
@@ -48,10 +49,14 @@ export const usePollingFallback = (options: UsePollingFallbackOptions = {}) => {
   const isMountedRef = useRef(true);
 
   // Clear message queue when polling starts
-  const clearQueue = useCallback(async () => {
+ const clearQueue = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token') || undefined;
-      await apiClient.delete('/message_queue/clear', token);
+      const token = useAuthStore.getState().accessToken;
+
+      // If apiClient.delete(url, token) is the expected signature:
+      if (token) {
+        await apiClient.delete('/message_queue/clear', token);
+      }
     } catch (error) {
       console.warn('[Polling] Failed to clear queue:', error);
     }
@@ -63,8 +68,10 @@ export const usePollingFallback = (options: UsePollingFallbackOptions = {}) => {
   const executePoll = useCallback(async () => {
     if (!isMountedRef.current || !isPolling) return;
 
+    // FIX: Access token from Zustand store
+    const token = useAuthStore.getState().accessToken;
+
     try {
-      const token = localStorage.getItem('token');
       if (!token) {
         console.warn('[Polling] No token available');
         return;
