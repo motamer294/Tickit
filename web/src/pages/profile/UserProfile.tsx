@@ -100,7 +100,7 @@ export function UserProfile() {
 
   const handleLogout = () => {
     logout();
-    navigate("/auth/login");
+     navigate("/login");
   };
 
   const handleChangePassword = () => {

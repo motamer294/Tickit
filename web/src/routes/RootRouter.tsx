@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom' // Added Outlet
 import DashboardLayout from '@/layouts/DashboardLayout'
 import ProtectedRoute from './ProtectedRoute'
 
@@ -33,7 +33,7 @@ import Debug from '@/pages/Debug'
 import { useAuth } from '@/hooks/useAuth'
 
 export default function RootRouter() {
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated } = useAuth()
 
   return (
     <Routes>
@@ -73,27 +73,37 @@ export default function RootRouter() {
         {/* Profile - Accessible by all authenticated users */}
         <Route path="profile" element={<UserProfile />} />
 
-        {/* Admin - Only accessible to managers */}
-        {user?.role === 'MANAGER' && (
-          <>
-            <Route path="debug" element={<Debug />} />
-            <Route path="admin">
-              <Route index element={<Navigate to="users" replace />} />
-              <Route path="users" element={<UserAdminPanel />} />
-              <Route path="categories" element={<CategoryAdminPanel />} />
-              <Route path="tags" element={<TagAdminPanel />} />
-              <Route path="slas" element={<SLAManagement />} />
-              <Route path="audit-logs" element={<AuditLogViewer />} />
-            </Route>
-          </>
-        )}
+        {/* ================= ADMIN ROUTES ================= */}
+        {/* Wrapped in ProtectedRoute with 'MANAGER' requirement */}
+        <Route
+          path="debug"
+          element={
+            <ProtectedRoute requiredRoles={['MANAGER']}>
+              <Debug />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Tickets - Role-based access control */}
+        <Route
+          path="admin"
+          element={
+            <ProtectedRoute requiredRoles={['MANAGER']}>
+              <Outlet />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="users" replace />} />
+          <Route path="users" element={<UserAdminPanel />} />
+          <Route path="categories" element={<CategoryAdminPanel />} />
+          <Route path="tags" element={<TagAdminPanel />} />
+          <Route path="slas" element={<SLAManagement />} />
+          <Route path="audit-logs" element={<AuditLogViewer />} />
+        </Route>
+
+        {/* ================= TICKETS ================= */}
         <Route path="tickets">
-          {/* View tickets - all authenticated users */}
           <Route index element={<TicketsList />} />
 
-          {/* Create ticket - CUSTOMER, EMPLOYEE, and MANAGER */}
           <Route
             path="create"
             element={
@@ -103,7 +113,6 @@ export default function RootRouter() {
             }
           />
 
-          {/* View/Edit ticket - all can view, only assignee/manager can edit */}
           <Route path=":ticketId" element={<TicketDetail />} />
         </Route>
       </Route>
