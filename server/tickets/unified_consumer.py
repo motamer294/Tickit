@@ -344,7 +344,7 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
             if self.user.role == 'MANAGER':
                 return True
             # Customer can only access their own tickets
-            return ticket.created_by_id == self.user_id
+            return ticket.created_by_id == self.user_id or ticket.assigned_to_id == self.user_id
         except Ticket.DoesNotExist:
             return False
 
