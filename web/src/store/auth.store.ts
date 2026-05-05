@@ -126,7 +126,14 @@ export const useAuthStore = create<AuthState>()(
        * Called after successful login
        * Sets all auth state and marks as authenticated
        */
-      loginSuccess: (accessToken, refreshToken, user) =>
+      loginSuccess: (accessToken, refreshToken, user) => {
+        console.log('[auth.store🔐] loginSuccess action called with:', {
+          accessToken: !!accessToken,
+          accessLength: accessToken?.length,
+          refreshToken: !!refreshToken,
+          user,
+        })
+
         set({
           accessToken,
           refreshToken,
@@ -134,7 +141,17 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: true,
           isLoading: false,
           error: null,
-        }),
+        })
+
+        console.log('[auth.store🔐] State updated, new state:')
+        const newState = get() // Get the updated state
+        console.log('[auth.store🔐] Verified state:', {
+          accessToken: !!newState.accessToken,
+          accessLength: newState.accessToken?.length,
+          isAuthenticated: newState.isAuthenticated,
+          user: newState.user,
+        })
+      },
 
       /**
        * Clear all authentication state

@@ -43,20 +43,40 @@ export interface SignupResponse {
  */
 export async function loginApi(payload: LoginPayload): Promise<AuthResponse> {
   try {
+    console.log('[loginApi] Starting login for:', payload.username)
     const client = getAxiosInstance()
+
     // Use custom /login endpoint that includes role in JWT
     const response = await client.post<AuthResponse>('/login', {
       username: payload.username,
       password: payload.password,
     })
+
+    console.log('[loginApi] ✅ Response received:')
+    console.log('  - Status:', response.status)
+    console.log('  - Has access token:', !!response.data.access)
+    console.log('  - Has refresh token:', !!response.data.refresh)
+    console.log('  - Has user:', !!response.data.user)
+    console.log('  - Response keys:', Object.keys(response.data))
+    console.log('  - Full data:', response.data)
+
     return response.data
   } catch (error) {
+    console.error('[loginApi] ❌ Login failed')
+
     if (error instanceof APIError) {
+      console.error('[loginApi] APIError:', {
+        statusCode: error.statusCode,
+        message: error.message,
+        data: error.data,
+      })
       // Translate common API errors to user-friendly messages
       if (error.statusCode === 401) {
         throw new Error('Invalid username or password')
       }
     }
+
+    console.error('[loginApi] Error object:', error)
     throw error
   }
 }
