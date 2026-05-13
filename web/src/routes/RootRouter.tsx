@@ -19,6 +19,7 @@ import SLAManagement from '@/pages/admin/SLAManagement'
 import AuditLogViewer from '@/pages/admin/AuditLogViewer'
 import CategoryAdminPanel from '@/pages/admin/CategoryAdminPanel'
 import TagAdminPanel from '@/pages/admin/TagAdminPanel'
+import TeamManagementPanel from '@/pages/admin/TeamManagementPanel'
 
 /* layouts */
 import AuthLayout from '@/layouts/AuthLayout'
@@ -94,6 +95,7 @@ export default function RootRouter() {
         >
           <Route index element={<Navigate to="users" replace />} />
           <Route path="users" element={<UserAdminPanel />} />
+          <Route path="teams" element={<TeamManagementPanel />} />
           <Route path="categories" element={<CategoryAdminPanel />} />
           <Route path="tags" element={<TagAdminPanel />} />
           <Route path="slas" element={<SLAManagement />} />
