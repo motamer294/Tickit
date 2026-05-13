@@ -12,7 +12,26 @@ class User(AbstractUser):
         choices=Role.choices,
         default=Role.CUSTOMER
     )
+    
+    # Team membership - for organizing employees into teams
+    # Nullable for MANAGER and CUSTOMER roles; required for EMPLOYEE
+    team = models.ForeignKey(
+        'departments.Team',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='members',
+        help_text="Team assignment for EMPLOYEE role (optional)"
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.username} ({self.role})"
+    
+    @property
+    def department(self):
+        """Get department through team membership"""
+        if self.team:
+            return self.team.department
+        return None
