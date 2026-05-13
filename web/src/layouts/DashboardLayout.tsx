@@ -37,6 +37,11 @@ const adminNavData = [
     path: '/app/admin/users',
   },
   {
+    label: 'Teams',
+    icon: 'solar:people-nearby-bold-duotone',
+    path: '/app/admin/teams',
+  },
+  {
     label: 'Categories',
     icon: 'solar:folder-bold-duotone',
     path: '/app/admin/categories',
