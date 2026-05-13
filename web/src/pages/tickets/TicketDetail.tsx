@@ -42,6 +42,10 @@ import {
   fetchCategoriesApi,
   fetchTagsApi,
 } from '@/api/tickets.api'
+import {
+  fetchEmployeesWithTeamApi,
+  groupEmployeesByTeamOnly,
+} from '@/api/departments.api'
 import type { TicketStatus } from '@/types/ticket'
 
 const statusColors: Record<TicketStatus, string> = {
@@ -494,10 +498,10 @@ export default function TicketDetail() {
   // Store ticket info for notifications
   const ticketTitle = useRef<string>('')
 
-  // Fetch employees for dropdown
+  // Fetch employees with team info for grouped dropdown
   const { data: employees = [], isLoading: employeesLoading } = useQuery({
-    queryKey: ['employees'],
-    queryFn: fetchEmployeesApi,
+    queryKey: ['employees-with-team'],
+    queryFn: fetchEmployeesWithTeamApi,
     enabled: user?.role === 'MANAGER', // Only fetch if manager
   })
 
@@ -1144,10 +1148,7 @@ export default function TicketDetail() {
             placeholder={
               employeesLoading ? 'Loading employees...' : 'Choose an employee'
             }
-            data={employees.map((emp) => ({
-              value: emp.id.toString(),
-              label: emp.username,
-            }))}
+            data={groupEmployeesByTeamOnly(employees)}
             value={selectedEmployeeId}
             onChange={setSelectedEmployeeId}
             disabled={employeesLoading || employees.length === 0}

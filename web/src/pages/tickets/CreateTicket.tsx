@@ -22,9 +22,13 @@ import { useForm } from '@mantine/form'
 import { Icon } from '@iconify-icon/react'
 import { notifications } from '@mantine/notifications'
 import { createTicketApi, fetchEmployeesApi, fetchCategoriesApi, fetchTagsApi } from '@/api/tickets.api'
+import {
+  fetchEmployeesWithTeamApi,
+  groupEmployeesByTeamOnly,
+} from '@/api/departments.api'
 import { useAuth } from '@/hooks/useAuth'
 import type { Ticket } from '@/types/ticket'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const priorityColors: Record<string, string> = {
   URGENT: '#FF1493',
@@ -53,12 +57,25 @@ export default function CreateTicket() {
     null,
   )
 
-  // Fetch employees for dropdown (Option A)
+  // Fetch employees with team info for grouped dropdown (Option A)
   const { data: employees = [], isLoading: employeesLoading } = useQuery({
-    queryKey: ['employees'],
-    queryFn: fetchEmployeesApi,
+    queryKey: ['employees-with-team'],
+    queryFn: fetchEmployeesWithTeamApi,
     enabled: user?.role === 'MANAGER',
   })
+
+  // Debug: Log employees when loaded
+  useEffect(() => {
+    if (employees.length > 0) {
+      console.log('👥 EMPLOYEES_DEBUG START')
+      console.log('Total:', employees.length)
+      console.log('Employee 0:', JSON.stringify(employees[0], null, 2))
+      console.log('Employee 0 team field exists:', 'team' in employees[0])
+      console.log('Employee 0 team value:', employees[0].team)
+      console.log('All employee keys:', Object.keys(employees[0]))
+      console.log('👥 EMPLOYEES_DEBUG END')
+    }
+  }, [employees])
 
   // Fetch categories
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
@@ -127,7 +144,6 @@ export default function CreateTicket() {
       })
     },
   })
-
   // Show success screen with AI analysis
   if (createdTicket) {
     return (
@@ -508,10 +524,7 @@ export default function CreateTicket() {
                             ? 'Loading employees...'
                             : 'Choose an employee (optional)'
                         }
-                        data={employees.map((emp) => ({
-                          value: emp.id.toString(),
-                          label: emp.username,
-                        }))}
+                        data={groupEmployeesByTeamOnly(employees)}
                         value={selectedEmployeeId}
                         onChange={setSelectedEmployeeId}
                         disabled={employeesLoading || employees.length === 0}
