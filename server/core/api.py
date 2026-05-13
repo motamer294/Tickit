@@ -38,6 +38,8 @@ import tickets.schemas as schemas
 from tickets.notification_service import notification_service
 from tickets.realtime_service import realtime_service
 from tickets.audit_service import audit_service
+# Import departments router
+from departments.views import router as departments_router
 
 
 # Custom AccessToken that includes user role
@@ -152,20 +154,54 @@ def get_current_user(request):
         "role": request.user.role,
     }
 
-# 2.5 Get Employees List (for dropdown in CreateTicket - Option A)
-class EmployeeSchema(Schema):
-    id: int
-    username: str
-
-@api.get("/employees", response=List[EmployeeSchema])
+# 2.5 Get Employees List (for dropdown in CreateTicket)
+# IMPORTANT: Returns comprehensive employee data with team and department information
+@api.get("/employees")
 def list_employees(request):
-    """Get all employees for assignment dropdown (managers only)"""
+    """Get all employees for assignment in tickets - with complete team/department info"""
     if request.user.role != User.Role.MANAGER:
-        return api.create_response(request, {"message": "Only managers can view employees"}, status=403)
+        return {"message": "Only managers can view employees"}, 403
 
-    # Return User objects so Ninja serializes them properly as EmployeeSchema
-    employees = User.objects.filter(role=User.Role.EMPLOYEE).order_by('username')
-    return employees
+    # Build comprehensive employee response manually without Pydantic filtering
+    employees = User.objects.filter(
+        role__in=[User.Role.EMPLOYEE, User.Role.MANAGER]
+    ).select_related('team__department')
+    
+    result = []
+    for emp in employees:
+        team_dict = None
+        if emp.team:
+            team_dict = {
+                'id': emp.team.id,
+                'name': emp.team.name,
+                'description': emp.team.description or '',
+                'department_id': emp.team.department_id,
+                'is_active': emp.team.is_active,
+                'team_lead_id': emp.team.team_lead_id,
+                'employee_count': emp.team.members.filter(is_active=True).count(),
+            }
+        
+        dept_dict = None
+        if emp.team and emp.team.department:
+            dept_dict = {
+                'id': emp.team.department.id,
+                'name': emp.team.department.name,
+                'description': emp.team.department.description or '',
+            }
+        
+        result.append({
+            'id': emp.id,
+            'username': emp.username,
+            'email': emp.email,
+            'first_name': emp.first_name or '',
+            'last_name': emp.last_name or '',
+            'role': emp.role,
+            'team_id': emp.team_id,
+            'team': team_dict,
+            'department': dept_dict,
+        })
+    
+    return result
 
 # ==========================================
 # 3. Categories Endpoints
@@ -1602,5 +1638,10 @@ def get_ticket_audit_logs(request, ticket_id: int):
     logs = AuditLog.objects.filter(ticket=ticket).order_by('-created_at')
     return list(logs)
 
+
+# ==========================================
+# Register Departments Router
+# ==========================================
+api.add_router('', departments_router)
 
 
