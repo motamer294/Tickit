@@ -166,7 +166,7 @@ def list_employees(request):
     employees = User.objects.filter(
         role__in=[User.Role.EMPLOYEE, User.Role.MANAGER]
     ).select_related('team__department')
-    
+
     result = []
     for emp in employees:
         team_dict = None
@@ -180,7 +180,7 @@ def list_employees(request):
                 'team_lead_id': emp.team.team_lead_id,
                 'employee_count': emp.team.members.filter(is_active=True).count(),
             }
-        
+
         dept_dict = None
         if emp.team and emp.team.department:
             dept_dict = {
@@ -188,7 +188,7 @@ def list_employees(request):
                 'name': emp.team.department.name,
                 'description': emp.team.department.description or '',
             }
-        
+
         result.append({
             'id': emp.id,
             'username': emp.username,
@@ -200,7 +200,7 @@ def list_employees(request):
             'team': team_dict,
             'department': dept_dict,
         })
-    
+        
     return result
 
 # ==========================================

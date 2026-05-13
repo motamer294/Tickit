@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'ninja_jwt',
     'accounts',
     'tickets',
+    'departments',
     'corsheaders',
 
 ]
