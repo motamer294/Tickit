@@ -6,6 +6,8 @@ const queryClient = new QueryClient({
     queries: {
       retry: false,
       refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes
     },
   },
 })
@@ -19,3 +21,12 @@ export default function ReactQueryProvider({
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   )
 }
+declare global {
+  interface Window {
+    __TANSTACK_QUERY_CLIENT__:
+      import('@tanstack/query-core')
+        .QueryClient
+  }
+}
+
+window.__TANSTACK_QUERY_CLIENT__ = queryClient
