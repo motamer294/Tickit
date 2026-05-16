@@ -3,7 +3,7 @@
  * Manage departments, teams, and team members
  */
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Container,
@@ -12,14 +12,15 @@ import {
   Text,
   Paper,
   Button,
-  Table,
-  Badge,
   ActionIcon,
   Tabs,
   Center,
   Loader,
   Tooltip,
   Modal,
+  Box,
+  Avatar,
+  TextInput,
 } from '@mantine/core'
 import { Icon } from '@iconify-icon/react'
 import { notifications } from '@mantine/notifications'
@@ -43,31 +44,143 @@ import { DepartmentForm } from '@/components/DepartmentForm'
 import { TeamForm } from '@/components/TeamForm'
 import { TeamMemberManager } from '@/components/TeamMemberManager'
 
-// ============================================
-// Component
-// ============================================
+// ─── Brand palette (matches Dashboard, TicketsList, UserAdminPanel) ────────────
+
+const BRAND = {
+  purple:      '#7F77DD',
+  purpleDark:  '#534AB7',
+  purpleLight: '#EEEDFE',
+  purpleText:  '#3C3489',
+  red:         '#E24B4A',
+  redLight:    '#FCEBEB',
+  redText:     '#791F1F',
+  amber:       '#EF9F27',
+  amberLight:  '#FAEEDA',
+  amberText:   '#633806',
+  green:       '#639922',
+  greenLight:  '#EAF3DE',
+  greenText:   '#27500A',
+  gray:        '#B4B2A9',
+  grayLight:   '#F1EFE8',
+  grayText:    '#444441',
+  blue:        '#378ADD',
+  blueLight:   '#E6F1FB',
+  blueText:    '#0C447C',
+}
+
+const AVATAR_PALETTES = [
+  { bg: '#EEEDFE', color: '#3C3489' },
+  { bg: '#E1F5EE', color: '#085041' },
+  { bg: '#FAEEDA', color: '#633806' },
+  { bg: '#FAECE7', color: '#712B13' },
+  { bg: '#E6F1FB', color: '#0C447C' },
+  { bg: '#FBEAF0', color: '#72243E' },
+]
+
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+// ─── Shared sub-components ─────────────────────────────────────────────────────
+
+function StatCard({
+  label,
+  value,
+  icon,
+  accentColor,
+}: {
+  label: string
+  value: number
+  icon: string
+  accentColor: string
+}) {
+  return (
+    <Paper
+      radius="md"
+      p="md"
+      style={{
+        border: '0.5px solid var(--mantine-color-default-border)',
+        position: 'relative',
+        overflow: 'hidden',
+        flex: 1,
+      }}
+    >
+      <Group justify="space-between" mb={8}>
+        <Text size="xs" c="dimmed" tt="uppercase" fw={500} style={{ letterSpacing: '0.05em' }}>
+          {label}
+        </Text>
+        <Icon icon={icon} width={15} style={{ color: accentColor, opacity: 0.75 }} />
+      </Group>
+      <Text fw={500} style={{ fontSize: 28, lineHeight: 1 }}>{value}</Text>
+      <Box
+        style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          height: 3, background: accentColor,
+        }}
+      />
+    </Paper>
+  )
+}
+
+// Pill count badge inline
+function CountBadge({ value, label }: { value: number; label: string }) {
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        fontSize: 11,
+        fontWeight: 500,
+        padding: '3px 9px',
+        borderRadius: 20,
+        background: BRAND.purpleLight,
+        color: BRAND.purpleText,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {value} {label}
+    </span>
+  )
+}
+
+const TH_STYLE: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 500,
+  color: 'var(--mantine-color-dimmed)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+  paddingBottom: 10,
+  whiteSpace: 'nowrap',
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function TeamManagementPanel() {
   const queryClient = useQueryClient()
 
-  // State
-  const [activeTab, setActiveTab] = useState<string | null>('departments')
+  const [activeTab, setActiveTab]               = useState<string | null>('departments')
   const [departmentFormOpen, setDepartmentFormOpen] = useState(false)
-  const [teamFormOpen, setTeamFormOpen] = useState(false)
+  const [teamFormOpen, setTeamFormOpen]         = useState(false)
   const [memberManagerOpen, setMemberManagerOpen] = useState(false)
-  const [editingDepartment, setEditingDepartment] = useState<Department | null>(
-    null,
-  )
-  const [editingTeam, setEditingTeam] = useState<Team | null>(null)
-  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
+  const [editingDepartment, setEditingDepartment] = useState<Department | null>(null)
+  const [editingTeam, setEditingTeam]           = useState<Team | null>(null)
+  const [selectedTeam, setSelectedTeam]         = useState<Team | null>(null)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [deleteItem, setDeleteItem] = useState<{
     type: 'department' | 'team'
     id: number
     name: string
   } | null>(null)
+  const [deptSearch, setDeptSearch]   = useState('')
+  const [teamSearch, setTeamSearch]   = useState('')
 
-  // Queries
+  // ── Queries ──
   const {
     data: departments = [],
     isLoading: departmentsLoading,
@@ -75,8 +188,8 @@ export default function TeamManagementPanel() {
   } = useQuery({
     queryKey: ['admin-departments'],
     queryFn: fetchDepartmentsApi,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 1000 * 60 * 10, // 10 minutes
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
   })
 
   const {
@@ -86,64 +199,39 @@ export default function TeamManagementPanel() {
   } = useQuery({
     queryKey: ['admin-teams'],
     queryFn: () => fetchTeamsApi(),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 1000 * 60 * 10, // 10 minutes
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
   })
 
-  const {
-    data: employees = [],
-  } = useQuery({
+  const { data: employees = [] } = useQuery({
     queryKey: ['admin-employees'],
     queryFn: () => fetchEmployeesWithTeamApi(),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 1000 * 60 * 10, // 10 minutes
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
   })
 
-  // Mutations
+  // ── Mutations ──
   const createDeptMutation = useMutation({
-    mutationFn: (data: Parameters<typeof createDepartmentApi>[0]) =>
-      createDepartmentApi(data),
+    mutationFn: (data: Parameters<typeof createDepartmentApi>[0]) => createDepartmentApi(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-departments'] })
-      notifications.show({
-        title: 'Department Created',
-        message: 'New department has been created successfully',
-        color: 'green',
-      })
+      notifications.show({ title: 'Department created', message: 'New department has been created successfully', color: 'green' })
       setDepartmentFormOpen(false)
       setEditingDepartment(null)
     },
-    onError: (error) => {
-      notifications.show({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to create department',
-        color: 'red',
-      })
-    },
+    onError: (err) => notifications.show({ title: 'Error', message: err instanceof Error ? err.message : 'Failed to create department', color: 'red' }),
   })
 
   const updateDeptMutation = useMutation({
-    mutationFn: async (data: {
-      id: number
-      payload: Parameters<typeof updateDepartmentApi>[1]
-    }) => updateDepartmentApi(data.id, data.payload),
+    mutationFn: ({ id, payload }: { id: number; payload: Parameters<typeof updateDepartmentApi>[1] }) =>
+      updateDepartmentApi(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-departments'] })
-      notifications.show({
-        title: 'Department Updated',
-        message: 'Department has been updated successfully',
-        color: 'green',
-      })
+      notifications.show({ title: 'Department updated', message: 'Department has been updated successfully', color: 'green' })
       setDepartmentFormOpen(false)
       setEditingDepartment(null)
     },
-    onError: (error) => {
-      notifications.show({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to update department',
-        color: 'red',
-      })
-    },
+    onError: (err) => notifications.show({ title: 'Error', message: err instanceof Error ? err.message : 'Failed to update department', color: 'red' }),
   })
 
   const deleteDeptMutation = useMutation({
@@ -151,432 +239,544 @@ export default function TeamManagementPanel() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-departments'] })
       queryClient.invalidateQueries({ queryKey: ['admin-teams'] })
-      notifications.show({
-        title: 'Department Deleted',
-        message: 'Department has been deleted successfully',
-        color: 'green',
-      })
+      notifications.show({ title: 'Department deleted', message: 'Department has been deleted', color: 'green' })
       setDeleteConfirmOpen(false)
       setDeleteItem(null)
     },
-    onError: (error) => {
-      notifications.show({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to delete department',
-        color: 'red',
-      })
-    },
+    onError: (err) => notifications.show({ title: 'Error', message: err instanceof Error ? err.message : 'Failed to delete department', color: 'red' }),
   })
 
   const createTeamMutation = useMutation({
     mutationFn: (data: Parameters<typeof createTeamApi>[0]) => createTeamApi(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-teams'] })
-      notifications.show({
-        title: 'Team Created',
-        message: 'New team has been created successfully',
-        color: 'green',
-      })
+      notifications.show({ title: 'Team created', message: 'New team has been created successfully', color: 'green' })
       setTeamFormOpen(false)
       setEditingTeam(null)
     },
-    onError: (error) => {
-      notifications.show({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to create team',
-        color: 'red',
-      })
-    },
+    onError: (err) => notifications.show({ title: 'Error', message: err instanceof Error ? err.message : 'Failed to create team', color: 'red' }),
   })
 
   const updateTeamMutation = useMutation({
-    mutationFn: async (data: {
-      id: number
-      payload: Parameters<typeof updateTeamApi>[1]
-    }) => updateTeamApi(data.id, data.payload),
+    mutationFn: ({ id, payload }: { id: number; payload: Parameters<typeof updateTeamApi>[1] }) =>
+      updateTeamApi(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-teams'] })
-      notifications.show({
-        title: 'Team Updated',
-        message: 'Team has been updated successfully',
-        color: 'green',
-      })
+      notifications.show({ title: 'Team updated', message: 'Team has been updated successfully', color: 'green' })
       setTeamFormOpen(false)
       setEditingTeam(null)
     },
-    onError: (error) => {
-      notifications.show({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to update team',
-        color: 'red',
-      })
-    },
+    onError: (err) => notifications.show({ title: 'Error', message: err instanceof Error ? err.message : 'Failed to update team', color: 'red' }),
   })
 
   const deleteTeamMutation = useMutation({
     mutationFn: (id: number) => deleteTeamApi(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-teams'] })
-      notifications.show({
-        title: 'Team Deleted',
-        message: 'Team has been deleted successfully',
-        color: 'green',
-      })
+      notifications.show({ title: 'Team deleted', message: 'Team has been deleted', color: 'green' })
       setDeleteConfirmOpen(false)
       setDeleteItem(null)
     },
-    onError: (error) => {
-      notifications.show({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to delete team',
-        color: 'red',
-      })
-    },
+    onError: (err) => notifications.show({ title: 'Error', message: err instanceof Error ? err.message : 'Failed to delete team', color: 'red' }),
   })
 
   const addMemberMutation = useMutation({
-    mutationFn: async (data: { teamId: number; userId: number }) =>
-      addTeamMemberApi(data.teamId, data.userId),
+    mutationFn: ({ teamId, userId }: { teamId: number; userId: number }) =>
+      addTeamMemberApi(teamId, userId),
     onSuccess: (updatedTeam) => {
-      // Update selectedTeam immediately with the response data
-      if (updatedTeam) {
-        setSelectedTeam(updatedTeam as any)
-      }
-      // Invalidate queries for background refetch
+      if (updatedTeam) setSelectedTeam(updatedTeam as any)
       queryClient.invalidateQueries({ queryKey: ['admin-teams'] })
-      if (selectedTeam) {
-        queryClient.invalidateQueries({
-          queryKey: ['team-detail', selectedTeam.id],
-        })
-      }
+      if (selectedTeam) queryClient.invalidateQueries({ queryKey: ['team-detail', selectedTeam.id] })
     },
-    onError: (error) => {
-      notifications.show({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to add member',
-        color: 'red',
-      })
-    },
+    onError: (err) => notifications.show({ title: 'Error', message: err instanceof Error ? err.message : 'Failed to add member', color: 'red' }),
   })
 
   const removeMemberMutation = useMutation({
-    mutationFn: async (data: { teamId: number; userId: number }) =>
-      removeTeamMemberApi(data.teamId, data.userId),
+    mutationFn: ({ teamId, userId }: { teamId: number; userId: number }) =>
+      removeTeamMemberApi(teamId, userId),
     onSuccess: (updatedTeam) => {
-      // Update selectedTeam immediately with the response data
-      if (updatedTeam) {
-        setSelectedTeam(updatedTeam as any)
-      }
-      // Invalidate queries for background refetch
+      if (updatedTeam) setSelectedTeam(updatedTeam as any)
       queryClient.invalidateQueries({ queryKey: ['admin-teams'] })
-      if (selectedTeam) {
-        queryClient.invalidateQueries({
-          queryKey: ['team-detail', selectedTeam.id],
-        })
-      }
+      if (selectedTeam) queryClient.invalidateQueries({ queryKey: ['team-detail', selectedTeam.id] })
     },
-    onError: (error) => {
-      notifications.show({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to remove member',
-        color: 'red',
-      })
-    },
+    onError: (err) => notifications.show({ title: 'Error', message: err instanceof Error ? err.message : 'Failed to remove member', color: 'red' }),
   })
 
-  // Handlers
-  const handleDeleteClick = (
-    type: 'department' | 'team',
-    id: number,
-    name: string,
-  ) => {
+  // ── Handlers ──
+  const handleDeleteClick = (type: 'department' | 'team', id: number, name: string) => {
     setDeleteItem({ type, id, name })
     setDeleteConfirmOpen(true)
   }
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = () => {
     if (!deleteItem) return
-
-    if (deleteItem.type === 'department') {
-      deleteDeptMutation.mutate(deleteItem.id)
-    } else {
-      deleteTeamMutation.mutate(deleteItem.id)
-    }
+    if (deleteItem.type === 'department') deleteDeptMutation.mutate(deleteItem.id)
+    else deleteTeamMutation.mutate(deleteItem.id)
   }
 
   const handleOpenTeamManager = async (team: Team) => {
-    // Fetch full team details with members
     try {
       const fullTeam = await fetchTeamDetailApi(team.id)
       setSelectedTeam(fullTeam)
       setMemberManagerOpen(true)
     } catch {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to load team details',
-        color: 'red',
-      })
+      notifications.show({ title: 'Error', message: 'Failed to load team details', color: 'red' })
     }
   }
 
+  // ── Filtered lists ──
+  const filteredDepts = useMemo(() => {
+    if (!deptSearch.trim()) return departments
+    const q = deptSearch.toLowerCase()
+    return departments.filter(
+      (d: Department) =>
+        d.name.toLowerCase().includes(q) ||
+        d.description?.toLowerCase().includes(q),
+    )
+  }, [departments, deptSearch])
+
+  const filteredTeams = useMemo(() => {
+    if (!teamSearch.trim()) return teams
+    const q = teamSearch.toLowerCase()
+    return teams.filter((t: Team) => t.name.toLowerCase().includes(q))
+  }, [teams, teamSearch])
+
+  // ── Derived counts ──
+  const totalMembers = teams.reduce((s: number, t: Team) => s + (t.employee_count ?? 0), 0)
+
+  // ─── Render ───────────────────────────────────────────────────────────────────
+
   return (
-    <Container size="xl" py="xl">
-      <Stack gap="xl">
-        {/* Header */}
-        <Group justify="space-between">
-          <div>
-            <Text size="lg" fw={700}>
-              Team Management
-            </Text>
-            <Text size="sm" c="dimmed">
-              Manage departments, teams, and team members
-            </Text>
-          </div>
+    <Container size="xl" py="lg">
+      <Stack gap="lg">
+
+        {/* ── Header ── */}
+        <Group justify="space-between" align="flex-end">
+          <Box>
+            <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>Team Management</Text>
+            <Text size="sm" c="dimmed" mt={2}>Manage departments, teams, and team members</Text>
+          </Box>
         </Group>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onChange={setActiveTab}>
-          <Tabs.List>
-            <Tabs.Tab value="departments" leftSection={<Icon icon="solar:organization-linear" width={18} />}>
-              Departments
-            </Tabs.Tab>
-            <Tabs.Tab value="teams" leftSection={<Icon icon="solar:people-nearby-bold-duotone" width={18} />}>
-              Teams
-            </Tabs.Tab>
-          </Tabs.List>
+        {/* ── Stat cards ── */}
+        <Group gap={10} wrap="nowrap">
+          <StatCard label="Departments"   value={departments.length} icon="solar:buildings-3-linear"              accentColor={BRAND.purple} />
+          <StatCard label="Teams"         value={teams.length}       icon="solar:people-nearby-linear"            accentColor={BRAND.blue}   />
+          <StatCard label="Total members" value={totalMembers}       icon="solar:users-group-two-rounded-linear"  accentColor={BRAND.green}  />
+          <StatCard label="Employees"     value={employees.length}   icon="solar:user-id-linear"                  accentColor={BRAND.amber}  />
+        </Group>
 
-          {/* Departments Tab */}
-          <Tabs.Panel value="departments" pt="md">
-            <Stack gap="md">
-              <Group justify="space-between">
-                <Text fw={600}>Departments ({departments.length})</Text>
-                <Button
-                  leftSection={<Icon icon="solar:add-circle-bold-duotone" width={18} />}
-                  onClick={() => {
-                    setEditingDepartment(null)
-                    setDepartmentFormOpen(true)
+        {/* ── Tabs ── */}
+        <Paper radius="md" style={{ border: '0.5px solid var(--mantine-color-default-border)', overflow: 'hidden' }}>
+          <Tabs
+            value={activeTab}
+            onChange={setActiveTab}
+            styles={{
+              list: {
+                padding: '0 16px',
+                borderBottom: '0.5px solid var(--mantine-color-default-border)',
+                gap: 0,
+              },
+              tab: { fontSize: 13, fontWeight: 500, padding: '12px 16px' },
+            }}
+          >
+            <Tabs.List>
+              <Tabs.Tab
+                value="departments"
+                leftSection={<Icon icon="solar:buildings-3-linear" width={15} />}
+              >
+                Departments
+                <span
+                  style={{
+                    marginLeft: 6,
+                    fontSize: 10,
+                    fontWeight: 600,
+                    padding: '1px 6px',
+                    borderRadius: 10,
+                    background: activeTab === 'departments' ? BRAND.purpleLight : 'var(--mantine-color-default-hover)',
+                    color: activeTab === 'departments' ? BRAND.purpleText : 'var(--mantine-color-dimmed)',
                   }}
                 >
-                  New Department
-                </Button>
-              </Group>
-
-              {departmentsLoading ? (
-                <Center py="xl">
-                  <Loader />
-                </Center>
-              ) : departmentsError ? (
-                <Paper p="md" radius="md" bg="red.0">
-                  <Text c="red">Failed to load departments</Text>
-                </Paper>
-              ) : departments.length === 0 ? (
-                <Paper p="md" radius="md" withBorder>
-                  <Center>
-                    <Text c="dimmed">No departments created yet</Text>
-                  </Center>
-                </Paper>
-              ) : (
-                <Paper radius="md" withBorder>
-                  <Table striped highlightOnHover>
-                    <Table.Thead>
-                      <Table.Tr>
-                        <Table.Th>Name</Table.Th>
-                        <Table.Th>Description</Table.Th>
-                        <Table.Th w="15%">Teams</Table.Th>
-                        <Table.Th w="15%">Actions</Table.Th>
-                      </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                      {departments.map((dept) => (
-                        <Table.Tr key={dept.id}>
-                          <Table.Td fw={500}>{dept.name}</Table.Td>
-                          <Table.Td c="dimmed">
-                            {dept.description || '—'}
-                          </Table.Td>
-                          <Table.Td>
-                            <Badge variant="light">
-                              {dept.team_count ?? 0} teams
-                            </Badge>
-                          </Table.Td>
-                          <Table.Td>
-                            <Group gap="xs">
-                              <Tooltip label="Edit">
-                                <ActionIcon
-                                  variant="light"
-                                  color="blue"
-                                  size="sm"
-                                  onClick={() => {
-                                    setEditingDepartment(dept)
-                                    setDepartmentFormOpen(true)
-                                  }}
-                                >
-                                  <Icon icon="solar:pen-new-round-linear" width={16} />
-                                </ActionIcon>
-                              </Tooltip>
-                              <Tooltip label="Delete">
-                                <ActionIcon
-                                  variant="light"
-                                  color="red"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleDeleteClick('department', dept.id, dept.name)
-                                  }
-                                >
-                                  <Icon icon="solar:trash-bin-trash-linear" width={16} />
-                                </ActionIcon>
-                              </Tooltip>
-                            </Group>
-                          </Table.Td>
-                        </Table.Tr>
-                      ))}
-                    </Table.Tbody>
-                  </Table>
-                </Paper>
-              )}
-            </Stack>
-          </Tabs.Panel>
-
-          {/* Teams Tab */}
-          <Tabs.Panel value="teams" pt="md">
-            <Stack gap="md">
-              <Group justify="space-between">
-                <Text fw={600}>Teams ({teams.length})</Text>
-                <Button
-                  leftSection={<Icon icon="solar:add-circle-bold-duotone" width={18} />}
-                  onClick={() => {
-                    setEditingTeam(null)
-                    setTeamFormOpen(true)
+                  {departments.length}
+                </span>
+              </Tabs.Tab>
+              <Tabs.Tab
+                value="teams"
+                leftSection={<Icon icon="solar:people-nearby-linear" width={15} />}
+              >
+                Teams
+                <span
+                  style={{
+                    marginLeft: 6,
+                    fontSize: 10,
+                    fontWeight: 600,
+                    padding: '1px 6px',
+                    borderRadius: 10,
+                    background: activeTab === 'teams' ? BRAND.purpleLight : 'var(--mantine-color-default-hover)',
+                    color: activeTab === 'teams' ? BRAND.purpleText : 'var(--mantine-color-dimmed)',
                   }}
                 >
-                  New Team
-                </Button>
-              </Group>
+                  {teams.length}
+                </span>
+              </Tabs.Tab>
+            </Tabs.List>
 
-              {teamsLoading ? (
-                <Center py="xl">
-                  <Loader />
-                </Center>
-              ) : teamsError ? (
-                <Paper p="md" radius="md" bg="red.0">
-                  <Text c="red">Failed to load teams</Text>
-                </Paper>
-              ) : teams.length === 0 ? (
-                <Paper p="md" radius="md" withBorder>
-                  <Center>
-                    <Text c="dimmed">No teams created yet</Text>
+            {/* ── Departments panel ── */}
+            <Tabs.Panel value="departments">
+              <Box p="md">
+                <Group justify="space-between" mb="md">
+                  <TextInput
+                    placeholder="Search departments…"
+                    value={deptSearch}
+                    onChange={(e) => setDeptSearch(e.currentTarget.value)}
+                    leftSection={<Icon icon="solar:magnifer-linear" width={14} style={{ color: 'var(--mantine-color-dimmed)' }} />}
+                    rightSection={
+                      deptSearch ? (
+                        <ActionIcon variant="subtle" size="xs" onClick={() => setDeptSearch('')}>
+                          <Icon icon="solar:close-circle-linear" width={13} />
+                        </ActionIcon>
+                      ) : null
+                    }
+                    style={{ width: 240 }}
+                    styles={{ input: { fontSize: 13, height: 34 } }}
+                  />
+                  <Button
+                    size="sm"
+                    leftSection={<Icon icon="solar:add-circle-bold-duotone" width={15} />}
+                    style={{ background: BRAND.purpleDark, border: 'none' }}
+                    onClick={() => { setEditingDepartment(null); setDepartmentFormOpen(true) }}
+                  >
+                    New department
+                  </Button>
+                </Group>
+
+                {departmentsLoading ? (
+                  <Center py={80}><Loader color={BRAND.purple} /></Center>
+                ) : departmentsError ? (
+                  <Paper p="md" radius="md" style={{ background: BRAND.redLight, border: `0.5px solid ${BRAND.red}33` }}>
+                    <Group gap={8}>
+                      <Icon icon="solar:danger-triangle-linear" width={15} style={{ color: BRAND.red }} />
+                      <Text size="sm" style={{ color: BRAND.redText }}>Failed to load departments</Text>
+                    </Group>
+                  </Paper>
+                ) : filteredDepts.length === 0 ? (
+                  <Center py={80}>
+                    <Stack align="center" gap="sm">
+                      <Icon icon="solar:buildings-3-linear" width={36} style={{ color: 'var(--mantine-color-dimmed)', opacity: 0.4 }} />
+                      <Text size="sm" c="dimmed">
+                        {deptSearch ? 'No departments match your search' : 'No departments created yet'}
+                      </Text>
+                      {deptSearch && (
+                        <Button variant="subtle" size="xs" style={{ color: BRAND.purpleDark }} onClick={() => setDeptSearch('')}>
+                          Clear search
+                        </Button>
+                      )}
+                    </Stack>
                   </Center>
-                </Paper>
-              ) : (
-                <Paper radius="md" withBorder>
-                  <Table striped highlightOnHover>
-                    <Table.Thead>
-                      <Table.Tr>
-                        <Table.Th>Team Name</Table.Th>
-                        <Table.Th>Department</Table.Th>
-                        <Table.Th w="12%">Members</Table.Th>
-                        <Table.Th w="20%">Actions</Table.Th>
-                      </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                      {teams.map((team) => {
-                        const dept = departments.find((d) => d.id === team.department_id)
-                        return (
-                          <Table.Tr key={team.id}>
-                            <Table.Td fw={500}>{team.name}</Table.Td>
-                            <Table.Td>{dept?.name || 'Unknown'}</Table.Td>
-                            <Table.Td>
-                              <Badge variant="light">
-                                {team.employee_count ?? 0} members
-                              </Badge>
-                            </Table.Td>
-                            <Table.Td>
-                              <Group gap="xs">
-                                <Tooltip label="Manage Members">
-                                  <ActionIcon
-                                    variant="light"
-                                    color="grape"
-                                    size="sm"
-                                    onClick={() => handleOpenTeamManager(team)}
+                ) : (
+                  <Box style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ borderBottom: '0.5px solid var(--mantine-color-default-border)' }}>
+                          <th style={{ ...TH_STYLE, padding: '8px 12px' }}>Department</th>
+                          <th style={{ ...TH_STYLE, padding: '8px 12px' }}>Description</th>
+                          <th style={{ ...TH_STYLE, padding: '8px 12px' }}>Teams</th>
+                          <th style={{ ...TH_STYLE, padding: '8px 12px' }}></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredDepts.map((dept: Department, idx: number) => {
+                          const pal = AVATAR_PALETTES[idx % AVATAR_PALETTES.length]
+                          return (
+                            <tr
+                              key={dept.id}
+                              style={{
+                                borderBottom:
+                                  idx < filteredDepts.length - 1
+                                    ? '0.5px solid var(--mantine-color-default-border)'
+                                    : 'none',
+                                transition: 'background .12s',
+                              }}
+                              onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--mantine-color-default-hover)' }}
+                              onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'transparent' }}
+                            >
+                              <td style={{ padding: '10px 12px' }}>
+                                <Group gap={10} wrap="nowrap">
+                                  <Avatar
+                                    size={30}
+                                    radius="md"
+                                    style={{ background: pal.bg, color: pal.color, fontSize: 11, fontWeight: 600, flexShrink: 0 }}
                                   >
-                                    <Icon icon="solar:users-group-rounded-linear" width={16} />
-                                  </ActionIcon>
-                                </Tooltip>
-                                <Tooltip label="Edit">
-                                  <ActionIcon
-                                    variant="light"
-                                    color="blue"
-                                    size="sm"
-                                    onClick={() => {
-                                      setEditingTeam(team)
-                                      setTeamFormOpen(true)
+                                    {getInitials(dept.name)}
+                                  </Avatar>
+                                  <Text size="sm" fw={500}>{dept.name}</Text>
+                                </Group>
+                              </td>
+                              <td style={{ padding: '10px 12px' }}>
+                                <Text size="sm" c="dimmed">{dept.description || '—'}</Text>
+                              </td>
+                              <td style={{ padding: '10px 12px' }}>
+                                <CountBadge value={dept.team_count ?? 0} label="teams" />
+                              </td>
+                              <td style={{ padding: '10px 12px' }}>
+                                <Group gap={4} justify="flex-end" wrap="nowrap">
+                                  <Tooltip label="Edit department" withArrow fz={11} position="top">
+                                    <ActionIcon
+                                      variant="subtle"
+                                      size="sm"
+                                      style={{ color: BRAND.purpleDark }}
+                                      onClick={() => { setEditingDepartment(dept); setDepartmentFormOpen(true) }}
+                                    >
+                                      <Icon icon="solar:pen-2-linear" width={15} />
+                                    </ActionIcon>
+                                  </Tooltip>
+                                  <Tooltip label="Delete department" withArrow fz={11} position="top">
+                                    <ActionIcon
+                                      variant="subtle"
+                                      size="sm"
+                                      style={{ color: BRAND.red }}
+                                      onClick={() => handleDeleteClick('department', dept.id, dept.name)}
+                                    >
+                                      <Icon icon="solar:trash-bin-2-linear" width={15} />
+                                    </ActionIcon>
+                                  </Tooltip>
+                                </Group>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </Box>
+                )}
+
+                {/* Footer */}
+                {filteredDepts.length > 0 && (
+                  <Box
+                    px={0}
+                    pt="sm"
+                    mt="sm"
+                    style={{ borderTop: '0.5px solid var(--mantine-color-default-border)' }}
+                  >
+                    <Text size="xs" c="dimmed">
+                      Showing{' '}
+                      <span style={{ fontWeight: 500, color: 'var(--mantine-color-text)' }}>{filteredDepts.length}</span>
+                      {' '}of{' '}
+                      <span style={{ fontWeight: 500, color: 'var(--mantine-color-text)' }}>{departments.length}</span>
+                      {' '}departments
+                    </Text>
+                  </Box>
+                )}
+              </Box>
+            </Tabs.Panel>
+
+            {/* ── Teams panel ── */}
+            <Tabs.Panel value="teams">
+              <Box p="md">
+                <Group justify="space-between" mb="md">
+                  <TextInput
+                    placeholder="Search teams…"
+                    value={teamSearch}
+                    onChange={(e) => setTeamSearch(e.currentTarget.value)}
+                    leftSection={<Icon icon="solar:magnifer-linear" width={14} style={{ color: 'var(--mantine-color-dimmed)' }} />}
+                    rightSection={
+                      teamSearch ? (
+                        <ActionIcon variant="subtle" size="xs" onClick={() => setTeamSearch('')}>
+                          <Icon icon="solar:close-circle-linear" width={13} />
+                        </ActionIcon>
+                      ) : null
+                    }
+                    style={{ width: 240 }}
+                    styles={{ input: { fontSize: 13, height: 34 } }}
+                  />
+                  <Button
+                    size="sm"
+                    leftSection={<Icon icon="solar:add-circle-bold-duotone" width={15} />}
+                    style={{ background: BRAND.purpleDark, border: 'none' }}
+                    onClick={() => { setEditingTeam(null); setTeamFormOpen(true) }}
+                  >
+                    New team
+                  </Button>
+                </Group>
+
+                {teamsLoading ? (
+                  <Center py={80}><Loader color={BRAND.purple} /></Center>
+                ) : teamsError ? (
+                  <Paper p="md" radius="md" style={{ background: BRAND.redLight, border: `0.5px solid ${BRAND.red}33` }}>
+                    <Group gap={8}>
+                      <Icon icon="solar:danger-triangle-linear" width={15} style={{ color: BRAND.red }} />
+                      <Text size="sm" style={{ color: BRAND.redText }}>Failed to load teams</Text>
+                    </Group>
+                  </Paper>
+                ) : filteredTeams.length === 0 ? (
+                  <Center py={80}>
+                    <Stack align="center" gap="sm">
+                      <Icon icon="solar:people-nearby-linear" width={36} style={{ color: 'var(--mantine-color-dimmed)', opacity: 0.4 }} />
+                      <Text size="sm" c="dimmed">
+                        {teamSearch ? 'No teams match your search' : 'No teams created yet'}
+                      </Text>
+                      {teamSearch && (
+                        <Button variant="subtle" size="xs" style={{ color: BRAND.purpleDark }} onClick={() => setTeamSearch('')}>
+                          Clear search
+                        </Button>
+                      )}
+                    </Stack>
+                  </Center>
+                ) : (
+                  <Box style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ borderBottom: '0.5px solid var(--mantine-color-default-border)' }}>
+                          <th style={{ ...TH_STYLE, padding: '8px 12px' }}>Team</th>
+                          <th style={{ ...TH_STYLE, padding: '8px 12px' }}>Department</th>
+                          <th style={{ ...TH_STYLE, padding: '8px 12px' }}>Members</th>
+                          <th style={{ ...TH_STYLE, padding: '8px 12px' }}></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredTeams.map((team: Team, idx: number) => {
+                          const dept = departments.find((d: Department) => d.id === team.department_id)
+                          const pal  = AVATAR_PALETTES[idx % AVATAR_PALETTES.length]
+                          return (
+                            <tr
+                              key={team.id}
+                              style={{
+                                borderBottom:
+                                  idx < filteredTeams.length - 1
+                                    ? '0.5px solid var(--mantine-color-default-border)'
+                                    : 'none',
+                                transition: 'background .12s',
+                              }}
+                              onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--mantine-color-default-hover)' }}
+                              onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'transparent' }}
+                            >
+                              {/* Team name */}
+                              <td style={{ padding: '10px 12px' }}>
+                                <Group gap={10} wrap="nowrap">
+                                  <Avatar
+                                    size={30}
+                                    radius="md"
+                                    style={{ background: pal.bg, color: pal.color, fontSize: 11, fontWeight: 600, flexShrink: 0 }}
+                                  >
+                                    {getInitials(team.name)}
+                                  </Avatar>
+                                  <Text size="sm" fw={500}>{team.name}</Text>
+                                </Group>
+                              </td>
+
+                              {/* Department */}
+                              <td style={{ padding: '10px 12px' }}>
+                                {dept ? (
+                                  <span
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 5,
+                                      fontSize: 11,
+                                      fontWeight: 500,
+                                      padding: '3px 9px',
+                                      borderRadius: 20,
+                                      background: BRAND.blueLight,
+                                      color: BRAND.blueText,
                                     }}
                                   >
-                                    <Icon icon="solar:pen-new-round-linear" width={16} />
-                                  </ActionIcon>
-                                </Tooltip>
-                                <Tooltip label="Delete">
-                                  <ActionIcon
-                                    variant="light"
-                                    color="red"
-                                    size="sm"
-                                    onClick={() =>
-                                      handleDeleteClick('team', team.id, team.name)
-                                    }
-                                  >
-                                    <Icon icon="solar:trash-bin-trash-linear" width={16} />
-                                  </ActionIcon>
-                                </Tooltip>
-                              </Group>
-                            </Table.Td>
-                          </Table.Tr>
-                        )
-                      })}
-                    </Table.Tbody>
-                  </Table>
-                </Paper>
-              )}
-            </Stack>
-          </Tabs.Panel>
-        </Tabs>
+                                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: BRAND.blue, flexShrink: 0 }} />
+                                    {dept.name}
+                                  </span>
+                                ) : (
+                                  <Text size="xs" c="dimmed">—</Text>
+                                )}
+                              </td>
+
+                              {/* Members */}
+                              <td style={{ padding: '10px 12px' }}>
+                                <CountBadge value={team.employee_count ?? 0} label="members" />
+                              </td>
+
+                              {/* Actions */}
+                              <td style={{ padding: '10px 12px' }}>
+                                <Group gap={4} justify="flex-end" wrap="nowrap">
+                                  <Tooltip label="Manage members" withArrow fz={11} position="top">
+                                    <ActionIcon
+                                      variant="subtle"
+                                      size="sm"
+                                      style={{ color: BRAND.purple }}
+                                      onClick={() => handleOpenTeamManager(team)}
+                                    >
+                                      <Icon icon="solar:users-group-rounded-linear" width={15} />
+                                    </ActionIcon>
+                                  </Tooltip>
+                                  <Tooltip label="Edit team" withArrow fz={11} position="top">
+                                    <ActionIcon
+                                      variant="subtle"
+                                      size="sm"
+                                      style={{ color: BRAND.purpleDark }}
+                                      onClick={() => { setEditingTeam(team); setTeamFormOpen(true) }}
+                                    >
+                                      <Icon icon="solar:pen-2-linear" width={15} />
+                                    </ActionIcon>
+                                  </Tooltip>
+                                  <Tooltip label="Delete team" withArrow fz={11} position="top">
+                                    <ActionIcon
+                                      variant="subtle"
+                                      size="sm"
+                                      style={{ color: BRAND.red }}
+                                      onClick={() => handleDeleteClick('team', team.id, team.name)}
+                                    >
+                                      <Icon icon="solar:trash-bin-2-linear" width={15} />
+                                    </ActionIcon>
+                                  </Tooltip>
+                                </Group>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </Box>
+                )}
+
+                {/* Footer */}
+                {filteredTeams.length > 0 && (
+                  <Box
+                    pt="sm"
+                    mt="sm"
+                    style={{ borderTop: '0.5px solid var(--mantine-color-default-border)' }}
+                  >
+                    <Text size="xs" c="dimmed">
+                      Showing{' '}
+                      <span style={{ fontWeight: 500, color: 'var(--mantine-color-text)' }}>{filteredTeams.length}</span>
+                      {' '}of{' '}
+                      <span style={{ fontWeight: 500, color: 'var(--mantine-color-text)' }}>{teams.length}</span>
+                      {' '}teams
+                    </Text>
+                  </Box>
+                )}
+              </Box>
+            </Tabs.Panel>
+          </Tabs>
+        </Paper>
       </Stack>
 
-      {/* Department Form Modal */}
+      {/* ── Department Form Modal ── */}
       <DepartmentForm
         opened={departmentFormOpen}
-        onClose={() => {
-          setDepartmentFormOpen(false)
-          setEditingDepartment(null)
-        }}
+        onClose={() => { setDepartmentFormOpen(false); setEditingDepartment(null) }}
         onSubmit={async (data) => {
-          if (editingDepartment) {
-            updateDeptMutation.mutate({
-              id: editingDepartment.id,
-              payload: data,
-            })
-          } else {
-            createDeptMutation.mutate(data)
-          }
+          if (editingDepartment) updateDeptMutation.mutate({ id: editingDepartment.id, payload: data })
+          else createDeptMutation.mutate(data)
         }}
         initialData={editingDepartment || undefined}
         isLoading={createDeptMutation.isPending || updateDeptMutation.isPending}
       />
 
-      {/* Team Form Modal */}
+      {/* ── Team Form Modal ── */}
       <TeamForm
         opened={teamFormOpen}
-        onClose={() => {
-          setTeamFormOpen(false)
-          setEditingTeam(null)
-        }}
+        onClose={() => { setTeamFormOpen(false); setEditingTeam(null) }}
         onSubmit={async (data) => {
-          if (editingTeam) {
-            updateTeamMutation.mutate({
-              id: editingTeam.id,
-              payload: data,
-            })
-          } else {
-            createTeamMutation.mutate(data)
-          }
+          if (editingTeam) updateTeamMutation.mutate({ id: editingTeam.id, payload: data })
+          else createTeamMutation.mutate(data)
         }}
         initialData={editingTeam || undefined}
         departments={departments}
@@ -584,69 +784,89 @@ export default function TeamManagementPanel() {
         isLoading={createTeamMutation.isPending || updateTeamMutation.isPending}
       />
 
-      {/* Member Manager Modal */}
+      {/* ── Member Manager Modal ── */}
       <Modal
         opened={memberManagerOpen}
-        onClose={() => {
-          setMemberManagerOpen(false)
-          setSelectedTeam(null)
-        }}
-        title={selectedTeam ? `Manage ${selectedTeam.name} Members` : 'Manage Members'}
+        onClose={() => { setMemberManagerOpen(false); setSelectedTeam(null) }}
+        title={
+          <Group gap={8}>
+            <Icon icon="solar:users-group-rounded-bold-duotone" width={18} style={{ color: BRAND.purple }} />
+            <Text fw={500} size="sm">
+              {selectedTeam ? `${selectedTeam.name} · Members` : 'Manage members'}
+            </Text>
+          </Group>
+        }
         size="lg"
         centered
+        radius="md"
+        styles={{
+          header: { borderBottom: '0.5px solid var(--mantine-color-default-border)', paddingBottom: 12 },
+          body:   { paddingTop: 16 },
+        }}
       >
         {selectedTeam && (
           <TeamMemberManager
             team={selectedTeam}
             allEmployees={employees}
             onAddMember={async (userId) => {
-              await addMemberMutation.mutateAsync({
-                teamId: selectedTeam.id,
-                userId,
-              })
+              await addMemberMutation.mutateAsync({ teamId: selectedTeam.id, userId })
             }}
             onRemoveMember={async (userId) => {
-              await removeMemberMutation.mutateAsync({
-                teamId: selectedTeam.id,
-                userId,
-              })
+              await removeMemberMutation.mutateAsync({ teamId: selectedTeam.id, userId })
             }}
             isLoading={addMemberMutation.isPending || removeMemberMutation.isPending}
           />
         )}
       </Modal>
 
-      {/* Delete Confirmation Modal */}
+      {/* ── Delete Confirmation Modal ── */}
       <Modal
         opened={deleteConfirmOpen}
-        onClose={() => {
-          setDeleteConfirmOpen(false)
-          setDeleteItem(null)
-        }}
-        title="Confirm Delete"
+        onClose={() => { setDeleteConfirmOpen(false); setDeleteItem(null) }}
+        title={
+          <Group gap={8}>
+            <Icon icon="solar:danger-triangle-bold-duotone" width={18} style={{ color: BRAND.red }} />
+            <Text fw={500} size="sm">Confirm deletion</Text>
+          </Group>
+        }
+        size="sm"
         centered
+        radius="md"
+        styles={{
+          header: { borderBottom: '0.5px solid var(--mantine-color-default-border)', paddingBottom: 12 },
+          body:   { paddingTop: 16 },
+        }}
       >
-        <Stack gap="md">
-          <Text>
-            Are you sure you want to delete {deleteItem?.type} "{deleteItem?.name}"?
-            This action cannot be undone.
-          </Text>
-          <Group justify="flex-end" gap="sm">
+        <Stack gap="lg">
+          <Paper
+            p="md"
+            radius="md"
+            style={{ background: BRAND.redLight, border: `0.5px solid ${BRAND.red}33` }}
+          >
+            <Group gap={8} align="flex-start">
+              <Icon icon="solar:info-circle-linear" width={15} style={{ color: BRAND.red, marginTop: 1, flexShrink: 0 }} />
+              <Text size="sm" style={{ color: BRAND.redText }}>
+                You are about to delete the {deleteItem?.type}{' '}
+                <strong>"{deleteItem?.name}"</strong>. This action cannot be undone.
+              </Text>
+            </Group>
+          </Paper>
+
+          <Group justify="flex-end" gap={8}>
             <Button
-              variant="subtle"
-              onClick={() => {
-                setDeleteConfirmOpen(false)
-                setDeleteItem(null)
-              }}
+              variant="default"
+              size="sm"
+              onClick={() => { setDeleteConfirmOpen(false); setDeleteItem(null) }}
             >
               Cancel
             </Button>
             <Button
-              color="red"
-              onClick={handleConfirmDelete}
+              size="sm"
+              style={{ background: BRAND.red, border: 'none' }}
               loading={deleteDeptMutation.isPending || deleteTeamMutation.isPending}
+              onClick={handleConfirmDelete}
             >
-              Delete
+              Delete {deleteItem?.type}
             </Button>
           </Group>
         </Stack>
