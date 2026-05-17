@@ -1,16 +1,10 @@
 # .github/labeler.yml
 
-# Matches any changes inside the frontend directory
 frontend:
-  - changed-files:
-      - any-glob-to-any-file: "web/**/*"
+  - "web/**/*"
 
-# Matches any changes inside the backend directory
 backend:
-  - changed-files:
-      - any-glob-to-any-file: "backend/**/*"
+  - "backend/**/*"
 
-# Matches changes to GitHub workflows, actions, or this config file
 ci-cd:
-  - changed-files:
-      - any-glob-to-any-file: ".github/**/*"
+  - ".github/**/*"
