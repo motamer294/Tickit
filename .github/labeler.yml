@@ -1,7 +1,23 @@
-- name: Labeler
-  uses: actions/labeler@v5
-  with:
-    repo-token: "${{ secrets.GITHUB_TOKEN }}"
-    configuration-path: ".github/labeler.yml"
-    # Optional: Set to true if you want labels removed when matching files are deleted
-    sync-labels: true
+name: Pull Request Labeler
+
+on:
+  pull_request_target: # Safe trigger for accessing repo config files
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. CRITICAL: Clone the repo so the runner can see .github/labeler.yml locally
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Run the updated labeler
+      - name: Run Labeler
+        uses: actions/labeler@v5
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          configuration-path: ".github/labeler.yml"
