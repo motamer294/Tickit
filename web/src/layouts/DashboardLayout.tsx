@@ -3,11 +3,10 @@ import {
   Burger,
   Group,
   Text,
-  NavLink,
   Stack,
   Box,
   ScrollArea,
-  Avatar, // Added for a better look
+  Avatar,
   Divider,
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
@@ -17,51 +16,117 @@ import { useAuth } from '@/hooks/useAuth'
 import ThemeToggle from '@/components/ThemeToggle'
 import { NotificationCenter } from '@/components/NotificationCenter'
 
-const navData = [
-  {
-    label: 'Dashboard',
-    icon: 'solar:widget-5-bold-duotone',
-    path: '/app/dashboard',
-  },
-  {
-    label: 'Tickets',
-    icon: 'solar:bug-minimalistic-bold-duotone',
-    path: '/app/tickets',
-  },
+// ─── Brand ─────────────────────────────────────────────────────────────────────
+
+const BRAND = {
+  purple:      '#7F77DD',
+  purpleDark:  '#534AB7',
+  purpleLight: '#EEEDFE',
+  purpleText:  '#3C3489',
+  red:         '#E24B4A',
+  redLight:    '#FCEBEB',
+  redText:     '#791F1F',
+}
+
+// ─── Nav data ──────────────────────────────────────────────────────────────────
+
+const NAV_ITEMS = [
+  { label: 'Dashboard', icon: 'solar:widget-5-bold-duotone',          path: '/app/dashboard' },
+  { label: 'Tickets',   icon: 'solar:bug-minimalistic-bold-duotone',  path: '/app/tickets'   },
 ]
 
-const adminNavData = [
-  {
-    label: 'Users',
-    icon: 'solar:users-group-rounded-bold-duotone',
-    path: '/app/admin/users',
-  },
-  {
-    label: 'Teams',
-    icon: 'solar:people-nearby-bold-duotone',
-    path: '/app/admin/teams',
-  },
-  {
-    label: 'Categories',
-    icon: 'solar:folder-bold-duotone',
-    path: '/app/admin/categories',
-  },
-  {
-    label: 'Tags',
-    icon: 'solar:bookmark-bold-duotone',
-    path: '/app/admin/tags',
-  },
-  {
-    label: 'SLAs',
-    icon: 'solar:stopwatch-bold-duotone',
-    path: '/app/admin/slas',
-  },
-  {
-    label: 'Audit Log',
-    icon: 'solar:history-bold-duotone',
-    path: '/app/admin/audit-logs',
-  },
+const ADMIN_ITEMS = [
+  { label: 'Users',      icon: 'solar:users-group-rounded-bold-duotone', path: '/app/admin/users'      },
+  { label: 'Teams',      icon: 'solar:people-nearby-bold-duotone',        path: '/app/admin/teams'      },
+  { label: 'Categories', icon: 'solar:folder-bold-duotone',               path: '/app/admin/categories' },
+  { label: 'Tags',       icon: 'solar:bookmark-bold-duotone',             path: '/app/admin/tags'       },
+  { label: 'SLAs',       icon: 'solar:stopwatch-bold-duotone',            path: '/app/admin/slas'       },
+  { label: 'Audit Log',  icon: 'solar:history-bold-duotone',              path: '/app/admin/audit-logs' },
 ]
+
+const BOTTOM_ITEMS = [
+  { label: 'Profile',  icon: 'solar:user-bold-duotone',     path: '/app/profile'   },
+  { label: 'Settings', icon: 'solar:settings-bold-duotone', path: '/app/settings'  },
+]
+
+// ─── NavItem ───────────────────────────────────────────────────────────────────
+
+function NavItem({
+  label,
+  icon,
+  active,
+  onClick,
+  danger = false,
+}: {
+  label: string
+  icon: string
+  active?: boolean
+  onClick: () => void
+  danger?: boolean
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        width: '100%',
+        padding: '8px 12px',
+        borderRadius: 8,
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: 13,
+        fontWeight: active ? 600 : 500,
+        transition: 'all .13s',
+        background: active
+          ? BRAND.purpleLight
+          : 'transparent',
+        color: danger
+          ? BRAND.red
+          : active
+          ? BRAND.purpleText
+          : 'var(--mantine-color-text)',
+        textAlign: 'left',
+      }}
+      onMouseEnter={(e) => {
+        if (!active)
+          (e.currentTarget as HTMLButtonElement).style.background =
+            danger
+              ? BRAND.redLight
+              : 'var(--mantine-color-default-hover)'
+      }}
+      onMouseLeave={(e) => {
+        if (!active)
+          (e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+      }}
+    >
+      {/* Left accent bar when active */}
+      <span
+        style={{
+          position: 'absolute',
+          left: 0,
+          width: 3,
+          height: 28,
+          borderRadius: '0 3px 3px 0',
+          background: active ? BRAND.purple : 'transparent',
+          transition: 'background .13s',
+        }}
+      />
+      <Icon
+        icon={icon}
+        width={18}
+        style={{
+          color: danger ? BRAND.red : active ? BRAND.purple : 'var(--mantine-color-dimmed)',
+          flexShrink: 0,
+        }}
+      />
+      <span style={{ lineHeight: 1.3 }}>{label}</span>
+    </button>
+  )
+}
+
+// ─── Layout ────────────────────────────────────────────────────────────────────
 
 const DashboardLayout = () => {
   const [opened, { toggle }] = useDisclosure()
@@ -71,143 +136,208 @@ const DashboardLayout = () => {
 
   const handleLogout = () => {
     logout()
-    navigate('/login') // Redirect after clearing store
+    navigate('/login')
   }
+
+  const go = (path: string) => {
+    navigate(path)
+    if (opened) toggle()
+  }
+
+  const initials = (user?.username ?? 'G')
+    .split(/[\s._-]/)
+    .map((n: string) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+
+  const roleLabel =
+    user?.role === 'MANAGER'
+      ? 'Manager'
+      : user?.role === 'EMPLOYEE'
+      ? 'Employee'
+      : user?.role === 'CUSTOMER'
+      ? 'Customer'
+      : 'User'
 
   return (
     <AppShell
-      header={{ height: 70 }}
-      navbar={{
-        width: 260,
-        breakpoint: 'sm',
-        collapsed: { mobile: !opened },
-      }}
-      padding="md"
-      transitionDuration={500}
+      header={{ height: 56 }}
+      navbar={{ width: 240, breakpoint: 'sm', collapsed: { mobile: !opened } }}
+      padding={0}
+      transitionDuration={300}
       transitionTimingFunction="ease"
     >
-      {/* 🔝 HEADER */}
+      {/* ── Header ── */}
       <AppShell.Header
         style={{
-          borderBottom: '1px solid var(--mantine-color-default-border)',
+          borderBottom: '0.5px solid var(--mantine-color-default-border)',
+          background: 'var(--mantine-color-body)',
         }}
       >
         <Group h="100%" px="md" justify="space-between">
-          <Group>
+          <Group gap={10}>
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <Text fw={900} size="xl" style={{ letterSpacing: '2px', color: 'var(--mantine-primary-color-filled)' }}>
-              TICKETME
-            </Text>
+
+            {/* Logo mark */}
+            <Group gap={8} align="center">
+              <Box
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 8,
+                  background: BRAND.purpleDark,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <Icon icon="solar:ticket-bold-duotone" width={16} style={{ color: '#fff' }} />
+              </Box>
+              <Text
+                fw={700}
+                size="sm"
+                style={{
+                  letterSpacing: '0.12em',
+                  color: BRAND.purpleDark,
+                  textTransform: 'uppercase',
+                }}
+              >
+                TicketMe
+              </Text>
+            </Group>
           </Group>
 
-          <Group gap="sm">
+          <Group gap={6}>
             <NotificationCenter />
             <ThemeToggle />
           </Group>
         </Group>
       </AppShell.Header>
 
-      {/* ⬅️ SIDEBAR */}
-      <AppShell.Navbar p="xs">
-        <AppShell.Section component={ScrollArea} grow>
-          <Stack gap="xs" mt="md">
-            {navData.map((item) => (
-              <NavLink
-                key={item.label}
+      {/* ── Sidebar ── */}
+      <AppShell.Navbar
+        style={{
+          borderRight: '0.5px solid var(--mantine-color-default-border)',
+          background: 'var(--mantine-color-body)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {/* Scrollable nav area */}
+        <Box style={{ flex: 1, overflow: 'hidden' }}>
+          <ScrollArea h="100%" scrollbarSize={4}>
+            <Stack gap={2} p="sm" pt="md" style={{ position: 'relative' }}>
+              {/* Main nav */}
+              {NAV_ITEMS.map((item) => (
+                <NavItem
+                  key={item.path}
+                  label={item.label}
+                  icon={item.icon}
+                  active={pathname.startsWith(item.path)}
+                  onClick={() => go(item.path)}
+                />
+              ))}
+
+              {/* Admin section */}
+              {user?.role === 'MANAGER' && (
+                <>
+                  <Box pt="sm" pb={2} px="xs">
+                    <Text
+                      size="xs"
+                      fw={600}
+                      c="dimmed"
+                      tt="uppercase"
+                      style={{ letterSpacing: '0.08em' }}
+                    >
+                      Administration
+                    </Text>
+                  </Box>
+                  {ADMIN_ITEMS.map((item) => (
+                    <NavItem
+                      key={item.path}
+                      label={item.label}
+                      icon={item.icon}
+                      active={pathname.startsWith(item.path)}
+                      onClick={() => go(item.path)}
+                    />
+                  ))}
+                </>
+              )}
+            </Stack>
+          </ScrollArea>
+        </Box>
+
+        {/* User section pinned to bottom */}
+        <Box
+          style={{
+            borderTop: '0.5px solid var(--mantine-color-default-border)',
+            padding: '12px 8px 8px',
+            flexShrink: 0,
+          }}
+        >
+          {/* User identity row */}
+          <Group gap={10} px={4} mb={8}>
+            <Avatar
+              size={32}
+              radius="xl"
+              style={{
+                background: BRAND.purpleLight,
+                color: BRAND.purpleText,
+                fontSize: 11,
+                fontWeight: 700,
+                flexShrink: 0,
+              }}
+            >
+              {initials}
+            </Avatar>
+            <Box style={{ minWidth: 0, flex: 1 }}>
+              <Text size="sm" fw={600} style={{ lineHeight: 1.2 }} truncate>
+                {user?.username ?? 'Guest'}
+              </Text>
+              <Text size="xs" c="dimmed" style={{ lineHeight: 1.2 }}>
+                {roleLabel}
+              </Text>
+            </Box>
+          </Group>
+
+          <Stack gap={2}>
+            {BOTTOM_ITEMS.map((item) => (
+              <NavItem
+                key={item.path}
                 label={item.label}
-                active={pathname.startsWith(item.path)}
-                leftSection={<Icon icon={item.icon} width="22" />}
-                onClick={() => {
-                  navigate(item.path)
-                  if (opened) toggle()
-                }}
-                variant="light"
-                h={50}
-                styles={{ label: { fontWeight: 600 } }}
+                icon={item.icon}
+                active={pathname === item.path}
+                onClick={() => go(item.path)}
               />
             ))}
 
-            {/* Admin Section */}
-            {user?.role === 'MANAGER' && (
-              <>
-                <Divider my="sm" />
-                <Text size="xs" fw={700} c="dimmed" px="md" py="sm" tt="uppercase">
-                  Administration
-                </Text>
-                {adminNavData.map((item) => (
-                  <NavLink
-                    key={item.label}
-                    label={item.label}
-                    active={pathname.startsWith(item.path)}
-                    leftSection={<Icon icon={item.icon} width="22" />}
-                    onClick={() => {
-                      navigate(item.path)
-                      if (opened) toggle()
-                    }}
-                    variant="light"
-                    h={50}
-                    styles={{ label: { fontWeight: 600 } }}
-                  />
-                ))}
-              </>
-            )}
-          </Stack>
-        </AppShell.Section>
+            {/* Divider before logout */}
+            <Box pt={4} pb={2}>
+              <Divider style={{ opacity: 0.5 }} />
+            </Box>
 
-        {/* 👤 USER & LOGOUT SECTION */}
-        <AppShell.Section
-          style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}
-          pt="md"
-        >
-          <Box px="xs" pb="xs">
-            <Group mb={15} px="xs" gap="sm">
-              <Avatar color="blue" radius="xl" size="sm">
-                {user?.username?.charAt(0).toUpperCase()}
-              </Avatar>
-              <Stack gap={0}>
-                <Text size="sm" fw={700}>
-                  {user?.username || 'Guest User'}
-                </Text>
-                <Text size="xs" c="dimmed">
-                  {user?.role || 'User'}
-                </Text>
-              </Stack>
-            </Group>
-
-            <NavLink
-              label="Profile"
-              leftSection={<Icon icon="solar:user-bold-duotone" width="22" />}
-              onClick={() => {
-                navigate('/app/profile')
-                if (opened) toggle()
-              }}
-              active={pathname === '/app/profile'}
-            />
-            <NavLink
-              label="Settings"
-              leftSection={<Icon icon="solar:settings-bold-duotone" width="22" />}
-              onClick={() => navigate('/app/settings')}
-              active={pathname === '/app/settings'}
-            />
-            <NavLink
-              label="Logout"
-              color="red"
-              variant="subtle"
-              leftSection={<Icon icon="solar:logout-3-bold-duotone" width="22" />}
+            <NavItem
+              label="Log out"
+              icon="solar:logout-3-bold-duotone"
               onClick={handleLogout}
-              mt="xs"
+              danger
             />
-          </Box>
-        </AppShell.Section>
+          </Stack>
+        </Box>
       </AppShell.Navbar>
 
-      {/* 🚀 MAIN CONTENT AREA */}
-      <AppShell.Main bg="var(--mantine-color-gray-light)">
+      {/* ── Main content ── */}
+      <AppShell.Main
+        style={{ background: 'var(--mantine-color-default-hover)' }}
+      >
         <Box
           style={{
-            maxWidth: '1600px',
+            maxWidth: 1600,
             margin: '0 auto',
-            animation: 'fadeIn 0.5s ease',
+            minHeight: '100%',
+            animation: 'fadeIn 0.25s ease',
           }}
         >
           <Outlet />
@@ -215,9 +345,10 @@ const DashboardLayout = () => {
 
         <style>{`
           @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(4px); }
+            to   { opacity: 1; transform: translateY(0);   }
           }
+          button { position: relative; }
         `}</style>
       </AppShell.Main>
     </AppShell>
