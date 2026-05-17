@@ -2,21 +2,34 @@
 # paths that are modified in the pull request.
 #
 # To use this workflow, you will need to set up a .github/labeler.yml
-# file with configuration.  For more information, see:
+# file with configuration. For more information, see:
 # https://github.com/actions/labeler
 
 name: Labeler
-on: [pull_request_target]
+
+on:
+  pull_request_target:
+    types: [opened, synchronized, reopened]
 
 jobs:
   label:
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
 
+    # Optional: Skips the job if the pull request is still a draft
+    if: github.event.pull_request.draft == false
+
     steps:
-    - uses: actions/labeler@v4
-      with:
-        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+      # 1. Added Checkout step so v5 can read your .github/labeler.yml file locally
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Upgraded to v5 to match the modern configuration schema
+      - name: Run Labeler
+        uses: actions/labeler@v5
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          configuration-path: ".github/labeler.yml"
+          sync-labels: true

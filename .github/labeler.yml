@@ -1,23 +1,16 @@
-name: Pull Request Labeler
+# .github/labeler.yml
 
-on:
-  pull_request_target: # Safe trigger for accessing repo config files
+# Matches any changes inside the frontend directory
+frontend:
+  - changed-files:
+      - any-glob-to-any-file: "web/**/*"
 
-permissions:
-  contents: read
-  pull-requests: write
+# Matches any changes inside the backend directory
+backend:
+  - changed-files:
+      - any-glob-to-any-file: "backend/**/*"
 
-jobs:
-  label:
-    runs-on: ubuntu-latest
-    steps:
-      # 1. CRITICAL: Clone the repo so the runner can see .github/labeler.yml locally
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      # 2. Run the updated labeler
-      - name: Run Labeler
-        uses: actions/labeler@v5
-        with:
-          repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          configuration-path: ".github/labeler.yml"
+# Matches changes to GitHub workflows, actions, or this config file
+ci-cd:
+  - changed-files:
+      - any-glob-to-any-file: ".github/**/*"
