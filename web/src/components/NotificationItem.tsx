@@ -1,226 +1,254 @@
-import { ActionIcon, Box, Group, Stack, Text, ThemeIcon, useMantineTheme, useMantineColorScheme, Badge, Tooltip } from '@mantine/core'
+import { ActionIcon, Box, Group, Stack, Text, Tooltip, useMantineColorScheme } from '@mantine/core'
 import { Icon } from '@iconify-icon/react'
 import type { Notification, NotificationType } from '@/types/notification'
 import { useNotifications } from '@/hooks/useNotifications'
+
+// ─── Brand palette ─────────────────────────────────────────────────────────────
+
+const BRAND = {
+  purple:      '#7F77DD',
+  purpleDark:  '#534AB7',
+  purpleLight: '#EEEDFE',
+  purpleText:  '#3C3489',
+  red:         '#E24B4A',
+  redLight:    '#FCEBEB',
+  redText:     '#791F1F',
+  amber:       '#EF9F27',
+  amberLight:  '#FAEEDA',
+  amberText:   '#633806',
+  green:       '#639922',
+  greenLight:  '#EAF3DE',
+  greenText:   '#27500A',
+  blue:        '#378ADD',
+  blueLight:   '#E6F1FB',
+  blueText:    '#0C447C',
+  teal:        '#0E9E8E',
+  tealLight:   '#E0F5F3',
+  tealText:    '#065F57',
+  cyan:        '#1EA8BF',
+  cyanLight:   '#E2F6FA',
+  cyanText:    '#0B5F6E',
+  orange:      '#E87B23',
+  orangeLight: '#FDF0E4',
+  orangeText:  '#7A3A05',
+  gray:        '#B4B2A9',
+  grayLight:   '#F1EFE8',
+  grayText:    '#444441',
+}
+
+// ─── Type metadata ─────────────────────────────────────────────────────────────
+
+const TYPE_META: Record<NotificationType, {
+  label: string
+  icon: string
+  dot: string
+  bg: string
+  text: string
+  iconBg: string
+}> = {
+  TICKET_ASSIGNED:   { label: 'Assigned',  icon: 'solar:briefcase-bold-duotone',           dot: BRAND.purple, bg: BRAND.purpleLight, text: BRAND.purpleText, iconBg: BRAND.purpleLight },
+  TICKET_UPDATED:    { label: 'Updated',   icon: 'solar:pen-bold-duotone',                 dot: BRAND.amber,  bg: BRAND.amberLight,  text: BRAND.amberText,  iconBg: BRAND.amberLight  },
+  COMMENT_ADDED:     { label: 'Comment',   icon: 'solar:chat-round-dots-bold-duotone',     dot: BRAND.blue,   bg: BRAND.blueLight,   text: BRAND.blueText,   iconBg: BRAND.blueLight   },
+  TICKET_RESOLVED:   { label: 'Resolved',  icon: 'solar:check-circle-bold-duotone',        dot: BRAND.green,  bg: BRAND.greenLight,  text: BRAND.greenText,  iconBg: BRAND.greenLight  },
+  TICKET_DELETED:    { label: 'Deleted',   icon: 'solar:trash-bin-trash-bold-duotone',     dot: BRAND.red,    bg: BRAND.redLight,    text: BRAND.redText,    iconBg: BRAND.redLight    },
+  TICKET_CREATED:    { label: 'Created',   icon: 'solar:document-add-bold-duotone',        dot: BRAND.teal,   bg: BRAND.tealLight,   text: BRAND.tealText,   iconBg: BRAND.tealLight   },
+  MANAGER_ACTIVITY:  { label: 'Activity',  icon: 'solar:pulse-bold-duotone',               dot: BRAND.cyan,   bg: BRAND.cyanLight,   text: BRAND.cyanText,   iconBg: BRAND.cyanLight   },
+  PERFORMANCE_ALERT: { label: 'Alert',     icon: 'solar:graph-bold-duotone',               dot: BRAND.orange, bg: BRAND.orangeLight, text: BRAND.orangeText, iconBg: BRAND.orangeLight },
+  SYSTEM:            { label: 'System',    icon: 'solar:bell-bold-duotone',                dot: BRAND.red,    bg: BRAND.redLight,    text: BRAND.redText,    iconBg: BRAND.redLight    },
+}
+
+const DEFAULT_META = TYPE_META.SYSTEM
+
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+
+function formatTime(date: Date): string {
+  const diffMs   = Date.now() - new Date(date).getTime()
+  const diffMins  = Math.floor(diffMs / 60_000)
+  const diffHours = Math.floor(diffMs / 3_600_000)
+  const diffDays  = Math.floor(diffMs / 86_400_000)
+  if (diffMins  < 1)  return 'just now'
+  if (diffMins  < 60) return `${diffMins}m ago`
+  if (diffHours < 24) return `${diffHours}h ago`
+  if (diffDays  < 7)  return `${diffDays}d ago`
+  return new Date(date).toLocaleDateString()
+}
+
+// ─── Component ─────────────────────────────────────────────────────────────────
 
 interface NotificationItemProps {
   notification: Notification
 }
 
-const getTypeIcon = (type: NotificationType) => {
-  const icons: Record<NotificationType, string> = {
-    TICKET_ASSIGNED: 'solar:briefcase-bold-duotone',
-    TICKET_UPDATED: 'solar:pen-bold-duotone',
-    COMMENT_ADDED: 'solar:chat-round-bold-duotone',
-    TICKET_RESOLVED: 'solar:check-circle-bold-duotone',
-    TICKET_DELETED: 'solar:trash-bin-trash-bold-duotone',
-    TICKET_CREATED: 'solar:document-add-bold-duotone',
-    MANAGER_ACTIVITY: 'solar:pulse-bold-duotone',
-    PERFORMANCE_ALERT: 'solar:graph-bold-duotone',
-    SYSTEM: 'solar:bell-bold-duotone',
-  }
-  return icons[type] || 'solar:notification-bold-duotone'
-}
-
-const getTypeColor = (type: NotificationType): string => {
-  const colors: Record<NotificationType, string> = {
-    TICKET_ASSIGNED: 'blue',
-    TICKET_UPDATED: 'yellow',
-    COMMENT_ADDED: 'violet',
-    TICKET_RESOLVED: 'green',
-    TICKET_DELETED: 'red',
-    TICKET_CREATED: 'cyan',
-    MANAGER_ACTIVITY: 'indigo',
-    PERFORMANCE_ALERT: 'orange',
-    SYSTEM: 'red',
-  }
-  return colors[type] || 'gray'
-}
-
-const getTypeLabel = (type: NotificationType) => {
-  const labels: Record<NotificationType, string> = {
-    TICKET_ASSIGNED: 'Assigned',
-    TICKET_UPDATED: 'Updated',
-    COMMENT_ADDED: 'Comment',
-    TICKET_RESOLVED: 'Resolved',
-    TICKET_DELETED: 'Deleted',
-    TICKET_CREATED: 'Created',
-    MANAGER_ACTIVITY: 'Activity',
-    PERFORMANCE_ALERT: 'Alert',
-    SYSTEM: 'System',
-  }
-  return labels[type]
-}
-
-const formatTime = (date: Date) => {
-  const now = new Date()
-  const diffMs = now.getTime() - new Date(date).getTime()
-  const diffMins = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMs / 3600000)
-  const diffDays = Math.floor(diffMs / 86400000)
-
-  if (diffMins < 1) return 'just now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  if (diffHours < 24) return `${diffHours}h ago`
-  if (diffDays < 7) return `${diffDays}d ago`
-
-  return new Date(date).toLocaleDateString()
-}
-
 export const NotificationItem = ({ notification }: NotificationItemProps) => {
-  const theme = useMantineTheme()
   const { colorScheme } = useMantineColorScheme()
   const isDark = colorScheme === 'dark'
   const { markAsRead, markAsUnread, deleteNotification } = useNotifications()
+  const meta = TYPE_META[notification.type] ?? DEFAULT_META
 
-  const colorName = getTypeColor(notification.type)
-  const borderColor = theme.colors[colorName]?.[6] || theme.colors.gray[6]
+  const unreadBg = isDark ? 'rgba(127,119,221,0.12)' : BRAND.purpleLight + '88'
 
-  const handleToggleRead = () => {
-    if (notification.read) {
-      markAsUnread(notification.id)
-    } else {
-      markAsRead(notification.id)
-    }
-  }
+  const handleToggleRead = () =>
+    notification.read ? markAsUnread(notification.id) : markAsRead(notification.id)
 
   return (
     <Box
-      p="md"
+      p="sm"
       style={{
-        backgroundColor: notification.read
-          ? 'transparent'
-          : (isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.1)'),
-        borderLeft: `4px solid ${borderColor}`,
-        borderRadius: '8px',
-        transition: 'all 0.2s ease',
-        cursor: 'default',
         position: 'relative',
+        borderRadius: 10,
+        border: `0.5px solid ${notification.read ? 'var(--mantine-color-default-border)' : meta.dot + '44'}`,
+        background: notification.read ? 'transparent' : unreadBg,
+        borderLeft: `3px solid ${notification.read ? 'var(--mantine-color-default-border)' : meta.dot}`,
+        transition: 'background .15s, transform .15s',
+        cursor: 'default',
         overflow: 'hidden',
-        width: '100%',
-        boxSizing: 'border-box',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = isDark
-          ? 'rgba(59, 130, 246, 0.2)'
-          : 'rgba(59, 130, 246, 0.12)'
-        e.currentTarget.style.transform = 'translateX(4px)'
+        ;(e.currentTarget as HTMLDivElement).style.background =
+          isDark ? 'rgba(127,119,221,0.15)' : BRAND.purpleLight + 'BB'
+        ;(e.currentTarget as HTMLDivElement).style.transform = 'translateX(2px)'
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = notification.read
+        ;(e.currentTarget as HTMLDivElement).style.background = notification.read
           ? 'transparent'
-          : (isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.1)')
-        e.currentTarget.style.transform = 'translateX(0)'
+          : unreadBg
+        ;(e.currentTarget as HTMLDivElement).style.transform = 'translateX(0)'
       }}
     >
-      {/* Unread indicator dot */}
+      {/* Unread dot */}
       {!notification.read && (
-        <div
+        <Box
           style={{
             position: 'absolute',
-            top: 12,
-            right: 12,
-            width: '8px',
-            height: '8px',
+            top: 10,
+            right: 10,
+            width: 7,
+            height: 7,
             borderRadius: '50%',
-            backgroundColor: theme.colors.blue[6],
-            animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            background: BRAND.purple,
+            boxShadow: `0 0 0 2px ${BRAND.purpleLight}`,
           }}
         />
       )}
 
-      <Group justify="apart" gap={8} wrap="nowrap" style={{ overflow: 'hidden' }}>
-        <Group gap={12} style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
-          <ThemeIcon
-            variant="light"
-            size="lg"
-            color={colorName}
-            radius="8px"
-            style={{ flexShrink: 0 }}
-          >
-            <Icon icon={getTypeIcon(notification.type)} width={18} height={18} />
-          </ThemeIcon>
+      <Group gap={10} wrap="nowrap" align="flex-start">
+        {/* Type icon */}
+        <Box
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: 9,
+            background: meta.iconBg,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <Icon icon={meta.icon} width={16} style={{ color: meta.dot }} />
+        </Box>
 
-          <Stack gap={5} style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-            <Group gap={8} wrap="nowrap">
-              <Text size="sm" fw={600} truncate style={{ lineHeight: 1.2 }}>
-                {notification.title}
-              </Text>
-              <Badge
-                size="xs"
-                color={colorName}
-                variant="dot"
-                style={{
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                }}
-              >
-                {getTypeLabel(notification.type)}
-              </Badge>
-            </Group>
+        {/* Content */}
+        <Stack gap={3} style={{ flex: 1, minWidth: 0 }}>
+          {/* Title + type badge */}
+          <Group gap={6} wrap="nowrap" align="center">
+            <Text
+              size="xs"
+              fw={notification.read ? 500 : 600}
+              truncate
+              style={{ lineHeight: 1.3, flex: 1, minWidth: 0 }}
+            >
+              {notification.title}
+            </Text>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 3,
+                fontSize: 10,
+                fontWeight: 600,
+                padding: '2px 7px',
+                borderRadius: 20,
+                background: meta.bg,
+                color: meta.text,
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
+              <span style={{ width: 4, height: 4, borderRadius: '50%', background: meta.dot }} />
+              {meta.label}
+            </span>
+          </Group>
 
-            {notification.fromUser && (
-              <Text size="xs" c="blue" fw={500} truncate>
-                👤 {notification.fromUser.username}
-              </Text>
-            )}
-
-            {notification.ticketId && (
+          {/* From user */}
+          {notification.fromUser && (
+            <Group gap={4} wrap="nowrap">
+              <Icon icon="solar:user-linear" width={10} style={{ color: 'var(--mantine-color-dimmed)', flexShrink: 0 }} />
               <Text size="xs" c="dimmed" fw={500} truncate>
-                🎫 Ticket #{notification.ticketId}
+                {notification.fromUser.username}
               </Text>
-            )}
+            </Group>
+          )}
 
-            <Text size="sm" c="dimmed" truncate style={{ lineHeight: 1.4 }}>
-              {notification.message}
+          {/* Ticket ref */}
+          {notification.ticketId && (
+            <Group gap={4} wrap="nowrap">
+              <Icon icon="solar:ticket-linear" width={10} style={{ color: 'var(--mantine-color-dimmed)', flexShrink: 0 }} />
+              <Text size="xs" c="dimmed" truncate>
+                Ticket #{notification.ticketId}
+              </Text>
+            </Group>
+          )}
+
+          {/* Message */}
+          <Text
+            size="xs"
+            c="dimmed"
+            truncate
+            style={{ lineHeight: 1.4 }}
+          >
+            {notification.message}
+          </Text>
+
+          {/* Timestamp + actions in one row */}
+          <Group justify="space-between" align="center" mt={2}>
+            <Text size="xs" style={{ color: 'var(--mantine-color-dimmed)', opacity: 0.7, fontSize: 10 }}>
+              {formatTime(notification.createdAt ?? new Date())}
             </Text>
-
-            <Text size="xs" c="dimmed" fw={400}>
-              {formatTime(notification.createdAt || new Date())}
-            </Text>
-          </Stack>
-        </Group>
-
-        {/* Action buttons */}
-        <Group gap={4} style={{ flexShrink: 0 }}>
-          <Tooltip label={notification.read ? 'Mark as unread' : 'Mark as read'} withArrow>
-            <ActionIcon
-              variant="light"
-              size="lg"
-              onClick={handleToggleRead}
-              color="blue"
-              title={notification.read ? 'Mark as unread' : 'Mark as read'}
-              style={{
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-            >
-              <Icon
-                icon={notification.read ? 'solar:mailbox-bold-duotone' : 'solar:mailbox-opened-bold-duotone'}
-                width={18}
-              />
-            </ActionIcon>
-          </Tooltip>
-          <Tooltip label="Delete" withArrow>
-            <ActionIcon
-              variant="light"
-              size="lg"
-              onClick={() => deleteNotification(notification.id)}
-              color="red"
-              title="Delete"
-              style={{
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-            >
-              <Icon icon="solar:trash-bin-minimalistic-bold-duotone" width={18} />
-            </ActionIcon>
-          </Tooltip>
-        </Group>
+            <Group gap={2}>
+              <Tooltip
+                label={notification.read ? 'Mark as unread' : 'Mark as read'}
+                withArrow
+                fz={10}
+                position="top"
+              >
+                <ActionIcon
+                  variant="subtle"
+                  size="xs"
+                  style={{ color: BRAND.purpleDark }}
+                  onClick={handleToggleRead}
+                >
+                  <Icon
+                    icon={notification.read
+                      ? 'solar:letter-bold-duotone'
+                      : 'solar:letter-opened-bold-duotone'}
+                    width={13}
+                  />
+                </ActionIcon>
+              </Tooltip>
+              <Tooltip label="Delete" withArrow fz={10} position="top">
+                <ActionIcon
+                  variant="subtle"
+                  size="xs"
+                  style={{ color: BRAND.red }}
+                  onClick={() => deleteNotification(notification.id)}
+                >
+                  <Icon icon="solar:trash-bin-2-linear" width={13} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+          </Group>
+        </Stack>
       </Group>
     </Box>
   )

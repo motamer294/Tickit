@@ -1,0 +1,7 @@
+- name: Labeler
+  uses: actions/labeler@v5
+  with:
+    repo-token: "${{ secrets.GITHUB_TOKEN }}"
+    configuration-path: ".github/labeler.yml"
+    # Optional: Set to true if you want labels removed when matching files are deleted
+    sync-labels: true

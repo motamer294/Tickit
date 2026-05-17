@@ -9,16 +9,53 @@ import {
   Group,
   Button,
   Select,
-  Table,
   ActionIcon,
-  Badge,
   Text,
-  Paper,
+  Box,
+  Avatar,
+  Tooltip,
   LoadingOverlay,
+  Center,
 } from '@mantine/core'
 import { Icon } from '@iconify-icon/react'
 import { notifications } from '@mantine/notifications'
 import type { Team, User } from '@/api/departments.api'
+
+// ─── Brand palette ─────────────────────────────────────────────────────────────
+
+const BRAND = {
+  purple:      '#7F77DD',
+  purpleDark:  '#534AB7',
+  purpleLight: '#EEEDFE',
+  purpleText:  '#3C3489',
+  red:         '#E24B4A',
+  redLight:    '#FCEBEB',
+  redText:     '#791F1F',
+  green:       '#639922',
+  greenLight:  '#EAF3DE',
+  greenText:   '#27500A',
+}
+
+const AVATAR_PALETTES = [
+  { bg: '#EEEDFE', color: '#3C3489' },
+  { bg: '#E1F5EE', color: '#085041' },
+  { bg: '#FAEEDA', color: '#633806' },
+  { bg: '#FAECE7', color: '#712B13' },
+  { bg: '#E6F1FB', color: '#0C447C' },
+  { bg: '#FBEAF0', color: '#72243E' },
+]
+
+function getInitials(name: string) {
+  return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+}
+
+function displayName(user: User) {
+  return user.first_name
+    ? `${user.first_name} ${user.last_name || ''}`.trim()
+    : user.username
+}
+
+// ─── Props ─────────────────────────────────────────────────────────────────────
 
 interface TeamMemberManagerProps {
   team: Team
@@ -28,6 +65,18 @@ interface TeamMemberManagerProps {
   isLoading?: boolean
 }
 
+const TH_STYLE: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 500,
+  color: 'var(--mantine-color-dimmed)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+  paddingBottom: 8,
+  whiteSpace: 'nowrap',
+}
+
+// ─── Component ─────────────────────────────────────────────────────────────────
+
 export function TeamMemberManager({
   team,
   allEmployees,
@@ -35,159 +84,296 @@ export function TeamMemberManager({
   onRemoveMember,
   isLoading = false,
 }: TeamMemberManagerProps) {
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null)
-  const [isAdding, setIsAdding] = useState(false)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [isAdding, setIsAdding]     = useState(false)
   const [removingId, setRemovingId] = useState<number | null>(null)
 
-  // Get employees not already in the team
-  const teamMemberIds = new Set((team.members || []).map((m) => m.id))
-  const availableEmployees = allEmployees.filter((e) => !teamMemberIds.has(e.id))
+  const members = team.members || []
+  const memberIds = new Set(members.map((m) => m.id))
+  const available = allEmployees.filter((e) => !memberIds.has(e.id))
 
-  const handleAddMember = async () => {
-    if (!selectedEmployeeId) return
+  const selectedEmployee = selectedId
+    ? available.find((e) => e.id.toString() === selectedId)
+    : null
 
+  const handleAdd = async () => {
+    if (!selectedId) return
     setIsAdding(true)
     try {
-      await onAddMember(parseInt(selectedEmployeeId, 10))
-      setSelectedEmployeeId(null)
-      notifications.show({
-        title: 'Member Added',
-        message: 'Employee added to team successfully',
-        color: 'green',
-      })
-    } catch (error) {
-      notifications.show({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to add member',
-        color: 'red',
-      })
+      await onAddMember(parseInt(selectedId, 10))
+      setSelectedId(null)
+      notifications.show({ title: 'Member added', message: 'Employee added to team successfully', color: 'green' })
+    } catch (err) {
+      notifications.show({ title: 'Error', message: err instanceof Error ? err.message : 'Failed to add member', color: 'red' })
     } finally {
       setIsAdding(false)
     }
   }
 
-  const handleRemoveMember = async (memberId: number) => {
+  const handleRemove = async (memberId: number) => {
     setRemovingId(memberId)
     try {
       await onRemoveMember(memberId)
-      notifications.show({
-        title: 'Member Removed',
-        message: 'Employee removed from team',
-        color: 'green',
-      })
-    } catch (error) {
-      notifications.show({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to remove member',
-        color: 'red',
-      })
+      notifications.show({ title: 'Member removed', message: 'Employee removed from team', color: 'green' })
+    } catch (err) {
+      notifications.show({ title: 'Error', message: err instanceof Error ? err.message : 'Failed to remove member', color: 'red' })
     } finally {
       setRemovingId(null)
     }
   }
 
-  const members = team.members || []
-
   return (
     <Stack gap="md" pos="relative">
-      <LoadingOverlay visible={isLoading} />
+      <LoadingOverlay visible={isLoading} zIndex={1000} overlayProps={{ radius: 'sm', blur: 2 }} />
 
-      {/* Add Member Section */}
-      <Paper p="md" radius="md" withBorder>
-        <Stack gap="sm">
-          <Text fw={600} size="sm">
-            Add Team Member
-          </Text>
-          <Group gap="sm">
-            <Select
-              placeholder="Select an employee to add"
-              data={availableEmployees.map((e) => ({
-                value: e.id.toString(),
-                label: e.first_name
-                  ? `${e.first_name} ${e.last_name || ''}`
-                  : e.username,
-              }))}
-              value={selectedEmployeeId}
-              onChange={setSelectedEmployeeId}
-              searchable
-              disabled={isAdding || availableEmployees.length === 0}
-              style={{ flex: 1 }}
-            />
-            <Button
-              onClick={handleAddMember}
-              loading={isAdding}
-              disabled={
-                !selectedEmployeeId ||
-                isAdding ||
-                availableEmployees.length === 0
-              }
+      {/* ── Add member ── */}
+      <Box
+        p="md"
+        style={{
+          borderRadius: 'var(--mantine-radius-md)',
+          border: '0.5px solid var(--mantine-color-default-border)',
+        }}
+      >
+        <Text size="xs" tt="uppercase" fw={500} c="dimmed" mb="sm" style={{ letterSpacing: '0.05em' }}>
+          Add member
+        </Text>
+
+        <Group gap={8} wrap="nowrap" align="flex-start">
+          <Select
+            placeholder={
+              available.length === 0
+                ? 'All employees already in team'
+                : 'Search employees…'
+            }
+            data={available.map((e) => ({ value: e.id.toString(), label: displayName(e) }))}
+            value={selectedId}
+            onChange={setSelectedId}
+            searchable
+            clearable
+            disabled={isAdding || available.length === 0}
+            style={{ flex: 1 }}
+            leftSection={
+              <Icon icon="solar:user-plus-linear" width={14} style={{ color: 'var(--mantine-color-dimmed)' }} />
+            }
+            styles={{ input: { fontSize: 13 } }}
+          />
+          <Button
+            size="sm"
+            style={{
+              background: selectedId ? BRAND.purpleDark : undefined,
+              border: 'none',
+              flexShrink: 0,
+            }}
+            onClick={handleAdd}
+            loading={isAdding}
+            disabled={!selectedId || isAdding || available.length === 0}
+          >
+            Add
+          </Button>
+        </Group>
+
+        {/* Selected employee preview */}
+        {selectedEmployee && (
+          <Group
+            gap={8}
+            mt={10}
+            px="sm"
+            py={7}
+            style={{
+              borderRadius: 8,
+              background: BRAND.purpleLight,
+              border: `0.5px solid ${BRAND.purple}33`,
+            }}
+          >
+            <Avatar
+              size={22}
+              radius="xl"
+              style={{
+                background: AVATAR_PALETTES[selectedEmployee.id % AVATAR_PALETTES.length].bg,
+                color: AVATAR_PALETTES[selectedEmployee.id % AVATAR_PALETTES.length].color,
+                fontSize: 8,
+                fontWeight: 700,
+                flexShrink: 0,
+              }}
             >
-              Add
-            </Button>
+              {getInitials(displayName(selectedEmployee))}
+            </Avatar>
+            <Text size="xs" fw={500} style={{ color: BRAND.purpleText }}>
+              {displayName(selectedEmployee)}
+            </Text>
+            {selectedEmployee.email && (
+              <Text size="xs" c="dimmed" style={{ marginLeft: 'auto' }}>
+                {selectedEmployee.email}
+              </Text>
+            )}
           </Group>
-          {availableEmployees.length === 0 && (
-            <Text size="sm" c="dimmed">
-              All available employees are already in this team
-            </Text>
-          )}
-        </Stack>
-      </Paper>
+        )}
 
-      {/* Members List Section */}
-      <Paper p="md" radius="md" withBorder>
-        <Stack gap="sm">
-          <Group justify="space-between">
-            <Text fw={600} size="sm">
-              Team Members ({members.length})
+        {available.length === 0 && (
+          <Group gap={6} mt={8}>
+            <Icon icon="solar:check-circle-linear" width={13} style={{ color: BRAND.green }} />
+            <Text size="xs" style={{ color: BRAND.greenText }}>
+              All available employees are already on this team
             </Text>
           </Group>
+        )}
+      </Box>
 
-          {members.length > 0 ? (
-            <Table striped highlightOnHover>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Name</Table.Th>
-                  <Table.Th>Username</Table.Th>
-                  <Table.Th>Email</Table.Th>
-                  <Table.Th w="10%">Actions</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {members.map((member) => (
-                  <Table.Tr key={member.id}>
-                    <Table.Td>
-                      {member.first_name
-                        ? `${member.first_name} ${member.last_name || ''}`
-                        : 'N/A'}
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge variant="light">{member.username}</Badge>
-                    </Table.Td>
-                    <Table.Td>{member.email || 'N/A'}</Table.Td>
-                    <Table.Td>
-                      <ActionIcon
-                        color="red"
-                        variant="light"
-                        size="sm"
-                        onClick={() => handleRemoveMember(member.id)}
-                        loading={removingId === member.id}
-                        disabled={isLoading}
-                        title="Remove from team"
-                      >
-                        <Icon icon="solar:trash-bin-trash-linear" width={16} />
-                      </ActionIcon>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          ) : (
-            <Text size="sm" c="dimmed">
-              No members in this team yet
+      {/* ── Members list ── */}
+      <Box
+        style={{
+          borderRadius: 'var(--mantine-radius-md)',
+          border: '0.5px solid var(--mantine-color-default-border)',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Sub-header */}
+        <Box
+          px="md"
+          py="sm"
+          style={{ borderBottom: '0.5px solid var(--mantine-color-default-border)' }}
+        >
+          <Group justify="space-between" align="center">
+            <Text size="xs" tt="uppercase" fw={500} c="dimmed" style={{ letterSpacing: '0.05em' }}>
+              Current members
             </Text>
-          )}
-        </Stack>
-      </Paper>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                padding: '2px 8px',
+                borderRadius: 20,
+                background: BRAND.purpleLight,
+                color: BRAND.purpleText,
+              }}
+            >
+              {members.length}
+            </span>
+          </Group>
+        </Box>
+
+        {members.length === 0 ? (
+          <Center py={60}>
+            <Stack align="center" gap="sm">
+              <Box
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  background: BRAND.purpleLight,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon icon="solar:users-group-two-rounded-linear" width={18} style={{ color: BRAND.purple }} />
+              </Box>
+              <Text size="sm" c="dimmed" fw={500}>No members yet</Text>
+              <Text size="xs" c="dimmed" style={{ opacity: 0.6 }}>Add employees using the form above</Text>
+            </Stack>
+          </Center>
+        ) : (
+          <Box style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ borderBottom: '0.5px solid var(--mantine-color-default-border)' }}>
+                  <th style={{ ...TH_STYLE, padding: '8px 16px' }}>Member</th>
+                  <th style={{ ...TH_STYLE, padding: '8px 16px' }}>Username</th>
+                  <th style={{ ...TH_STYLE, padding: '8px 16px' }}>Email</th>
+                  <th style={{ ...TH_STYLE, padding: '8px 16px' }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((member, idx) => {
+                  const pal = AVATAR_PALETTES[member.id % AVATAR_PALETTES.length]
+                  const name = displayName(member)
+                  return (
+                    <tr
+                      key={member.id}
+                      style={{
+                        borderBottom:
+                          idx < members.length - 1
+                            ? '0.5px solid var(--mantine-color-default-border)'
+                            : 'none',
+                        transition: 'background .12s',
+                        opacity: removingId === member.id ? 0.5 : 1,
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--mantine-color-default-hover)' }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'transparent' }}
+                    >
+                      {/* Name + avatar */}
+                      <td style={{ padding: '9px 16px' }}>
+                        <Group gap={10} wrap="nowrap">
+                          <Avatar
+                            size={28}
+                            radius="xl"
+                            style={{ background: pal.bg, color: pal.color, fontSize: 9, fontWeight: 700, flexShrink: 0 }}
+                          >
+                            {getInitials(name)}
+                          </Avatar>
+                          <Text size="sm" fw={500}>{name || '—'}</Text>
+                        </Group>
+                      </td>
+
+                      {/* Username */}
+                      <td style={{ padding: '9px 16px' }}>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            fontSize: 11,
+                            fontWeight: 500,
+                            padding: '3px 9px',
+                            borderRadius: 20,
+                            background: BRAND.purpleLight,
+                            color: BRAND.purpleText,
+                          }}
+                        >
+                          @{member.username}
+                        </span>
+                      </td>
+
+                      {/* Email */}
+                      <td style={{ padding: '9px 16px' }}>
+                        <Text size="xs" c="dimmed">{member.email || '—'}</Text>
+                      </td>
+
+                      {/* Remove */}
+                      <td style={{ padding: '9px 16px' }}>
+                        <Tooltip label="Remove from team" withArrow fz={11} position="top">
+                          <ActionIcon
+                            variant="subtle"
+                            size="sm"
+                            style={{ color: BRAND.red }}
+                            loading={removingId === member.id}
+                            disabled={isLoading || removingId !== null}
+                            onClick={() => handleRemove(member.id)}
+                          >
+                            <Icon icon="solar:user-minus-linear" width={15} />
+                          </ActionIcon>
+                        </Tooltip>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </Box>
+        )}
+
+        {/* Footer */}
+        {members.length > 0 && (
+          <Box
+            px="md"
+            py="sm"
+            style={{ borderTop: '0.5px solid var(--mantine-color-default-border)' }}
+          >
+            <Text size="xs" c="dimmed">
+              {members.length} member{members.length !== 1 ? 's' : ''} on this team
+            </Text>
+          </Box>
+        )}
+      </Box>
     </Stack>
   )
 }
