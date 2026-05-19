@@ -27,8 +27,8 @@ A modern, full-stack help desk ticketing system with real-time updates, team col
 
 ```bash
 
-git clone https://github.com/yourusername/ticketme.git
-cd TIcketMe
+git clone https://github.com/motamer294/graduation_project.git
+cd graduation_project
 npm run setup
 npm run dev
 ```
