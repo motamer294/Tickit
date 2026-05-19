@@ -1,209 +1,179 @@
-# Developer Setup Guide
+# 🎫 TIKIT - HelpDesk System
 
-Quick start guide for developers to get the project running locally.
+A modern, full-stack help desk ticketing system with real-time updates, team collaboration, and intelligent AI-powered ticket analysis.
+
+**Version:** 1.0.0 | **License:** MIT
+
+## Key Features
+
+- **Real-time Collaboration** - WebSocket-powered live updates
+- **Team Management** - Department & team organization with role-based access
+- **AI-Powered Intelligence** - ML-based ticket categorization & routing
+- **Comprehensive Ticketing** - Priority, status, SLA, and audit tracking
+- **Admin Dashboard** - Full system analytics and reporting
+- **Mobile Responsive** - Works on all devices
+- **API-First Architecture** - RESTful API with Ninja framework
 
 ## Prerequisites
 
-- Docker and Docker Compose
-- Node.js 18+
-- Python 3.12+
-- Git
+- **Node.js** 18+ (for frontend & root npm scripts)
+- **Python** 3.12+ (for backend & ML services)
+- **Docker & Docker Compose** (for database, Redis, Nginx)
+- **Git** (for version control)
+- **PostgreSQL** 15+ (via Docker)
+- **Redis** (via Docker, for caching & Celery)
 
 ## Quick Start
 
-### 1. Backend Setup
-
 ```bash
-cd server
-docker-compose up -d
-docker-compose exec -T backend python manage.py migrate
-docker-compose exec backend python manage.py createsuperuser
-```
 
-Backend running at: http://localhost:8000/api/
-
-### 2. Frontend Setup
-
-```bash
-cd web
-npm install
+git clone https://github.com/yourusername/ticketme.git
+cd TIcketMe
+npm run setup
 npm run dev
 ```
 
-Frontend running at: http://localhost:5173
+This will:
 
-### 3. ML Service Setup (Optional)
+- Install all npm dependencies
+- Set up frontend with npm
+- Create Python virtual environment & install dependencies
+- Configure environment variables
+- Start Docker containers
+- Launch development servers
 
-```bash
-cd ML
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-python scripts/build_faiss.py
-python app.py
-```
+## Docker Commands
 
-ML Service running at: http://localhost:5000/api/
-
-## Environment Variables
-
-### Backend (server/.env)
-
-```
-DEBUG=False
-SECRET_KEY=dev-secret-key
-ALLOWED_HOSTS=localhost,127.0.0.1
-DATABASE_URL=postgresql://postgres:postgres@db:5432/helpdesk
-REDIS_URL=redis://redis:6379/0
-```
-
-### Frontend (web/.env.local)
-
-```
-VITE_API_URL=http://localhost:8000/api
-VITE_WS_URL=ws://localhost:8000/ws
-```
-
-## Common Commands
-
-### Backend
+### Container Management
 
 ```bash
-# View logs
-docker-compose logs -f backend
+npm run docker:up        # Start all containers
+npm run docker:down      # Stop & remove containers
+npm run docker:stop      # Stop containers (keep state)
+npm run docker:status    # View running containers
 
-# Run migrations
-docker-compose exec -T backend python manage.py migrate
-
-# Create test data
-docker-compose exec backend python manage.py shell
-
-# Run tests
-docker-compose exec -T backend python manage.py test
-
-# Access database
-docker-compose exec db psql -U postgres -d helpdesk
-
-# Stop services
-docker-compose down
+npm run docker:rebuild   # Rebuild & restart containers
+npm run docker:logs      # View real-time container logs
+npm run docker:nuke      # Complete cleanup (remove volumes & images)
 ```
 
-### Frontend
+## Database & Migrations
+
+### Migrations
 
 ```bash
-# Build for production
-npm run build
-
-# Type check
-npm run type-check
-
-# Run linter
-npm run lint
-
-# Run tests
-npm run test
+npm run db:makemigrations   # Create new migrations
+npm run db:migrate          # Apply pending migrations
+npm run db:seed             # Load seed data
 ```
 
-## Verify Setup
+### Manual Database Access
 
 ```bash
-# Backend API
-curl http://localhost:8000/api/
+# Connect to PostgreSQL
+docker exec -it helpdesk_postgres_db psql -U admin -d helpdesk_db
 
-# Frontend
-curl http://localhost:5173/
+# View tables
+\dt
 
-# Admin panel
-http://localhost:8000/admin/
-```
-
-## Database Migrations
-
-```bash
-# Check migration status
-docker-compose exec -T backend python manage.py showmigrations
-
-# Create new migration
-docker-compose exec -T backend python manage.py makemigrations app_name
-
-# Apply migration
-docker-compose exec -T backend python manage.py migrate
+# Exit
+\q
 ```
 
 ## Testing
 
+### Run All Tests
+
 ```bash
-# Backend tests
+npm run test        # Frontend + Backend tests
+```
+
+### Component-Specific Tests
+
+```bash
+npm run test:client  # React component tests
+npm run test:server  # Django/pytest tests
+```
+
+### Creating Test Data
+
+```bash
+# Database shell
+docker exec -it helpdesk_postgres_db psql -U admin -d helpdesk_db
+
+# Or in Django shell
 cd server
-docker-compose exec -T backend python manage.py test
-
-# Frontend tests
-cd web
-npm run test
+. venv/bin/activate
+python manage.py shell
 ```
 
-## Troubleshooting
+### Debugging
 
-**Port 8000 already in use:**
 ```bash
-lsof -ti:8000 | xargs kill -9
+# Backend logs
+npm run docker:logs
+
+# Frontend browser dev tools (F12)
+
+# Django debug toolbar included
+# Check your browser's Network tab
 ```
 
-**Database connection failed:**
+## ML Service
+
+The ML module provides AI-powered ticket analysis:
+
 ```bash
-docker-compose restart db
+# Setup ML environment
+cd ML
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# Build FAISS index
+python scripts/build_faiss.py
+
+# Start ML service
+python app.py
 ```
 
-**WebSocket not connecting:**
-Check that backend is running and VITE_WS_URL is correct in `.env.local`.
+ML Service runs on: http://localhost:5000/api/
 
-**Frontend not loading:**
-Ensure npm install completed and no TypeScript errors:
-```bash
-npm run type-check
-```
+**Features:**
 
-## Project Structure
+- Ticket categorization
+- Priority auto-assignment
+- Similar ticket detection
+- Customer sentiment analysis
 
-```
-server/          - Django backend and API
-web/             - React frontend
-ML/              - Machine learning service
-```
+## Additional Resources
+
+- [Django Documentation](https://docs.djangoproject.com/)
+- [React Documentation](https://react.dev/)
+- [Nginx Reverse Proxy](server/nginx/README.md)
+- [Local Deployment Guide](server/LOCAL_DEPLOYMENT.md)
+- [Docker Development Guide](server/DOCKER_DEVELOPMENT_GUIDE.md)
+- [Multi-Channel Integration Plan](MULTI_CHANNEL_INTEGRATION_PLAN.md)
+
+## Contributing
+
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open Pull Request
+
+## License
+
+This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
+
+For questions or issues, please refer to the [troubleshooting section](#-troubleshooting) or open an issue on GitHub.
 
 ## API Documentation
 
 API endpoints documented in: `server/docs/HelpDesk_API.postman_collection.json`
 
 Import into Postman to test endpoints.
-
-## Development Workflow
-
-1. Create feature branch: `git checkout -b feature/your-feature`
-2. Make changes
-3. Test locally
-4. Commit with clear message
-5. Push and create pull request
-
-## Architecture
-
-Backend: Django 6.0 + DRF + Daphne ASGI + WebSocket
-Frontend: React 19 + Vite + TypeScript + Mantine UI
-Database: PostgreSQL 15
-Cache: Redis
-Real-time: Django Channels + WebSocket
-
-## Features Implemented
-
-1. Ticket Management System
-2. Category and Tags
-3. Status Workflow
-4. File Attachments
-5. Advanced Search and Filtering
-6. Analytics Dashboard
-7. User Admin Panel
-8. SLA Tracking
-9. Comprehensive Audit Logging with Real-time Updates
 
 ## Notes
 
