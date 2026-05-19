@@ -29,6 +29,7 @@ A modern, full-stack help desk ticketing system with real-time updates, team col
 
 git clone https://github.com/motamer294/graduation_project.git
 cd graduation_project
+npm i
 npm run setup
 npm run dev
 ```
