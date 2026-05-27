@@ -13,6 +13,9 @@ import TicketDetail from '@/pages/tickets/TicketDetail'
 /* Profile */
 import { UserProfile } from '@/pages/profile/UserProfile'
 
+/* Settings */
+import Settings from '@/pages/settings/Settings'
+
 /* Admin */
 import UserAdminPanel from '@/pages/admin/UserAdminPanel'
 import SLAManagement from '@/pages/admin/SLAManagement'
@@ -73,6 +76,9 @@ export default function RootRouter() {
 
         {/* Profile - Accessible by all authenticated users */}
         <Route path="profile" element={<UserProfile />} />
+
+        {/* Settings - Accessible by all authenticated users */}
+        <Route path="settings" element={<Settings />} />
 
         {/* ================= ADMIN ROUTES ================= */}
         {/* Wrapped in ProtectedRoute with 'MANAGER' requirement */}
