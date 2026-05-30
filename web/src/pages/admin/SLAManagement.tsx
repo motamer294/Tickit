@@ -1,14 +1,11 @@
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Container,
   Stack,
   Group,
   Text,
-  Paper,
   Button,
-  Table,
-  Badge,
   Modal,
   TextInput,
   NumberInput,
@@ -20,10 +17,14 @@ import {
   ActionIcon,
   Tooltip,
   Switch,
-} from '@mantine/core'
-import { Icon } from '@iconify-icon/react'
-import { notifications } from '@mantine/notifications'
-import { fetchCategoriesApi } from '@/api/tickets.api'
+  Box,
+  Divider,
+  Paper,
+  SimpleGrid,
+} from "@mantine/core";
+import { Icon } from "@iconify-icon/react";
+import { notifications } from "@mantine/notifications";
+import { fetchCategoriesApi } from "@/api/tickets.api";
 import {
   listSLAs,
   createSLA,
@@ -32,165 +33,321 @@ import {
   type SLA,
   type SLACreatePayload,
   type SLAUpdatePayload,
-} from '@/api/admin.api'
-import type { Category } from '@/types/ticket'
+} from "@/api/admin.api";
+import type { Category } from "@/types/ticket";
 
-// ============================================
-// Component
-// ============================================
+// ─── Brand palette ─────────────────────────────────────────────────────────────
+
+const B = {
+  purple: "#7F77DD",
+  purpleDark: "#534AB7",
+  purpleLight: "#EEEDFE",
+  purpleDeep: "#3C3489",
+  red: "#E24B4A",
+  redLight: "#FCEBEB",
+  redText: "#791F1F",
+  amber: "#EF9F27",
+  amberLight: "#FAEEDA",
+  amberText: "#633806",
+  green: "#639922",
+  greenLight: "#EAF3DE",
+  greenText: "#27500A",
+  gray: "#B4B2A9",
+  grayLight: "#F1EFE8",
+  grayText: "#444441",
+  blue: "#378ADD",
+  blueLight: "#E6F1FB",
+  blueText: "#0C447C",
+};
+
+const PRIORITY_META: Record<string, { bg: string; text: string; dot: string }> =
+  {
+    HIGH: { bg: B.redLight, text: B.redText, dot: B.red },
+    MEDIUM: { bg: B.amberLight, text: B.amberText, dot: B.amber },
+    LOW: { bg: B.greenLight, text: B.greenText, dot: B.green },
+  };
+
+// ─── Shared micro-components ──────────────────────────────────────────────────
+
+function SLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Text
+      size="xs"
+      tt="uppercase"
+      fw={500}
+      c="dimmed"
+      style={{ letterSpacing: "0.05em" }}
+    >
+      {children}
+    </Text>
+  );
+}
+
+function DotBadge({
+  label,
+  bg,
+  text,
+  dot,
+}: {
+  label: string;
+  bg: string;
+  text: string;
+  dot: string;
+}) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        fontSize: 11,
+        fontWeight: 500,
+        padding: "3px 9px",
+        borderRadius: 20,
+        background: bg,
+        color: text,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span
+        style={{
+          width: 5,
+          height: 5,
+          borderRadius: "50%",
+          background: dot,
+          flexShrink: 0,
+        }}
+      />
+      {label}
+    </span>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  icon,
+  accentColor,
+}: {
+  label: string;
+  value: number | string;
+  icon: string;
+  accentColor: string;
+}) {
+  return (
+    <Paper
+      radius="md"
+      p="md"
+      style={{
+        border: "0.5px solid var(--mantine-color-default-border)",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <Group justify="space-between" mb={8}>
+        <Text
+          size="xs"
+          c="dimmed"
+          fw={500}
+          tt="uppercase"
+          style={{ letterSpacing: "0.05em" }}
+        >
+          {label}
+        </Text>
+        <Icon
+          icon={icon}
+          width={14}
+          style={{ color: accentColor, opacity: 0.75 }}
+        />
+      </Group>
+      <Text fw={500} style={{ fontSize: 26, lineHeight: 1 }}>
+        {value}
+      </Text>
+      <Box
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 3,
+          background: accentColor,
+        }}
+      />
+    </Paper>
+  );
+}
+
+const TH_STYLE: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 500,
+  color: "var(--mantine-color-dimmed)",
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+  paddingBottom: 10,
+  whiteSpace: "nowrap",
+};
+
+const mStyles = {
+  header: {
+    borderBottom: "0.5px solid var(--mantine-color-default-border)",
+    paddingBottom: 12,
+  },
+  body: { paddingTop: 16 },
+};
+
+// ─── Default form ─────────────────────────────────────────────────────────────
+
+type FormData = {
+  name: string;
+  description: string;
+  priority: "HIGH" | "MEDIUM" | "LOW";
+  category_id: number | null;
+  response_time_hours: number;
+  resolution_time_hours: number;
+  is_active: boolean;
+};
+
+const DEFAULT_FORM: FormData = {
+  name: "",
+  description: "",
+  priority: "MEDIUM",
+  category_id: null,
+  response_time_hours: 4,
+  resolution_time_hours: 24,
+  is_active: true,
+};
+
+// ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function SLAManagement() {
-  const queryClient = useQueryClient()
-  const [opened, setOpened] = useState(false)
-  const [editingSLA, setEditingSLA] = useState<SLA | null>(null)
-  const [formData, setFormData] = useState<{
-    name: string
-    description: string
-    priority: 'HIGH' | 'MEDIUM' | 'LOW'
-    category_id: number | null
-    response_time_hours: number
-    resolution_time_hours: number
-    is_active: boolean
-  }>({
-    name: '',
-    description: '',
-    priority: 'MEDIUM',
-    category_id: null,
-    response_time_hours: 4,
-    resolution_time_hours: 24,
-    is_active: true,
-  })
+  const queryClient = useQueryClient();
+  const [opened, setOpened] = useState(false);
+  const [editingSLA, setEditingSLA] = useState<SLA | null>(null);
+  const [formData, setFormData] = useState<FormData>(DEFAULT_FORM);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
 
-  // Fetch SLAs
-  const { data: slas = [], isLoading, error } = useQuery({
-    queryKey: ['admin-slas'],
+  // ── Queries ──
+  const {
+    data: slas = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["admin-slas"],
     queryFn: () => listSLAs(1000, 0),
-  })
+  });
 
-  // Fetch categories for dropdown
   const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
+    queryKey: ["categories"],
     queryFn: fetchCategoriesApi,
-  })
+  });
 
-  // Create SLA mutation
-  const createSLAMutation = useMutation({
-    mutationFn: async (payload: SLACreatePayload) => {
-      return createSLA(payload)
-    },
+  // ── Mutations ──
+  const createMutation = useMutation({
+    mutationFn: (payload: SLACreatePayload) => createSLA(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-slas'] })
+      queryClient.invalidateQueries({ queryKey: ["admin-slas"] });
       notifications.show({
-        title: 'SLA Created',
-        message: 'New SLA has been created successfully',
-        color: 'green',
-      })
-      resetForm()
-      setOpened(false)
+        title: "SLA created",
+        message: "New SLA has been created successfully",
+        color: "green",
+      });
+      closeModal();
     },
-    onError: (error) => {
+    onError: (err) =>
       notifications.show({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to create SLA',
-        color: 'red',
-      })
-    },
-  })
+        title: "Error",
+        message: err instanceof Error ? err.message : "Failed to create SLA",
+        color: "red",
+      }),
+  });
 
-  // Update SLA mutation
-  const updateSLAMutation = useMutation({
-    mutationFn: async (payload: { slaId: number; data: SLAUpdatePayload }) => {
-      return updateSLA(payload.slaId, payload.data)
-    },
+  const updateMutation = useMutation({
+    mutationFn: ({ slaId, data }: { slaId: number; data: SLAUpdatePayload }) =>
+      updateSLA(slaId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-slas'] })
+      queryClient.invalidateQueries({ queryKey: ["admin-slas"] });
       notifications.show({
-        title: 'SLA Updated',
-        message: 'SLA has been updated successfully',
-        color: 'green',
-      })
-      resetForm()
-      setOpened(false)
+        title: "SLA updated",
+        message: "SLA has been updated successfully",
+        color: "green",
+      });
+      closeModal();
     },
-    onError: (error) => {
+    onError: (err) =>
       notifications.show({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to update SLA',
-        color: 'red',
-      })
-    },
-  })
+        title: "Error",
+        message: err instanceof Error ? err.message : "Failed to update SLA",
+        color: "red",
+      }),
+  });
 
-  // Delete SLA mutation
-  const deleteSLAMutation = useMutation({
+  const deleteMutation = useMutation({
     mutationFn: deleteSLA,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-slas'] })
+      queryClient.invalidateQueries({ queryKey: ["admin-slas"] });
       notifications.show({
-        title: 'SLA Deleted',
-        message: 'SLA has been deleted successfully',
-        color: 'green',
-      })
+        title: "SLA deleted",
+        message: "SLA has been deleted",
+        color: "green",
+      });
+      setDeleteConfirmId(null);
     },
-    onError: (error) => {
+    onError: (err) =>
       notifications.show({
-        title: 'Error',
-        message: error instanceof Error ? error.message : 'Failed to delete SLA',
-        color: 'red',
-      })
-    },
-  })
+        title: "Error",
+        message: err instanceof Error ? err.message : "Failed to delete SLA",
+        color: "red",
+      }),
+  });
 
-  // Handlers
-  const handleOpenModal = (sla?: SLA) => {
-    if (sla) {
-      setEditingSLA(sla)
-      setFormData({
-        name: sla.name,
-        description: sla.description || '',
-        priority: sla.priority,
-        category_id: sla.category_id,
-        response_time_hours: sla.response_time_hours,
-        resolution_time_hours: sla.resolution_time_hours,
-        is_active: sla.is_active,
-      })
-    } else {
-      setEditingSLA(null)
-      resetForm()
-    }
-    setOpened(true)
-  }
+  // ── Handlers ──
+  const closeModal = () => {
+    setOpened(false);
+    setEditingSLA(null);
+    setFormData(DEFAULT_FORM);
+  };
 
-  const resetForm = () => {
+  const openCreate = () => {
+    setEditingSLA(null);
+    setFormData(DEFAULT_FORM);
+    setOpened(true);
+  };
+
+  const openEdit = (sla: SLA) => {
+    setEditingSLA(sla);
     setFormData({
-      name: '',
-      description: '',
-      priority: 'MEDIUM',
-      category_id: null,
-      response_time_hours: 4,
-      resolution_time_hours: 24,
-      is_active: true,
-    })
-    setEditingSLA(null)
-  }
+      name: sla.name,
+      description: sla.description || "",
+      priority: sla.priority,
+      category_id: sla.category_id,
+      response_time_hours: sla.response_time_hours,
+      resolution_time_hours: sla.resolution_time_hours,
+      is_active: sla.is_active,
+    });
+    setOpened(true);
+  };
 
-  const handleSubmit = async () => {
-    if (!formData.name || !formData.category_id) {
+  const handleSubmit = () => {
+    if (!formData.name.trim() || !formData.category_id) {
       notifications.show({
-        title: 'Validation Error',
-        message: 'Please fill in all required fields',
-        color: 'yellow',
-      })
-      return
+        title: "Validation error",
+        message: "Name and category are required",
+        color: "yellow",
+      });
+      return;
     }
-
-    if (formData.response_time_hours <= 0 || formData.resolution_time_hours <= 0) {
+    if (
+      formData.response_time_hours <= 0 ||
+      formData.resolution_time_hours <= 0
+    ) {
       notifications.show({
-        title: 'Validation Error',
-        message: 'Time values must be greater than 0',
-        color: 'yellow',
-      })
-      return
+        title: "Validation error",
+        message: "Time values must be greater than 0",
+        color: "yellow",
+      });
+      return;
     }
 
     const payload = {
@@ -200,262 +357,779 @@ export default function SLAManagement() {
       category_id: formData.category_id,
       response_time_hours: formData.response_time_hours,
       resolution_time_hours: formData.resolution_time_hours,
-    }
+    };
 
     if (editingSLA) {
-      updateSLAMutation.mutate({
+      updateMutation.mutate({
         slaId: editingSLA.id,
         data: { ...payload, is_active: formData.is_active },
-      })
+      });
     } else {
-      createSLAMutation.mutate(payload)
+      createMutation.mutate(payload);
     }
-  }
+  };
 
-  const handleDelete = (sla: SLA) => {
-    if (window.confirm(`Are you sure you want to delete SLA "${sla.name}"?`)) {
-      deleteSLAMutation.mutate(sla.id)
-    }
-  }
+  // ── Derived data ──
+  const categoryMap = useMemo(
+    () => Object.fromEntries((categories as Category[]).map((c) => [c.id, c])),
+    [categories],
+  );
 
-  // Render
+  const displaySLAs = useMemo(() => {
+    if (!searchQuery.trim()) return slas;
+    const q = searchQuery.toLowerCase();
+    return slas.filter(
+      (s: SLA) =>
+        s.name.toLowerCase().includes(q) ||
+        (categoryMap[s.category_id]?.name ?? "").toLowerCase().includes(q),
+    );
+  }, [slas, searchQuery, categoryMap]);
+
+  const activeSLAs = slas.filter((s: SLA) => s.is_active).length;
+  const inactiveSLAs = slas.length - activeSLAs;
+
+  // ── Loading ──
   if (isLoading) {
     return (
       <Container size="lg" py="lg">
-        <Center>
-          <Loader />
+        <Center h={300}>
+          <Loader color={B.purple} />
         </Center>
       </Container>
-    )
+    );
   }
-
-  const priorityColors: Record<string, string> = {
-    HIGH: 'red',
-    MEDIUM: 'yellow',
-    LOW: 'green',
-  }
-
-  const categoryMap = Object.fromEntries(
-    (categories as Category[]).map((c) => [c.id, c.name])
-  )
 
   return (
     <Container size="lg" py="lg">
       <Stack gap="lg">
-        {/* Header */}
-        <Group justify="space-between" align="center">
-          <div>
-            <Text size="lg" fw={500}>
+        {/* ── Header ── */}
+        <Group justify="space-between" align="flex-end">
+          <Box>
+            <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>
               SLA Management
             </Text>
-            <Text size="sm" c="dimmed">
-              Define service level agreements for ticket priorities
+            <Text size="sm" c="dimmed" mt={2}>
+              Define service level agreements for ticket priorities and
+              categories
             </Text>
-          </div>
-          <Button onClick={() => handleOpenModal()} leftSection={<Icon icon="mdi:plus" />}>
+          </Box>
+          <Button
+            size="sm"
+            leftSection={
+              <Icon icon="solar:add-circle-bold-duotone" width={15} />
+            }
+            style={{ background: B.purpleDark, border: "none" }}
+            onClick={openCreate}
+          >
             Add SLA
           </Button>
         </Group>
 
-        {/* Error Alert */}
+        {/* ── Stat cards ── */}
+        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing={10}>
+          <StatCard
+            label="Total SLAs"
+            value={slas.length}
+            icon="solar:document-text-linear"
+            accentColor={B.purple}
+          />
+          <StatCard
+            label="Active"
+            value={activeSLAs}
+            icon="solar:check-circle-linear"
+            accentColor={B.green}
+          />
+          <StatCard
+            label="Inactive"
+            value={inactiveSLAs}
+            icon="solar:close-circle-linear"
+            accentColor={B.gray}
+          />
+          <StatCard
+            label="Categories"
+            value={(categories as Category[]).length}
+            icon="solar:folder-2-linear"
+            accentColor={B.blue}
+          />
+        </SimpleGrid>
+
+        {/* ── Error ── */}
         {error && (
-          <Paper p="md" bg="red.0" c="red.9" radius="md">
+          <Box
+            p="md"
+            style={{
+              borderRadius: 10,
+              background: B.redLight,
+              border: `0.5px solid ${B.red}33`,
+            }}
+          >
             <Group justify="space-between">
-              <Text>Error loading SLAs. Please try again.</Text>
+              <Group gap={8}>
+                <Icon
+                  icon="solar:danger-triangle-linear"
+                  width={14}
+                  style={{ color: B.red }}
+                />
+                <Text size="sm" style={{ color: B.redText }}>
+                  Error loading SLAs. Please try again.
+                </Text>
+              </Group>
               <ActionIcon
-                variant="transparent"
+                variant="subtle"
                 color="red"
+                size="sm"
                 onClick={() => window.location.reload()}
               >
-                <Icon icon="mdi:refresh" />
+                <Icon icon="solar:refresh-linear" width={14} />
               </ActionIcon>
             </Group>
-          </Paper>
+          </Box>
         )}
 
-        {/* SLAs Table */}
-        <Paper withBorder radius="md" style={{ overflow: 'hidden' }}>
-          <Table striped highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Name</Table.Th>
-                <Table.Th>Category</Table.Th>
-                <Table.Th>Priority</Table.Th>
-                <Table.Th>Response Time</Table.Th>
-                <Table.Th>Resolution Time</Table.Th>
-                <Table.Th>Status</Table.Th>
-                <Table.Th align="center">Actions</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {slas.length === 0 ? (
-                <Table.Tr>
-                  <Table.Td colSpan={7}>
-                    <Center py="lg">
-                      <Text c="dimmed">No SLAs configured</Text>
-                    </Center>
-                  </Table.Td>
-                </Table.Tr>
-              ) : (
-                slas.map((sla) => (
-                  <Table.Tr key={sla.id}>
-                    <Table.Td fw={500}>{sla.name}</Table.Td>
-                    <Table.Td>{categoryMap[sla.category_id] || 'Unknown'}</Table.Td>
-                    <Table.Td>
-                      <Badge color={priorityColors[sla.priority]}>{sla.priority}</Badge>
-                    </Table.Td>
-                    <Table.Td>{sla.response_time_hours}h</Table.Td>
-                    <Table.Td>{sla.resolution_time_hours}h</Table.Td>
-                    <Table.Td>
-                      <Badge color={sla.is_active ? 'green' : 'gray'}>
-                        {sla.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap="xs" justify="center">
-                        <Tooltip label="Edit">
-                          <ActionIcon
-                            variant="subtle"
-                            color="blue"
-                            onClick={() => handleOpenModal(sla)}
+        {/* ── Table card ── */}
+        <Paper
+          radius="md"
+          style={{
+            border: "0.5px solid var(--mantine-color-default-border)",
+            overflow: "hidden",
+          }}
+        >
+          {/* Toolbar */}
+          <Box
+            px="md"
+            py="sm"
+            style={{
+              borderBottom: "0.5px solid var(--mantine-color-default-border)",
+            }}
+          >
+            <Group justify="space-between">
+              <TextInput
+                placeholder="Search SLAs…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.currentTarget.value)}
+                leftSection={
+                  <Icon
+                    icon="solar:magnifer-linear"
+                    width={14}
+                    style={{ color: "var(--mantine-color-dimmed)" }}
+                  />
+                }
+                rightSection={
+                  searchQuery ? (
+                    <ActionIcon
+                      variant="subtle"
+                      size="xs"
+                      onClick={() => setSearchQuery("")}
+                    >
+                      <Icon icon="solar:close-circle-linear" width={13} />
+                    </ActionIcon>
+                  ) : null
+                }
+                style={{ width: 240 }}
+                styles={{ input: { fontSize: 13, height: 34 } }}
+              />
+              <Text size="xs" c="dimmed">
+                {displaySLAs.length} of {slas.length} SLAs
+              </Text>
+            </Group>
+          </Box>
+
+          {/* Table */}
+          {isLoading ? (
+            <Center py={80}>
+              <Loader color={B.purple} />
+            </Center>
+          ) : (
+            <>
+              <Box style={{ overflowX: "auto" }}>
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontSize: 13,
+                  }}
+                >
+                  <thead>
+                    <tr
+                      style={{
+                        borderBottom:
+                          "0.5px solid var(--mantine-color-default-border)",
+                      }}
+                    >
+                      <th style={{ ...TH_STYLE, padding: "10px 16px" }}>
+                        Name
+                      </th>
+                      <th style={{ ...TH_STYLE, padding: "10px 16px" }}>
+                        Category
+                      </th>
+                      <th style={{ ...TH_STYLE, padding: "10px 16px" }}>
+                        Priority
+                      </th>
+                      <th style={{ ...TH_STYLE, padding: "10px 16px" }}>
+                        Response
+                      </th>
+                      <th style={{ ...TH_STYLE, padding: "10px 16px" }}>
+                        Resolution
+                      </th>
+                      <th style={{ ...TH_STYLE, padding: "10px 16px" }}>
+                        Status
+                      </th>
+                      <th style={{ ...TH_STYLE, padding: "10px 16px" }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displaySLAs.length > 0 ? (
+                      displaySLAs.map((sla: SLA, idx: number) => {
+                        const cat = categoryMap[sla.category_id];
+                        const prioMeta =
+                          PRIORITY_META[sla.priority] ?? PRIORITY_META.MEDIUM;
+                        return (
+                          <tr
+                            key={sla.id}
+                            style={{
+                              borderBottom:
+                                idx < displaySLAs.length - 1
+                                  ? "0.5px solid var(--mantine-color-default-border)"
+                                  : "none",
+                              transition: "background .12s",
+                            }}
+                            onMouseEnter={(e) => {
+                              (
+                                e.currentTarget as HTMLTableRowElement
+                              ).style.background =
+                                "var(--mantine-color-default-hover)";
+                            }}
+                            onMouseLeave={(e) => {
+                              (
+                                e.currentTarget as HTMLTableRowElement
+                              ).style.background = "transparent";
+                            }}
                           >
-                            <Icon icon="mdi:pencil" width={18} />
-                          </ActionIcon>
-                        </Tooltip>
-                        <Tooltip label="Delete">
-                          <ActionIcon
-                            variant="subtle"
-                            color="red"
-                            onClick={() => handleDelete(sla)}
-                          >
-                            <Icon icon="mdi:delete" width={18} />
-                          </ActionIcon>
-                        </Tooltip>
-                      </Group>
-                    </Table.Td>
-                  </Table.Tr>
-                ))
+                            {/* Name */}
+                            <td style={{ padding: "11px 16px" }}>
+                              <Text size="sm" fw={500}>
+                                {sla.name}
+                              </Text>
+                              {sla.description && (
+                                <Text
+                                  size="xs"
+                                  c="dimmed"
+                                  truncate
+                                  style={{ maxWidth: 200 }}
+                                >
+                                  {sla.description}
+                                </Text>
+                              )}
+                            </td>
+
+                            {/* Category */}
+                            <td style={{ padding: "11px 16px" }}>
+                              {cat ? (
+                                <span
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 5,
+                                    fontSize: 11,
+                                    fontWeight: 500,
+                                    padding: "3px 9px",
+                                    borderRadius: 20,
+                                    background: (cat.color || B.gray) + "22",
+                                    color: cat.color || B.gray,
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      width: 5,
+                                      height: 5,
+                                      borderRadius: "50%",
+                                      background: cat.color || B.gray,
+                                    }}
+                                  />
+                                  {cat.name}
+                                </span>
+                              ) : (
+                                <Text size="xs" c="dimmed">
+                                  —
+                                </Text>
+                              )}
+                            </td>
+
+                            {/* Priority */}
+                            <td style={{ padding: "11px 16px" }}>
+                              <DotBadge
+                                label={
+                                  sla.priority.charAt(0) +
+                                  sla.priority.slice(1).toLowerCase()
+                                }
+                                {...prioMeta}
+                              />
+                            </td>
+
+                            {/* Response time */}
+                            <td style={{ padding: "11px 16px" }}>
+                              <Group gap={5} wrap="nowrap">
+                                <Icon
+                                  icon="solar:clock-circle-linear"
+                                  width={13}
+                                  style={{
+                                    color: "var(--mantine-color-dimmed)",
+                                  }}
+                                />
+                                <Text size="sm" fw={500}>
+                                  {sla.response_time_hours}h
+                                </Text>
+                              </Group>
+                            </td>
+
+                            {/* Resolution time */}
+                            <td style={{ padding: "11px 16px" }}>
+                              <Group gap={5} wrap="nowrap">
+                                <Icon
+                                  icon="solar:hourglass-linear"
+                                  width={13}
+                                  style={{
+                                    color: "var(--mantine-color-dimmed)",
+                                  }}
+                                />
+                                <Text size="sm" fw={500}>
+                                  {sla.resolution_time_hours}h
+                                </Text>
+                              </Group>
+                            </td>
+
+                            {/* Status */}
+                            <td style={{ padding: "11px 16px" }}>
+                              <DotBadge
+                                label={sla.is_active ? "Active" : "Inactive"}
+                                bg={sla.is_active ? B.greenLight : B.grayLight}
+                                text={sla.is_active ? B.greenText : B.grayText}
+                                dot={sla.is_active ? B.green : B.gray}
+                              />
+                            </td>
+
+                            {/* Actions */}
+                            <td style={{ padding: "11px 16px" }}>
+                              <Group gap={4} justify="flex-end" wrap="nowrap">
+                                <Tooltip
+                                  label="Edit SLA"
+                                  withArrow
+                                  fz={11}
+                                  position="top"
+                                >
+                                  <ActionIcon
+                                    variant="subtle"
+                                    size="sm"
+                                    style={{ color: B.purpleDark }}
+                                    onClick={() => openEdit(sla)}
+                                  >
+                                    <Icon
+                                      icon="solar:pen-2-linear"
+                                      width={15}
+                                    />
+                                  </ActionIcon>
+                                </Tooltip>
+                                <Tooltip
+                                  label="Delete SLA"
+                                  withArrow
+                                  fz={11}
+                                  position="top"
+                                >
+                                  <ActionIcon
+                                    variant="subtle"
+                                    size="sm"
+                                    style={{ color: B.red }}
+                                    onClick={() => {
+                                      setDeleteConfirmId(sla.id);
+                                      setDeleteConfirmName(sla.name);
+                                    }}
+                                  >
+                                    <Icon
+                                      icon="solar:trash-bin-2-linear"
+                                      width={15}
+                                    />
+                                  </ActionIcon>
+                                </Tooltip>
+                              </Group>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={7}>
+                          <Center py={80}>
+                            <Stack align="center" gap="sm">
+                              <Icon
+                                icon="solar:stopwatch-linear"
+                                width={36}
+                                style={{
+                                  color: "var(--mantine-color-dimmed)",
+                                  opacity: 0.4,
+                                }}
+                              />
+                              <Text size="sm" c="dimmed">
+                                {searchQuery
+                                  ? "No SLAs match your search"
+                                  : "No SLAs configured yet"}
+                              </Text>
+                              {!searchQuery && (
+                                <Button
+                                  size="xs"
+                                  style={{ color: B.purpleDark }}
+                                  variant="subtle"
+                                  onClick={openCreate}
+                                >
+                                  Create your first SLA
+                                </Button>
+                              )}
+                            </Stack>
+                          </Center>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </Box>
+
+              {/* Table footer */}
+              {displaySLAs.length > 0 && (
+                <Box
+                  px="md"
+                  py="sm"
+                  style={{
+                    borderTop:
+                      "0.5px solid var(--mantine-color-default-border)",
+                  }}
+                >
+                  <Text size="xs" c="dimmed">
+                    Showing{" "}
+                    <span
+                      style={{
+                        fontWeight: 500,
+                        color: "var(--mantine-color-text)",
+                      }}
+                    >
+                      {displaySLAs.length}
+                    </span>{" "}
+                    of{" "}
+                    <span
+                      style={{
+                        fontWeight: 500,
+                        color: "var(--mantine-color-text)",
+                      }}
+                    >
+                      {slas.length}
+                    </span>{" "}
+                    SLAs{searchQuery && " · filtered"}
+                  </Text>
+                </Box>
               )}
-            </Table.Tbody>
-          </Table>
+            </>
+          )}
         </Paper>
       </Stack>
 
-      {/* SLA Form Modal */}
+      {/* ── Create / Edit Modal ── */}
       <Modal
         opened={opened}
-        onClose={() => {
-          setOpened(false)
-          resetForm()
-        }}
-        title={editingSLA ? 'Edit SLA' : 'Create New SLA'}
+        onClose={closeModal}
+        title={
+          <Group gap={8}>
+            <Icon
+              icon={
+                editingSLA
+                  ? "solar:pen-2-bold-duotone"
+                  : "solar:stopwatch-bold-duotone"
+              }
+              width={18}
+              style={{ color: B.purple }}
+            />
+            <Text fw={500} size="sm">
+              {editingSLA ? "Edit SLA" : "New SLA"}
+            </Text>
+          </Group>
+        }
         size="md"
+        centered
+        radius="md"
+        styles={mStyles}
       >
         <LoadingOverlay
-          visible={createSLAMutation.isPending || updateSLAMutation.isPending}
+          visible={createMutation.isPending || updateMutation.isPending}
           zIndex={1000}
-          overlayProps={{ radius: 'sm', blur: 2 }}
+          overlayProps={{ radius: "sm", blur: 2 }}
         />
+
         <Stack gap="md">
+          {/* Name */}
           <TextInput
-            label="SLA Name"
-            placeholder="Enter SLA name (e.g., 'High Priority - Sales')"
+            label={
+              <Text size="xs" fw={500} mb={4}>
+                SLA name
+              </Text>
+            }
+            placeholder="e.g. High Priority — Billing"
             required
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            styles={{ input: { fontSize: 13 } }}
           />
 
+          {/* Description */}
           <Textarea
-            label="Description"
-            placeholder="Enter SLA description"
+            label={
+              <Text size="xs" fw={500} mb={4}>
+                Description{" "}
+                <Text span size="xs" c="dimmed">
+                  (optional)
+                </Text>
+              </Text>
+            }
+            placeholder="Briefly describe when this SLA applies…"
             value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, description: e.target.value })
+            }
+            minRows={2}
+            styles={{ input: { fontSize: 13 } }}
           />
 
-          <Group grow>
+          {/* Priority + Category */}
+          <Group grow gap="md">
             <Select
-              label="Priority"
-              placeholder="Select priority"
+              label={
+                <Text size="xs" fw={500} mb={4}>
+                  Priority
+                </Text>
+              }
               data={[
-                { value: 'HIGH', label: 'High' },
-                { value: 'MEDIUM', label: 'Medium' },
-                { value: 'LOW', label: 'Low' },
+                { value: "HIGH", label: "High" },
+                { value: "MEDIUM", label: "Medium" },
+                { value: "LOW", label: "Low" },
               ]}
               value={formData.priority}
-              onChange={(value) =>
+              onChange={(val) =>
                 setFormData({
                   ...formData,
-                  priority: (value as 'HIGH' | 'MEDIUM' | 'LOW') || 'MEDIUM',
+                  priority: (val as "HIGH" | "MEDIUM" | "LOW") || "MEDIUM",
                 })
               }
               required
+              styles={{ input: { fontSize: 13 } }}
             />
-
             <Select
-              label="Category"
+              label={
+                <Text size="xs" fw={500} mb={4}>
+                  Category
+                </Text>
+              }
               placeholder="Select category"
-              data={(categories as Category[]).map((c) => ({ value: c.id.toString(), label: c.name }))}
-              value={formData.category_id?.toString() || ''}
-              onChange={(value) =>
-                setFormData({ ...formData, category_id: value ? parseInt(value) : null })
-              }
-              required
-            />
-          </Group>
-
-          <Group grow>
-            <NumberInput
-              label="Response Time (hours)"
-              placeholder="Enter response time"
-              min={0}
-              value={formData.response_time_hours}
-              onChange={(value) =>
+              data={(categories as Category[]).map((c) => ({
+                value: c.id.toString(),
+                label: c.name,
+              }))}
+              value={formData.category_id?.toString() || ""}
+              onChange={(val) =>
                 setFormData({
                   ...formData,
-                  response_time_hours: typeof value === 'number' ? value : 4,
+                  category_id: val ? parseInt(val) : null,
                 })
               }
               required
-            />
-
-            <NumberInput
-              label="Resolution Time (hours)"
-              placeholder="Enter resolution time"
-              min={0}
-              value={formData.resolution_time_hours}
-              onChange={(value) =>
-                setFormData({
-                  ...formData,
-                  resolution_time_hours: typeof value === 'number' ? value : 24,
-                })
-              }
-              required
+              searchable
+              styles={{ input: { fontSize: 13 } }}
             />
           </Group>
 
+          {/* Time targets */}
+          <Box
+            p="md"
+            style={{
+              borderRadius: 8,
+              background: "var(--mantine-color-default-hover)",
+              border: "0.5px solid var(--mantine-color-default-border)",
+            }}
+          >
+            <Group gap={6} mb="sm">
+              <Icon
+                icon="solar:clock-circle-linear"
+                width={13}
+                style={{ color: B.purple }}
+              />
+              <SLabel>Time targets</SLabel>
+            </Group>
+            <Group grow gap="md">
+              <NumberInput
+                label={
+                  <Text size="xs" fw={500} mb={4}>
+                    First response (hours)
+                  </Text>
+                }
+                placeholder="e.g. 4"
+                min={1}
+                value={formData.response_time_hours}
+                onChange={(val) =>
+                  setFormData({
+                    ...formData,
+                    response_time_hours: typeof val === "number" ? val : 4,
+                  })
+                }
+                required
+                leftSection={
+                  <Icon
+                    icon="solar:bell-linear"
+                    width={13}
+                    style={{ color: "var(--mantine-color-dimmed)" }}
+                  />
+                }
+                styles={{ input: { fontSize: 13 } }}
+              />
+              <NumberInput
+                label={
+                  <Text size="xs" fw={500} mb={4}>
+                    Resolution (hours)
+                  </Text>
+                }
+                placeholder="e.g. 24"
+                min={1}
+                value={formData.resolution_time_hours}
+                onChange={(val) =>
+                  setFormData({
+                    ...formData,
+                    resolution_time_hours: typeof val === "number" ? val : 24,
+                  })
+                }
+                required
+                leftSection={
+                  <Icon
+                    icon="solar:hourglass-linear"
+                    width={13}
+                    style={{ color: "var(--mantine-color-dimmed)" }}
+                  />
+                }
+                styles={{ input: { fontSize: 13 } }}
+              />
+            </Group>
+          </Box>
+
+          {/* Active toggle (edit only) */}
           {editingSLA && (
-            <Switch
-              label="Active"
-              description="Enable or disable this SLA"
-              checked={formData.is_active}
-              onChange={(e) => setFormData({ ...formData, is_active: e.currentTarget.checked })}
-            />
+            <Group
+              justify="space-between"
+              px="md"
+              py="sm"
+              style={{
+                borderRadius: 8,
+                background: "var(--mantine-color-default-hover)",
+                border: "0.5px solid var(--mantine-color-default-border)",
+              }}
+            >
+              <Box>
+                <Text size="sm" fw={500}>
+                  Active
+                </Text>
+                <Text size="xs" c="dimmed">
+                  Disable to pause this SLA without deleting it
+                </Text>
+              </Box>
+              <Switch
+                checked={formData.is_active}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    is_active: e.currentTarget.checked,
+                  })
+                }
+                color={B.purple}
+              />
+            </Group>
           )}
 
-          <Group justify="flex-end" mt="lg">
+          <Divider />
+
+          <Group justify="flex-end" gap={8}>
+            <Button variant="default" size="sm" onClick={closeModal}>
+              Cancel
+            </Button>
             <Button
-              variant="light"
-              onClick={() => {
-                setOpened(false)
-                resetForm()
-              }}
+              size="sm"
+              style={{ background: B.purpleDark, border: "none" }}
+              loading={createMutation.isPending || updateMutation.isPending}
+              onClick={handleSubmit}
+            >
+              {editingSLA ? "Save changes" : "Create SLA"}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* ── Delete Confirm Modal ── */}
+      <Modal
+        opened={deleteConfirmId !== null}
+        onClose={() => setDeleteConfirmId(null)}
+        title={
+          <Group gap={8}>
+            <Icon
+              icon="solar:danger-triangle-bold-duotone"
+              width={18}
+              style={{ color: B.red }}
+            />
+            <Text fw={500} size="sm">
+              Delete SLA
+            </Text>
+          </Group>
+        }
+        size="sm"
+        centered
+        radius="md"
+        styles={mStyles}
+      >
+        <Stack gap="lg">
+          <Box
+            p="sm"
+            style={{
+              borderRadius: 8,
+              background: B.redLight,
+              border: `0.5px solid ${B.red}33`,
+            }}
+          >
+            <Group gap={8} align="flex-start">
+              <Icon
+                icon="solar:info-circle-linear"
+                width={14}
+                style={{ color: B.red, marginTop: 1, flexShrink: 0 }}
+              />
+              <Text size="sm" style={{ color: B.redText }}>
+                You are about to delete the SLA{" "}
+                <strong>"{deleteConfirmName}"</strong>. Tickets using this SLA
+                will no longer have response or resolution targets applied. This
+                cannot be undone.
+              </Text>
+            </Group>
+          </Box>
+          <Group justify="flex-end" gap={8}>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setDeleteConfirmId(null)}
             >
               Cancel
             </Button>
-            <Button onClick={handleSubmit}>{editingSLA ? 'Update SLA' : 'Create SLA'}</Button>
+            <Button
+              size="sm"
+              style={{ background: B.red, border: "none" }}
+              loading={deleteMutation.isPending}
+              onClick={() => {
+                if (deleteConfirmId !== null)
+                  deleteMutation.mutate(deleteConfirmId);
+              }}
+            >
+              Delete SLA
+            </Button>
           </Group>
         </Stack>
       </Modal>
     </Container>
-  )
+  );
 }
