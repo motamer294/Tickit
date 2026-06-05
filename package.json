@@ -1,23 +1,18 @@
 {
-  "name": "graduation-project-root",
+  "name": "tikit",
   "version": "1.0.0",
   "private": true,
   "scripts": {
-
     "// ===  DEVELOPMENT === //": "",
     "dev": "concurrently -c \"cyan,magenta\" -n \"WEB,SERVER\" \"npm run dev:client\" \"npm run dev:server\"",
     "dev:client": "npm run dev --prefix web",
     "dev:server": "cd server && . venv/bin/activate && docker compose up -d && docker compose logs -f",
-
     "// ===  INSTALLATION & SETUP === //": "",
-
     "setup": "npm install && npm run setup:client && npm run setup:server && npm run setup:env",
     "setup:client": "npm install --prefix web",
     "setup:server": "cd server && python3 -m venv venv && . venv/bin/activate && pip install -r requirements.txt",
     "setup:env": "cp web/.env.example web/.env && cp server/.env.example server/.env",
-
     "// ===  DOCKER === //": "",
-
     "docker:up": "docker compose -f server/docker-compose.yml up -d",
     "docker:down": "docker compose -f server/docker-compose.yml down",
     "docker:stop": "docker compose -f server/docker-compose.yml stop",
@@ -25,20 +20,14 @@
     "docker:status": "docker compose -f server/docker-compose.yml ps",
     "docker:rebuild": "docker compose -f server/docker-compose.yml up -d --build",
     "docker:nuke": "docker compose -f server/docker-compose.yml down -v --rmi all && docker system prune -a -f --volumes",
-
     "// === DATABASE & MIGRATIONS === //": "",
-
     "db:makemigrations": "cd server && . venv/bin/activate && python manage.py makemigrations",
     "db:migrate": "cd server && . venv/bin/activate && python manage.py migrate",
     "db:seed": "cd server && . venv/bin/activate && python manage.py loaddata seed.json",
-
-
     "// === TESTING === //": "",
-
     "test": "npm run test:client && npm run test:server",
     "test:client": "npm run test --prefix web",
     "test:server": "cd server && . venv/bin/activate && pytest",
-
     "// ===  PRODUCTION === //": "",
     "build": "npm run build:client",
     "build:client": "npm run build --prefix web"
