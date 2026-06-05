@@ -29,6 +29,10 @@ export interface Notification {
     username: string
     email?: string
   }
+  // Custom alert properties
+  isCustomAlert?: boolean
+  alertVariant?: 'info' | 'success' | 'warning' | 'error'
+  autoCloseDuration?: number
 }
 
 export interface NotificationState {

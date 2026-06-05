@@ -38,24 +38,90 @@ const BRAND = {
 
 // ─── Type metadata ─────────────────────────────────────────────────────────────
 
-const TYPE_META: Record<NotificationType, {
-  label: string
-  icon: string
-  dot: string
-  bg: string
-  text: string
-  iconBg: string
-}> = {
-  TICKET_ASSIGNED:   { label: 'Assigned',  icon: 'solar:briefcase-bold-duotone',           dot: BRAND.purple, bg: BRAND.purpleLight, text: BRAND.purpleText, iconBg: BRAND.purpleLight },
-  TICKET_UPDATED:    { label: 'Updated',   icon: 'solar:pen-bold-duotone',                 dot: BRAND.amber,  bg: BRAND.amberLight,  text: BRAND.amberText,  iconBg: BRAND.amberLight  },
-  COMMENT_ADDED:     { label: 'Comment',   icon: 'solar:chat-round-dots-bold-duotone',     dot: BRAND.blue,   bg: BRAND.blueLight,   text: BRAND.blueText,   iconBg: BRAND.blueLight   },
-  TICKET_RESOLVED:   { label: 'Resolved',  icon: 'solar:check-circle-bold-duotone',        dot: BRAND.green,  bg: BRAND.greenLight,  text: BRAND.greenText,  iconBg: BRAND.greenLight  },
-  TICKET_DELETED:    { label: 'Deleted',   icon: 'solar:trash-bin-trash-bold-duotone',     dot: BRAND.red,    bg: BRAND.redLight,    text: BRAND.redText,    iconBg: BRAND.redLight    },
-  TICKET_CREATED:    { label: 'Created',   icon: 'solar:document-add-bold-duotone',        dot: BRAND.teal,   bg: BRAND.tealLight,   text: BRAND.tealText,   iconBg: BRAND.tealLight   },
-  MANAGER_ACTIVITY:  { label: 'Activity',  icon: 'solar:pulse-bold-duotone',               dot: BRAND.cyan,   bg: BRAND.cyanLight,   text: BRAND.cyanText,   iconBg: BRAND.cyanLight   },
-  PERFORMANCE_ALERT: { label: 'Alert',     icon: 'solar:graph-bold-duotone',               dot: BRAND.orange, bg: BRAND.orangeLight, text: BRAND.orangeText, iconBg: BRAND.orangeLight },
-  SYSTEM:            { label: 'System',    icon: 'solar:bell-bold-duotone',                dot: BRAND.red,    bg: BRAND.redLight,    text: BRAND.redText,    iconBg: BRAND.redLight    },
-}
+const TYPE_META: Record<
+  NotificationType,
+  {
+    label: string;
+    icon: string;
+    dot: string;
+    bg: string;
+    text: string;
+    iconBg: string;
+  }
+> = {
+  TICKET_ASSIGNED: {
+    label: "Assigned",
+    icon: "si:briefcase-detailed-duotone",
+    dot: BRAND.purple,
+    bg: BRAND.purpleLight,
+    text: BRAND.purpleText,
+    iconBg: BRAND.purpleLight,
+  },
+  TICKET_UPDATED: {
+    label: "Updated",
+    icon: "solar:pen-bold-duotone",
+    dot: BRAND.amber,
+    bg: BRAND.amberLight,
+    text: BRAND.amberText,
+    iconBg: BRAND.amberLight,
+  },
+  COMMENT_ADDED: {
+    label: "Comment",
+    icon: "solar:chat-round-dots-bold-duotone",
+    dot: BRAND.blue,
+    bg: BRAND.blueLight,
+    text: BRAND.blueText,
+    iconBg: BRAND.blueLight,
+  },
+  TICKET_RESOLVED: {
+    label: "Resolved",
+    icon: "solar:check-circle-bold-duotone",
+    dot: BRAND.green,
+    bg: BRAND.greenLight,
+    text: BRAND.greenText,
+    iconBg: BRAND.greenLight,
+  },
+  TICKET_DELETED: {
+    label: "Deleted",
+    icon: "solar:trash-bin-trash-bold-duotone",
+    dot: BRAND.red,
+    bg: BRAND.redLight,
+    text: BRAND.redText,
+    iconBg: BRAND.redLight,
+  },
+  TICKET_CREATED: {
+    label: "Created",
+    icon: "solar:document-add-bold-duotone",
+    dot: BRAND.teal,
+    bg: BRAND.tealLight,
+    text: BRAND.tealText,
+    iconBg: BRAND.tealLight,
+  },
+  MANAGER_ACTIVITY: {
+    label: "Activity",
+    icon: "solar:pulse-bold-duotone",
+    dot: BRAND.cyan,
+    bg: BRAND.cyanLight,
+    text: BRAND.cyanText,
+    iconBg: BRAND.cyanLight,
+  },
+  PERFORMANCE_ALERT: {
+    label: "Alert",
+    icon: "solar:graph-bold-duotone",
+    dot: BRAND.orange,
+    bg: BRAND.orangeLight,
+    text: BRAND.orangeText,
+    iconBg: BRAND.orangeLight,
+  },
+  SYSTEM: {
+    label: "System",
+    icon: "solar:bell-bold-duotone",
+    dot: BRAND.red,
+    bg: BRAND.redLight,
+    text: BRAND.redText,
+    iconBg: BRAND.redLight,
+  },
+};
 
 const DEFAULT_META = TYPE_META.SYSTEM
 
