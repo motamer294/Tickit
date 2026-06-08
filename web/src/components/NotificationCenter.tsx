@@ -1,5 +1,6 @@
 import {
   Popover,
+  Drawer,
   Group,
   Stack,
   Text,
@@ -10,6 +11,7 @@ import {
   Box,
   Tooltip,
 } from '@mantine/core'
+import { useMediaQuery } from '@mantine/hooks'
 import { Icon } from '@iconify-icon/react'
 import { useState } from 'react'
 import { useNotifications } from '@/hooks/useNotifications'
@@ -88,21 +90,278 @@ export const NotificationCenter = () => {
   const isDark = colorScheme === 'dark'
   const [opened, setOpened] = useState(false)
   const [filter, setFilter] = useState<NotificationType | 'ALL'>('ALL')
+  const isMobile = useMediaQuery('(max-width: 768px)')
 
   const {
     notifications: allNotifications,
-    getByType,
     clearAll,
     markAllAsRead,
   } = useNotifications()
 
-  // Exclude inline toasts (isCustomAlert) — those belong to CustomToastContainer, not the bell
   const notifications = allNotifications.filter((n) => !n.isCustomAlert)
   const unreadCount = notifications.filter((n) => !n.read).length
-
   const filteredNotifications =
     filter === 'ALL' ? notifications : notifications.filter((n) => n.type === (filter as NotificationType))
   const hasNotifications = notifications.length > 0
+
+  // ── Trigger button ────────────────────────────────────────────────────────────
+
+  const triggerButton = (
+    <Tooltip label="Notifications" withArrow fz={11} position="bottom">
+      <ActionIcon
+        variant="default"
+        size="lg"
+        radius="md"
+        onClick={() => setOpened((o) => !o)}
+        style={{
+          position: 'relative',
+          border: unreadCount > 0
+            ? `1px solid ${BRAND.purple}55`
+            : '1px solid var(--mantine-color-default-border)',
+          background: unreadCount > 0 ? BRAND.purpleLight : undefined,
+          transition: 'all .15s',
+        }}
+      >
+        <Icon
+          icon="solar:bell-bold-duotone"
+          width={20}
+          style={{ color: unreadCount > 0 ? BRAND.purple : 'var(--mantine-color-dimmed)' }}
+        />
+        {unreadCount > 0 && (
+          <Box
+            style={{
+              position: 'absolute',
+              top: -5,
+              right: -5,
+              minWidth: 16,
+              height: 16,
+              borderRadius: 8,
+              background: BRAND.red,
+              border: `2px solid var(--mantine-color-body)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 9,
+              fontWeight: 700,
+              color: '#fff',
+              lineHeight: 1,
+              padding: '0 3px',
+            }}
+          >
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </Box>
+        )}
+      </ActionIcon>
+    </Tooltip>
+  )
+
+  // ── Shared panel content ──────────────────────────────────────────────────────
+
+  const panelContent = (
+    <Stack gap={0} style={{ height: '100%' }}>
+      {/* Header */}
+      <Group
+        justify="space-between"
+        align="center"
+        px="md"
+        py="sm"
+        style={{
+          borderBottom: '0.5px solid var(--mantine-color-default-border)',
+          flexShrink: 0,
+        }}
+      >
+        <Group gap={8}>
+          <Icon icon="solar:bell-bold-duotone" width={16} style={{ color: BRAND.purple }} />
+          <Text fw={600} size="sm">Notifications</Text>
+          {unreadCount > 0 && (
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                padding: '2px 7px',
+                borderRadius: 20,
+                background: BRAND.redLight,
+                color: BRAND.red,
+              }}
+            >
+              {unreadCount} new
+            </span>
+          )}
+        </Group>
+
+        <Group gap={4}>
+          {unreadCount > 0 && (
+            <Tooltip label="Mark all as read" withArrow fz={10} position="top">
+              <ActionIcon
+                variant="subtle"
+                size="sm"
+                style={{ color: BRAND.purpleDark }}
+                onClick={() => markAllAsRead?.()}
+              >
+                <Icon icon="solar:check-read-linear" width={14} />
+              </ActionIcon>
+            </Tooltip>
+          )}
+          {hasNotifications && (
+            <Tooltip label="Clear all" withArrow fz={10} position="top">
+              <ActionIcon
+                variant="subtle"
+                size="sm"
+                style={{ color: BRAND.red }}
+                onClick={clearAll}
+              >
+                <Icon icon="solar:trash-bin-2-linear" width={14} />
+              </ActionIcon>
+            </Tooltip>
+          )}
+          {isMobile && (
+            <ActionIcon
+              variant="subtle"
+              size="sm"
+              onClick={() => setOpened(false)}
+              style={{ color: 'var(--mantine-color-dimmed)' }}
+            >
+              <Icon icon="solar:close-circle-bold-duotone" width={18} />
+            </ActionIcon>
+          )}
+        </Group>
+      </Group>
+
+      {/* Filter tabs */}
+      {hasNotifications && (
+        <ScrollArea
+          scrollbars="x"
+          scrollbarSize={0}
+          style={{
+            borderBottom: '0.5px solid var(--mantine-color-default-border)',
+            flexShrink: 0,
+          }}
+        >
+          <Group gap={4} px="sm" py={8} wrap="nowrap">
+            {FILTER_TABS.map(({ type, label, icon }) => (
+              <FilterPill
+                key={type}
+                label={label}
+                icon={icon}
+                active={filter === type}
+                onClick={() => setFilter(type)}
+              />
+            ))}
+          </Group>
+        </ScrollArea>
+      )}
+
+      {/* List */}
+      <ScrollArea.Autosize
+        mah={isMobile ? 'calc(100dvh - 180px)' : 'clamp(240px, calc(100vh - 200px), 56vh)'}
+        offsetScrollbars
+        scrollbarSize={6}
+        style={{ flex: 1 }}
+      >
+        {filteredNotifications.length === 0 ? (
+          <Stack align="center" justify="center" mih={180} p="xl" gap="sm">
+            <Box
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: BRAND.purpleLight,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Icon icon="solar:inbox-bold-duotone" width={22} style={{ color: BRAND.purple }} />
+            </Box>
+            <Text size="sm" c="dimmed" ta="center" fw={500}>
+              {hasNotifications
+                ? `No ${filter.toLowerCase().replace('_', ' ')} notifications`
+                : 'All caught up!'}
+            </Text>
+            {!hasNotifications && (
+              <Text size="xs" c="dimmed" ta="center" style={{ opacity: 0.6 }}>
+                You'll see ticket updates and alerts here
+              </Text>
+            )}
+          </Stack>
+        ) : (
+          <Stack gap={6} p="sm">
+            {filteredNotifications.map((notification) => (
+              <NotificationItem key={notification.id} notification={notification} />
+            ))}
+          </Stack>
+        )}
+      </ScrollArea.Autosize>
+
+      {/* Footer */}
+      {hasNotifications && (
+        <>
+          <Divider />
+          <Box
+            px="md"
+            py="sm"
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Text size="xs" c="dimmed">
+              {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
+              {unreadCount > 0 && ` · ${unreadCount} unread`}
+            </Text>
+            {filter !== 'ALL' && (
+              <button
+                onClick={() => setFilter('ALL')}
+                style={{
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: BRAND.purpleDark,
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                }}
+              >
+                Show all ↗
+              </button>
+            )}
+          </Box>
+        </>
+      )}
+    </Stack>
+  )
+
+  // ── Mobile: full-screen drawer ────────────────────────────────────────────────
+
+  if (isMobile) {
+    return (
+      <>
+        {triggerButton}
+        <Drawer
+          opened={opened}
+          onClose={() => setOpened(false)}
+          position="right"
+          size="100%"
+          withCloseButton={false}
+          styles={{
+            body: {
+              padding: 0,
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            },
+          }}
+        >
+          {panelContent}
+        </Drawer>
+      </>
+    )
+  }
+
+  // ── Desktop: popover ──────────────────────────────────────────────────────────
 
   return (
     <Popover
@@ -114,54 +373,7 @@ export const NotificationCenter = () => {
       offset={8}
     >
       <Popover.Target>
-        <Tooltip label="Notifications" withArrow fz={11} position="bottom">
-          <ActionIcon
-            variant="default"
-            size="lg"
-            radius="md"
-            onClick={() => setOpened((o) => !o)}
-            style={{
-              position: 'relative',
-              border: unreadCount > 0
-                ? `1px solid ${BRAND.purple}55`
-                : '1px solid var(--mantine-color-default-border)',
-              background: unreadCount > 0 ? BRAND.purpleLight : undefined,
-              transition: 'all .15s',
-            }}
-          >
-            <Icon
-              icon="solar:bell-bold-duotone"
-              width={20}
-              style={{ color: unreadCount > 0 ? BRAND.purple : 'var(--mantine-color-dimmed)' }}
-            />
-
-            {/* Unread count badge */}
-            {unreadCount > 0 && (
-              <Box
-                style={{
-                  position: 'absolute',
-                  top: -5,
-                  right: -5,
-                  minWidth: 16,
-                  height: 16,
-                  borderRadius: 8,
-                  background: BRAND.red,
-                  border: `2px solid var(--mantine-color-body)`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 9,
-                  fontWeight: 700,
-                  color: '#fff',
-                  lineHeight: 1,
-                  padding: '0 3px',
-                }}
-              >
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </Box>
-            )}
-          </ActionIcon>
-        </Tooltip>
+        {triggerButton}
       </Popover.Target>
 
       <Popover.Dropdown
@@ -176,161 +388,7 @@ export const NotificationCenter = () => {
             : '0 8px 32px rgba(0,0,0,0.12)',
         }}
       >
-        {/* ── Header ── */}
-        <Group
-          justify="space-between"
-          align="center"
-          px="md"
-          py="sm"
-          style={{
-            borderBottom: '0.5px solid var(--mantine-color-default-border)',
-          }}
-        >
-          <Group gap={8}>
-            <Icon icon="solar:bell-bold-duotone" width={16} style={{ color: BRAND.purple }} />
-            <Text fw={600} size="sm">Notifications</Text>
-            {unreadCount > 0 && (
-              <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  padding: '2px 7px',
-                  borderRadius: 20,
-                  background: BRAND.redLight,
-                  color: BRAND.red,
-                }}
-              >
-                {unreadCount} new
-              </span>
-            )}
-          </Group>
-
-          <Group gap={4}>
-            {unreadCount > 0 && (
-              <Tooltip label="Mark all as read" withArrow fz={10} position="top">
-                <ActionIcon
-                  variant="subtle"
-                  size="sm"
-                  style={{ color: BRAND.purpleDark }}
-                  onClick={() => markAllAsRead?.()}
-                >
-                  <Icon icon="solar:check-read-linear" width={14} />
-                </ActionIcon>
-              </Tooltip>
-            )}
-            {hasNotifications && (
-              <Tooltip label="Clear all" withArrow fz={10} position="top">
-                <ActionIcon
-                  variant="subtle"
-                  size="sm"
-                  style={{ color: BRAND.red }}
-                  onClick={clearAll}
-                >
-                  <Icon icon="solar:trash-bin-2-linear" width={14} />
-                </ActionIcon>
-              </Tooltip>
-            )}
-          </Group>
-        </Group>
-
-        {/* ── Filter tabs ── */}
-        {hasNotifications && (
-          <ScrollArea
-            scrollbars="x"
-            scrollbarSize={0}
-            style={{ borderBottom: '0.5px solid var(--mantine-color-default-border)' }}
-          >
-            <Group gap={4} px="sm" py={8} wrap="nowrap">
-              {FILTER_TABS.map(({ type, label, icon }) => (
-                <FilterPill
-                  key={type}
-                  label={label}
-                  icon={icon}
-                  active={filter === type}
-                  onClick={() => setFilter(type)}
-                />
-              ))}
-            </Group>
-          </ScrollArea>
-        )}
-
-        {/* ── List ── */}
-        <ScrollArea.Autosize
-          mah="clamp(240px, calc(100vh - 200px), 56vh)"
-          offsetScrollbars
-          scrollbarSize={6}
-        >
-          {filteredNotifications.length === 0 ? (
-            <Stack align="center" justify="center" mih={180} p="xl" gap="sm">
-              <Box
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
-                  background: BRAND.purpleLight,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Icon icon="solar:inbox-bold-duotone" width={22} style={{ color: BRAND.purple }} />
-              </Box>
-              <Text size="sm" c="dimmed" ta="center" fw={500}>
-                {hasNotifications
-                  ? `No ${filter.toLowerCase().replace('_', ' ')} notifications`
-                  : 'All caught up!'}
-              </Text>
-              {!hasNotifications && (
-                <Text size="xs" c="dimmed" ta="center" style={{ opacity: 0.6 }}>
-                  You'll see ticket updates and alerts here
-                </Text>
-              )}
-            </Stack>
-          ) : (
-            <Stack gap={6} p="sm">
-              {filteredNotifications.map((notification) => (
-                <NotificationItem key={notification.id} notification={notification} />
-              ))}
-            </Stack>
-          )}
-        </ScrollArea.Autosize>
-
-        {/* ── Footer ── */}
-        {hasNotifications && (
-          <>
-            <Divider />
-            <Box
-              px="md"
-              py="sm"
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <Text size="xs" c="dimmed">
-                {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
-                {unreadCount > 0 && ` · ${unreadCount} unread`}
-              </Text>
-              {filter !== 'ALL' && (
-                <button
-                  onClick={() => setFilter('ALL')}
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 500,
-                    color: BRAND.purpleDark,
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: 0,
-                  }}
-                >
-                  Show all ↗
-                </button>
-              )}
-            </Box>
-          </>
-        )}
+        {panelContent}
       </Popover.Dropdown>
     </Popover>
   )
