@@ -51,6 +51,13 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     }))
   },
 
+  // Mark all notifications as read
+  markAllAsRead: () => {
+    set((state) => ({
+      notifications: state.notifications.map((n) => ({ ...n, read: true })),
+    }))
+  },
+
   // Clear all notifications
   clearAll: () => {
     set({ notifications: [] })

@@ -2,7 +2,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { loginApi, signupApi } from '@/api/auth.api'
 import { useAuthStore } from '@/store/auth.store'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '@/utils/customNotifications'
 import { parseError, toNotificationPayload } from '@/utils/error-handling'
 import { decodeJWT, getUserIdFromToken } from '@/utils/jwt'
 

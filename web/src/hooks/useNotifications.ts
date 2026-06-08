@@ -8,6 +8,7 @@ export const useNotifications = () => {
   const addNotification = useNotificationStore((s) => s.addNotification)
   const markAsRead = useNotificationStore((s) => s.markAsRead)
   const markAsUnread = useNotificationStore((s) => s.markAsUnread)
+  const markAllAsRead = useNotificationStore((s) => s.markAllAsRead)
   const deleteNotification = useNotificationStore((s) => s.deleteNotification)
   const clearAll = useNotificationStore((s) => s.clearAll)
   const getUnreadCount = useNotificationStore((s) => s.getUnreadCount)
@@ -18,6 +19,7 @@ export const useNotifications = () => {
     addNotification,
     markAsRead,
     markAsUnread,
+    markAllAsRead,
     deleteNotification,
     clearAll,
     getUnreadCount,

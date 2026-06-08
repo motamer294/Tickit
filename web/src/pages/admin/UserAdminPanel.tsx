@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Container,
   Stack,
@@ -19,9 +19,9 @@ import {
   Box,
   Divider,
   Avatar,
-} from '@mantine/core'
-import { Icon } from '@iconify-icon/react'
-import { notifications } from '@mantine/notifications'
+} from "@mantine/core";
+import { Icon } from "@iconify-icon/react";
+import { notifications } from "@/utils/customNotifications";
 import {
   listUsers,
   createUser,
@@ -30,98 +30,150 @@ import {
   type User,
   type UserCreatePayload,
   type UserUpdatePayload,
-} from '@/api/admin.api'
+} from "@/api/admin.api";
 
 // ─── Brand palette (matches Dashboard & TicketsList) ──────────────────────────
 
 const BRAND = {
-  purple:      '#7F77DD',
-  purpleDark:  '#534AB7',
-  purpleLight: '#EEEDFE',
-  purpleText:  '#3C3489',
-  red:         '#E24B4A',
-  redLight:    '#FCEBEB',
-  redText:     '#791F1F',
-  amber:       '#EF9F27',
-  amberLight:  '#FAEEDA',
-  amberText:   '#633806',
-  green:       '#639922',
-  greenLight:  '#EAF3DE',
-  greenText:   '#27500A',
-  gray:        '#B4B2A9',
-  grayLight:   '#F1EFE8',
-  grayText:    '#444441',
-  blue:        '#378ADD',
-  blueLight:   '#E6F1FB',
-  blueText:    '#0C447C',
-}
+  purple: "#7F77DD",
+  purpleDark: "#534AB7",
+  purpleLight: "#EEEDFE",
+  purpleText: "#3C3489",
+  red: "#E24B4A",
+  redLight: "#FCEBEB",
+  redText: "#791F1F",
+  amber: "#EF9F27",
+  amberLight: "#FAEEDA",
+  amberText: "#633806",
+  green: "#639922",
+  greenLight: "#EAF3DE",
+  greenText: "#27500A",
+  gray: "#B4B2A9",
+  grayLight: "#F1EFE8",
+  grayText: "#444441",
+  blue: "#378ADD",
+  blueLight: "#E6F1FB",
+  blueText: "#0C447C",
+};
 
 // ─── Role / Status metadata ────────────────────────────────────────────────────
 
-const ROLE_META: Record<string, { label: string; bg: string; text: string; dot: string; avatarBg: string; avatarText: string }> = {
-  MANAGER:  { label: 'Manager',  bg: BRAND.purpleLight, text: BRAND.purpleText, dot: BRAND.purple, avatarBg: '#EEEDFE', avatarText: '#3C3489' },
-  EMPLOYEE: { label: 'Employee', bg: BRAND.blueLight,   text: BRAND.blueText,   dot: BRAND.blue,   avatarBg: '#E6F1FB', avatarText: '#0C447C' },
-  CUSTOMER: { label: 'Customer', bg: BRAND.greenLight,  text: BRAND.greenText,  dot: BRAND.green,  avatarBg: '#EAF3DE', avatarText: '#27500A' },
-}
+const ROLE_META: Record<
+  string,
+  {
+    label: string;
+    bg: string;
+    text: string;
+    dot: string;
+    avatarBg: string;
+    avatarText: string;
+  }
+> = {
+  MANAGER: {
+    label: "Manager",
+    bg: BRAND.purpleLight,
+    text: BRAND.purpleText,
+    dot: BRAND.purple,
+    avatarBg: "#EEEDFE",
+    avatarText: "#3C3489",
+  },
+  EMPLOYEE: {
+    label: "Employee",
+    bg: BRAND.blueLight,
+    text: BRAND.blueText,
+    dot: BRAND.blue,
+    avatarBg: "#E6F1FB",
+    avatarText: "#0C447C",
+  },
+  CUSTOMER: {
+    label: "Customer",
+    bg: BRAND.greenLight,
+    text: BRAND.greenText,
+    dot: BRAND.green,
+    avatarBg: "#EAF3DE",
+    avatarText: "#27500A",
+  },
+};
 
 const AVATAR_PALETTES = [
-  { bg: '#EEEDFE', color: '#3C3489' },
-  { bg: '#E1F5EE', color: '#085041' },
-  { bg: '#FAEEDA', color: '#633806' },
-  { bg: '#FAECE7', color: '#712B13' },
-  { bg: '#E6F1FB', color: '#0C447C' },
-  { bg: '#FBEAF0', color: '#72243E' },
-]
+  { bg: "#EEEDFE", color: "#3C3489" },
+  { bg: "#E1F5EE", color: "#085041" },
+  { bg: "#FAEEDA", color: "#633806" },
+  { bg: "#FAECE7", color: "#712B13" },
+  { bg: "#E6F1FB", color: "#0C447C" },
+  { bg: "#FBEAF0", color: "#72243E" },
+];
 
 function getInitials(firstName: string, lastName: string) {
-  return `${firstName?.[0] ?? ''}${lastName?.[0] ?? ''}`.toUpperCase()
+  return `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
 }
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
 function RoleBadge({ role }: { role: string }) {
-  const m = ROLE_META[role] ?? { label: role, bg: BRAND.grayLight, text: BRAND.grayText, dot: BRAND.gray }
+  const m = ROLE_META[role] ?? {
+    label: role,
+    bg: BRAND.grayLight,
+    text: BRAND.grayText,
+    dot: BRAND.gray,
+  };
   return (
     <span
       style={{
-        display: 'inline-flex',
-        alignItems: 'center',
+        display: "inline-flex",
+        alignItems: "center",
         gap: 5,
         fontSize: 11,
         fontWeight: 500,
-        padding: '3px 9px',
+        padding: "3px 9px",
         borderRadius: 20,
         background: m.bg,
         color: m.text,
-        whiteSpace: 'nowrap',
+        whiteSpace: "nowrap",
       }}
     >
-      <span style={{ width: 5, height: 5, borderRadius: '50%', background: m.dot, flexShrink: 0 }} />
+      <span
+        style={{
+          width: 5,
+          height: 5,
+          borderRadius: "50%",
+          background: m.dot,
+          flexShrink: 0,
+        }}
+      />
       {m.label}
     </span>
-  )
+  );
 }
 
 function StatusBadge({ active }: { active: boolean }) {
   return (
     <span
       style={{
-        display: 'inline-flex',
-        alignItems: 'center',
+        display: "inline-flex",
+        alignItems: "center",
         gap: 5,
         fontSize: 11,
         fontWeight: 500,
-        padding: '3px 9px',
+        padding: "3px 9px",
         borderRadius: 20,
         background: active ? BRAND.greenLight : BRAND.redLight,
-        color:      active ? BRAND.greenText  : BRAND.redText,
-        whiteSpace: 'nowrap',
+        color: active ? BRAND.greenText : BRAND.redText,
+        whiteSpace: "nowrap",
       }}
     >
-      <span style={{ width: 5, height: 5, borderRadius: '50%', background: active ? BRAND.green : BRAND.red, flexShrink: 0 }} />
-      {active ? 'Active' : 'Inactive'}
+      <span
+        style={{
+          width: 5,
+          height: 5,
+          borderRadius: "50%",
+          background: active ? BRAND.green : BRAND.red,
+          flexShrink: 0,
+        }}
+      />
+      {active ? "Active" : "Inactive"}
     </span>
-  )
+  );
 }
 
 // Quick-filter role pill
@@ -132,30 +184,30 @@ function RolePill({
   color,
   onClick,
 }: {
-  label: string
-  count: number
-  active: boolean
-  color: string
-  onClick: () => void
+  label: string;
+  count: number;
+  active: boolean;
+  color: string;
+  onClick: () => void;
 }) {
   return (
     <button
       onClick={onClick}
       style={{
-        display: 'inline-flex',
-        alignItems: 'center',
+        display: "inline-flex",
+        alignItems: "center",
         gap: 6,
         fontSize: 12,
         fontWeight: 500,
-        padding: '5px 12px',
+        padding: "5px 12px",
         borderRadius: 20,
         border: active
           ? `1.5px solid ${color}`
-          : '1.5px solid var(--mantine-color-default-border)',
-        background: active ? color + '22' : 'transparent',
-        color: active ? color : 'var(--mantine-color-dimmed)',
-        cursor: 'pointer',
-        transition: 'all .15s',
+          : "1.5px solid var(--mantine-color-default-border)",
+        background: active ? color + "22" : "transparent",
+        color: active ? color : "var(--mantine-color-dimmed)",
+        cursor: "pointer",
+        transition: "all .15s",
       }}
     >
       {label}
@@ -163,15 +215,17 @@ function RolePill({
         style={{
           fontSize: 10,
           fontWeight: 600,
-          padding: '1px 5px',
+          padding: "1px 5px",
           borderRadius: 10,
-          background: active ? 'rgba(0,0,0,0.08)' : 'var(--mantine-color-default-hover)',
+          background: active
+            ? "rgba(0,0,0,0.08)"
+            : "var(--mantine-color-default-hover)",
         }}
       >
         {count}
       </span>
     </button>
-  )
+  );
 }
 
 // ─── Stat Card ─────────────────────────────────────────────────────────────────
@@ -182,135 +236,209 @@ function StatCard({
   icon,
   accentColor,
 }: {
-  label: string
-  value: number
-  icon: string
-  accentColor: string
+  label: string;
+  value: number;
+  icon: string;
+  accentColor: string;
 }) {
   return (
     <Paper
       radius="md"
       p="md"
       style={{
-        border: '0.5px solid var(--mantine-color-default-border)',
-        position: 'relative',
-        overflow: 'hidden',
+        border: "0.5px solid var(--mantine-color-default-border)",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
       <Group justify="space-between" mb={8}>
-        <Text size="xs" c="dimmed" tt="uppercase" fw={500} style={{ letterSpacing: '0.05em' }}>
+        <Text
+          size="xs"
+          c="dimmed"
+          tt="uppercase"
+          fw={500}
+          style={{ letterSpacing: "0.05em" }}
+        >
           {label}
         </Text>
-        <Icon icon={icon} width={15} style={{ color: accentColor, opacity: 0.75 }} />
+        <Icon
+          icon={icon}
+          width={15}
+          style={{ color: accentColor, opacity: 0.75 }}
+        />
       </Group>
-      <Text fw={500} style={{ fontSize: 28, lineHeight: 1 }}>{value}</Text>
+      <Text fw={500} style={{ fontSize: 28, lineHeight: 1 }}>
+        {value}
+      </Text>
       <Box
         style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0,
-          height: 3, background: accentColor,
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 3,
+          background: accentColor,
         }}
       />
     </Paper>
-  )
+  );
 }
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 type FormData = {
-  username?: string
-  email: string
-  password?: string
-  first_name: string
-  last_name: string
-  role: 'MANAGER' | 'EMPLOYEE' | 'CUSTOMER'
-}
+  username?: string;
+  email: string;
+  password?: string;
+  first_name: string;
+  last_name: string;
+  role: "MANAGER" | "EMPLOYEE" | "CUSTOMER";
+};
 
-const DEFAULT_FORM: FormData = { email: '', first_name: '', last_name: '', role: 'EMPLOYEE' }
+const DEFAULT_FORM: FormData = {
+  email: "",
+  first_name: "",
+  last_name: "",
+  role: "EMPLOYEE",
+};
 
 export default function UserAdminPanel() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
-  const [opened, setOpened]           = useState(false)
-  const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [formData, setFormData]       = useState<FormData>(DEFAULT_FORM)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [activeRole, setActiveRole]   = useState<string>('ALL')
+  const [opened, setOpened] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [formData, setFormData] = useState<FormData>(DEFAULT_FORM);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeRole, setActiveRole] = useState<string>("ALL");
 
   // ── Queries ──
-  const { data: users = [], isLoading, error } = useQuery({
-    queryKey: ['admin-users'],
+  const {
+    data: users = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["admin-users"],
     queryFn: () => listUsers(1000, 0),
-  })
+  });
 
   // ── Mutations ──
   const createUserMutation = useMutation({
     mutationFn: (payload: UserCreatePayload) => createUser(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
-      notifications.show({ title: 'User created', message: 'New user has been created successfully', color: 'green' })
-      closeModal()
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      notifications.show({
+        title: "User created",
+        message: "New user has been created successfully",
+        color: "green",
+      });
+      closeModal();
     },
     onError: (err) => {
-      notifications.show({ title: 'Error', message: err instanceof Error ? err.message : 'Failed to create user', color: 'red' })
+      notifications.show({
+        title: "Error",
+        message: err instanceof Error ? err.message : "Failed to create user",
+        color: "red",
+      });
     },
-  })
+  });
 
   const updateUserMutation = useMutation({
-    mutationFn: ({ userId, data }: { userId: number; data: UserUpdatePayload }) => updateUser(userId, data),
+    mutationFn: ({
+      userId,
+      data,
+    }: {
+      userId: number;
+      data: UserUpdatePayload;
+    }) => updateUser(userId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
-      notifications.show({ title: 'User updated', message: 'User has been updated successfully', color: 'green' })
-      closeModal()
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      notifications.show({
+        title: "User updated",
+        message: "User has been updated successfully",
+        color: "green",
+      });
+      closeModal();
     },
     onError: (err) => {
-      notifications.show({ title: 'Error', message: err instanceof Error ? err.message : 'Failed to update user', color: 'red' })
+      notifications.show({
+        title: "Error",
+        message: err instanceof Error ? err.message : "Failed to update user",
+        color: "red",
+      });
     },
-  })
+  });
 
   const deactivateUserMutation = useMutation({
     mutationFn: deactivateUser,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
-      notifications.show({ title: 'User deactivated', message: 'User has been deactivated successfully', color: 'green' })
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      notifications.show({
+        title: "User deactivated",
+        message: "User has been deactivated successfully",
+        color: "green",
+      });
     },
     onError: (err) => {
-      notifications.show({ title: 'Error', message: err instanceof Error ? err.message : 'Failed to deactivate user', color: 'red' })
+      notifications.show({
+        title: "Error",
+        message:
+          err instanceof Error ? err.message : "Failed to deactivate user",
+        color: "red",
+      });
     },
-  })
+  });
 
   // ── Handlers ──
   const openCreate = () => {
-    setEditingUser(null)
-    setFormData(DEFAULT_FORM)
-    setOpened(true)
-  }
+    setEditingUser(null);
+    setFormData(DEFAULT_FORM);
+    setOpened(true);
+  };
 
   const openEdit = (user: User) => {
-    setEditingUser(user)
-    setFormData({ email: user.email, first_name: user.first_name, last_name: user.last_name, role: user.role })
-    setOpened(true)
-  }
+    setEditingUser(user);
+    setFormData({
+      email: user.email,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      role: user.role,
+    });
+    setOpened(true);
+  };
 
   const closeModal = () => {
-    setOpened(false)
-    setEditingUser(null)
-    setFormData(DEFAULT_FORM)
-  }
+    setOpened(false);
+    setEditingUser(null);
+    setFormData(DEFAULT_FORM);
+  };
 
   const handleSubmit = () => {
     if (!formData.email || !formData.first_name || !formData.last_name) {
-      notifications.show({ title: 'Validation error', message: 'Please fill in all required fields', color: 'yellow' })
-      return
+      notifications.show({
+        title: "Validation error",
+        message: "Please fill in all required fields",
+        color: "yellow",
+      });
+      return;
     }
     if (editingUser) {
       updateUserMutation.mutate({
         userId: editingUser.id,
-        data: { email: formData.email, first_name: formData.first_name, last_name: formData.last_name, role: formData.role },
-      })
+        data: {
+          email: formData.email,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          role: formData.role,
+        },
+      });
     } else {
       if (!formData.username || !formData.password) {
-        notifications.show({ title: 'Validation error', message: 'Username and password are required', color: 'yellow' })
-        return
+        notifications.show({
+          title: "Validation error",
+          message: "Username and password are required",
+          color: "yellow",
+        });
+        return;
       }
       createUserMutation.mutate({
         username: formData.username,
@@ -319,77 +447,89 @@ export default function UserAdminPanel() {
         first_name: formData.first_name,
         last_name: formData.last_name,
         role: formData.role,
-      })
+      });
     }
-  }
+  };
 
   const handleDeactivate = (user: User) => {
-    if (window.confirm(`Deactivate ${user.username}? They will lose access immediately.`)) {
-      deactivateUserMutation.mutate(user.id)
+    if (
+      window.confirm(
+        `Deactivate ${user.username}? They will lose access immediately.`,
+      )
+    ) {
+      deactivateUserMutation.mutate(user.id);
     }
-  }
+  };
 
   // ── Derived data ──
   const roleCounts = useMemo(() => {
-    const counts: Record<string, number> = { ALL: users.length }
-    ;['MANAGER', 'EMPLOYEE', 'CUSTOMER'].forEach((r) => {
-      counts[r] = users.filter((u: User) => u.role === r).length
-    })
-    return counts
-  }, [users])
+    const counts: Record<string, number> = { ALL: users.length };
+    ["MANAGER", "EMPLOYEE", "CUSTOMER"].forEach((r) => {
+      counts[r] = users.filter((u: User) => u.role === r).length;
+    });
+    return counts;
+  }, [users]);
 
   const displayUsers = useMemo(() => {
-    let list = users
-    if (activeRole !== 'ALL') list = list.filter((u: User) => u.role === activeRole)
+    let list = users;
+    if (activeRole !== "ALL")
+      list = list.filter((u: User) => u.role === activeRole);
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase()
+      const q = searchQuery.toLowerCase();
       list = list.filter(
         (u: User) =>
           u.username?.toLowerCase().includes(q) ||
           u.email?.toLowerCase().includes(q) ||
           u.first_name?.toLowerCase().includes(q) ||
           u.last_name?.toLowerCase().includes(q),
-      )
+      );
     }
-    return list
-  }, [users, activeRole, searchQuery])
+    return list;
+  }, [users, activeRole, searchQuery]);
 
-  const activeCount   = users.filter((u: User) => u.is_active).length
-  const inactiveCount = users.length - activeCount
+  const activeCount = users.filter((u: User) => u.is_active).length;
+  const inactiveCount = users.length - activeCount;
 
   // ── Loading / Error ──
   if (isLoading) {
     return (
       <Container size="lg" py="lg">
-        <Center h={300}><Loader color={BRAND.purple} /></Center>
+        <Center h={300}>
+          <Loader color={BRAND.purple} />
+        </Center>
       </Container>
-    )
+    );
   }
 
   const TH_STYLE: React.CSSProperties = {
     fontSize: 11,
     fontWeight: 500,
-    color: 'var(--mantine-color-dimmed)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
+    color: "var(--mantine-color-dimmed)",
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
     paddingBottom: 10,
-    whiteSpace: 'nowrap',
-  }
+    whiteSpace: "nowrap",
+  };
 
   return (
     <Container size="lg" py="lg">
       <Stack gap="lg">
-
         {/* ── Header ── */}
         <Group justify="space-between" align="flex-end">
           <Box>
-            <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>User Management</Text>
-            <Text size="sm" c="dimmed" mt={2}>Create, edit, and manage system users</Text>
+            <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>
+              User Management
+            </Text>
+            <Text size="sm" c="dimmed" mt={2}>
+              Create, edit, and manage system users
+            </Text>
           </Box>
           <Button
             size="sm"
-            leftSection={<Icon icon="solar:user-plus-bold-duotone" width={15} />}
-            style={{ background: BRAND.purpleDark, border: 'none' }}
+            leftSection={
+              <Icon icon="solar:user-plus-bold-duotone" width={15} />
+            }
+            style={{ background: BRAND.purpleDark, border: "none" }}
             onClick={openCreate}
           >
             Add user
@@ -398,12 +538,42 @@ export default function UserAdminPanel() {
 
         {/* ── Stat cards ── */}
         <Group grow gap={10}>
-          <StatCard label="Total users"   value={users.length}  icon="solar:users-group-two-rounded-linear" accentColor={BRAND.purple} />
-          <StatCard label="Active"        value={activeCount}   icon="solar:check-circle-linear"            accentColor={BRAND.green}  />
-          <StatCard label="Inactive"      value={inactiveCount} icon="solar:close-circle-linear"            accentColor={BRAND.red}    />
-          <StatCard label="Managers"      value={roleCounts['MANAGER']  ?? 0} icon="solar:shield-user-linear"   accentColor={BRAND.purple} />
-          <StatCard label="Employees"     value={roleCounts['EMPLOYEE'] ?? 0} icon="solar:user-id-linear"        accentColor={BRAND.blue}   />
-          <StatCard label="Customers"     value={roleCounts['CUSTOMER'] ?? 0} icon="solar:user-circle-linear"    accentColor={BRAND.green}  />
+          <StatCard
+            label="Total users"
+            value={users.length}
+            icon="solar:users-group-two-rounded-linear"
+            accentColor={BRAND.purple}
+          />
+          <StatCard
+            label="Active"
+            value={activeCount}
+            icon="solar:check-circle-linear"
+            accentColor={BRAND.green}
+          />
+          <StatCard
+            label="Inactive"
+            value={inactiveCount}
+            icon="solar:close-circle-linear"
+            accentColor={BRAND.red}
+          />
+          <StatCard
+            label="Managers"
+            value={roleCounts["MANAGER"] ?? 0}
+            icon="solar:shield-user-linear"
+            accentColor={BRAND.purple}
+          />
+          <StatCard
+            label="Employees"
+            value={roleCounts["EMPLOYEE"] ?? 0}
+            icon="solar:user-id-linear"
+            accentColor={BRAND.blue}
+          />
+          <StatCard
+            label="Customers"
+            value={roleCounts["CUSTOMER"] ?? 0}
+            icon="solar:user-circle-linear"
+            accentColor={BRAND.green}
+          />
         </Group>
 
         {/* ── Error ── */}
@@ -411,14 +581,27 @@ export default function UserAdminPanel() {
           <Paper
             p="md"
             radius="md"
-            style={{ background: BRAND.redLight, border: `0.5px solid ${BRAND.red}33` }}
+            style={{
+              background: BRAND.redLight,
+              border: `0.5px solid ${BRAND.red}33`,
+            }}
           >
             <Group justify="space-between">
               <Group gap={8}>
-                <Icon icon="solar:danger-triangle-linear" width={16} style={{ color: BRAND.red }} />
-                <Text size="sm" style={{ color: BRAND.redText }}>Error loading users. Please try again.</Text>
+                <Icon
+                  icon="solar:danger-triangle-linear"
+                  width={16}
+                  style={{ color: BRAND.red }}
+                />
+                <Text size="sm" style={{ color: BRAND.redText }}>
+                  Error loading users. Please try again.
+                </Text>
               </Group>
-              <ActionIcon variant="subtle" color="red" onClick={() => window.location.reload()}>
+              <ActionIcon
+                variant="subtle"
+                color="red"
+                onClick={() => window.location.reload()}
+              >
                 <Icon icon="solar:refresh-linear" width={16} />
               </ActionIcon>
             </Group>
@@ -426,14 +609,42 @@ export default function UserAdminPanel() {
         )}
 
         {/* ── Role filter pills + search ── */}
-        <Paper radius="md" p="md" style={{ border: '0.5px solid var(--mantine-color-default-border)' }}>
+        <Paper
+          radius="md"
+          p="md"
+          style={{ border: "0.5px solid var(--mantine-color-default-border)" }}
+        >
           <Group justify="space-between" wrap="wrap" gap={8}>
             {/* Role pills */}
             <Group gap={6} wrap="wrap">
-              <RolePill label="All"      count={roleCounts['ALL'] ?? 0}      active={activeRole === 'ALL'}      color={BRAND.purple} onClick={() => setActiveRole('ALL')}      />
-              <RolePill label="Manager"  count={roleCounts['MANAGER'] ?? 0}  active={activeRole === 'MANAGER'}  color={BRAND.purple} onClick={() => setActiveRole('MANAGER')}  />
-              <RolePill label="Employee" count={roleCounts['EMPLOYEE'] ?? 0} active={activeRole === 'EMPLOYEE'} color={BRAND.blue}   onClick={() => setActiveRole('EMPLOYEE')} />
-              <RolePill label="Customer" count={roleCounts['CUSTOMER'] ?? 0} active={activeRole === 'CUSTOMER'} color={BRAND.green}  onClick={() => setActiveRole('CUSTOMER')} />
+              <RolePill
+                label="All"
+                count={roleCounts["ALL"] ?? 0}
+                active={activeRole === "ALL"}
+                color={BRAND.purple}
+                onClick={() => setActiveRole("ALL")}
+              />
+              <RolePill
+                label="Manager"
+                count={roleCounts["MANAGER"] ?? 0}
+                active={activeRole === "MANAGER"}
+                color={BRAND.purple}
+                onClick={() => setActiveRole("MANAGER")}
+              />
+              <RolePill
+                label="Employee"
+                count={roleCounts["EMPLOYEE"] ?? 0}
+                active={activeRole === "EMPLOYEE"}
+                color={BRAND.blue}
+                onClick={() => setActiveRole("EMPLOYEE")}
+              />
+              <RolePill
+                label="Customer"
+                count={roleCounts["CUSTOMER"] ?? 0}
+                active={activeRole === "CUSTOMER"}
+                color={BRAND.green}
+                onClick={() => setActiveRole("CUSTOMER")}
+              />
             </Group>
 
             {/* Search */}
@@ -441,10 +652,20 @@ export default function UserAdminPanel() {
               placeholder="Search by name, username or email…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.currentTarget.value)}
-              leftSection={<Icon icon="solar:magnifer-linear" width={14} style={{ color: 'var(--mantine-color-dimmed)' }} />}
+              leftSection={
+                <Icon
+                  icon="solar:magnifer-linear"
+                  width={14}
+                  style={{ color: "var(--mantine-color-dimmed)" }}
+                />
+              }
               rightSection={
                 searchQuery ? (
-                  <ActionIcon variant="subtle" size="xs" onClick={() => setSearchQuery('')}>
+                  <ActionIcon
+                    variant="subtle"
+                    size="xs"
+                    onClick={() => setSearchQuery("")}
+                  >
                     <Icon icon="solar:close-circle-linear" width={13} />
                   </ActionIcon>
                 ) : null
@@ -456,55 +677,91 @@ export default function UserAdminPanel() {
         </Paper>
 
         {/* ── Table ── */}
-        <Paper radius="md" style={{ border: '0.5px solid var(--mantine-color-default-border)', overflow: 'hidden' }}>
-          <Box style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <Paper
+          radius="md"
+          style={{
+            border: "0.5px solid var(--mantine-color-default-border)",
+            overflow: "hidden",
+          }}
+        >
+          <Box style={{ overflowX: "auto" }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                fontSize: 13,
+              }}
+            >
               <thead>
-                <tr style={{ borderBottom: '0.5px solid var(--mantine-color-default-border)' }}>
-                  <th style={{ ...TH_STYLE, padding: '10px 16px' }}>User</th>
-                  <th style={{ ...TH_STYLE, padding: '10px 16px' }}>Email</th>
-                  <th style={{ ...TH_STYLE, padding: '10px 16px' }}>Role</th>
-                  <th style={{ ...TH_STYLE, padding: '10px 16px' }}>Status</th>
-                  <th style={{ ...TH_STYLE, padding: '10px 16px' }}>Joined</th>
-                  <th style={{ ...TH_STYLE, padding: '10px 16px' }}></th>
+                <tr
+                  style={{
+                    borderBottom:
+                      "0.5px solid var(--mantine-color-default-border)",
+                  }}
+                >
+                  <th style={{ ...TH_STYLE, padding: "10px 16px" }}>User</th>
+                  <th style={{ ...TH_STYLE, padding: "10px 16px" }}>Email</th>
+                  <th style={{ ...TH_STYLE, padding: "10px 16px" }}>Role</th>
+                  <th style={{ ...TH_STYLE, padding: "10px 16px" }}>Status</th>
+                  <th style={{ ...TH_STYLE, padding: "10px 16px" }}>Joined</th>
+                  <th style={{ ...TH_STYLE, padding: "10px 16px" }}></th>
                 </tr>
               </thead>
               <tbody>
                 {displayUsers.length > 0 ? (
                   displayUsers.map((user: User, idx: number) => {
-                    const pal = AVATAR_PALETTES[idx % AVATAR_PALETTES.length]
+                    const pal = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
                     return (
                       <tr
                         key={user.id}
                         style={{
                           borderBottom:
                             idx < displayUsers.length - 1
-                              ? '0.5px solid var(--mantine-color-default-border)'
-                              : 'none',
-                          transition: 'background .12s',
+                              ? "0.5px solid var(--mantine-color-default-border)"
+                              : "none",
+                          transition: "background .12s",
                         }}
                         onMouseEnter={(e) => {
-                          ;(e.currentTarget as HTMLTableRowElement).style.background = 'var(--mantine-color-default-hover)'
+                          (
+                            e.currentTarget as HTMLTableRowElement
+                          ).style.background =
+                            "var(--mantine-color-default-hover)";
                         }}
                         onMouseLeave={(e) => {
-                          ;(e.currentTarget as HTMLTableRowElement).style.background = 'transparent'
+                          (
+                            e.currentTarget as HTMLTableRowElement
+                          ).style.background = "transparent";
                         }}
                       >
                         {/* User (avatar + name + username) */}
-                        <td style={{ padding: '10px 16px' }}>
+                        <td style={{ padding: "10px 16px" }}>
                           <Group gap={10} wrap="nowrap">
                             <Avatar
                               size={32}
                               radius="xl"
-                              style={{ background: pal.bg, color: pal.color, fontSize: 11, fontWeight: 600, flexShrink: 0 }}
+                              style={{
+                                background: pal.bg,
+                                color: pal.color,
+                                fontSize: 11,
+                                fontWeight: 600,
+                                flexShrink: 0,
+                              }}
                             >
                               {getInitials(user.first_name, user.last_name)}
                             </Avatar>
                             <Box style={{ minWidth: 0 }}>
-                              <Text size="sm" fw={500} style={{ lineHeight: 1.3 }}>
+                              <Text
+                                size="sm"
+                                fw={500}
+                                style={{ lineHeight: 1.3 }}
+                              >
                                 {user.first_name} {user.last_name}
                               </Text>
-                              <Text size="xs" c="dimmed" style={{ lineHeight: 1.2 }}>
+                              <Text
+                                size="xs"
+                                c="dimmed"
+                                style={{ lineHeight: 1.2 }}
+                              >
                                 @{user.username}
                               </Text>
                             </Box>
@@ -512,33 +769,47 @@ export default function UserAdminPanel() {
                         </td>
 
                         {/* Email */}
-                        <td style={{ padding: '10px 16px' }}>
-                          <Text size="sm" c="dimmed">{user.email}</Text>
+                        <td style={{ padding: "10px 16px" }}>
+                          <Text size="sm" c="dimmed">
+                            {user.email}
+                          </Text>
                         </td>
 
                         {/* Role */}
-                        <td style={{ padding: '10px 16px' }}>
+                        <td style={{ padding: "10px 16px" }}>
                           <RoleBadge role={user.role} />
                         </td>
 
                         {/* Status */}
-                        <td style={{ padding: '10px 16px' }}>
+                        <td style={{ padding: "10px 16px" }}>
                           <StatusBadge active={user.is_active} />
                         </td>
 
                         {/* Joined */}
-                        <td style={{ padding: '10px 16px', whiteSpace: 'nowrap' }}>
+                        <td
+                          style={{ padding: "10px 16px", whiteSpace: "nowrap" }}
+                        >
                           <Text size="xs" c="dimmed">
-                            {new Date(user.date_joined).toLocaleDateString(undefined, {
-                              month: 'short', day: 'numeric', year: 'numeric',
-                            })}
+                            {new Date(user.date_joined).toLocaleDateString(
+                              undefined,
+                              {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              },
+                            )}
                           </Text>
                         </td>
 
                         {/* Actions */}
-                        <td style={{ padding: '10px 16px' }}>
+                        <td style={{ padding: "10px 16px" }}>
                           <Group gap={4} wrap="nowrap" justify="flex-end">
-                            <Tooltip label="Edit user" withArrow fz={11} position="top">
+                            <Tooltip
+                              label="Edit user"
+                              withArrow
+                              fz={11}
+                              position="top"
+                            >
                               <ActionIcon
                                 variant="subtle"
                                 size="sm"
@@ -549,7 +820,11 @@ export default function UserAdminPanel() {
                               </ActionIcon>
                             </Tooltip>
                             <Tooltip
-                              label={user.is_active ? 'Deactivate user' : 'Already inactive'}
+                              label={
+                                user.is_active
+                                  ? "Deactivate user"
+                                  : "Already inactive"
+                              }
                               withArrow
                               fz={11}
                               position="top"
@@ -557,17 +832,24 @@ export default function UserAdminPanel() {
                               <ActionIcon
                                 variant="subtle"
                                 size="sm"
-                                style={{ color: user.is_active ? BRAND.red : BRAND.gray }}
+                                style={{
+                                  color: user.is_active
+                                    ? BRAND.red
+                                    : BRAND.gray,
+                                }}
                                 disabled={!user.is_active}
                                 onClick={() => handleDeactivate(user)}
                               >
-                                <Icon icon="solar:user-block-linear" width={15} />
+                                <Icon
+                                  icon="solar:user-block-linear"
+                                  width={15}
+                                />
                               </ActionIcon>
                             </Tooltip>
                           </Group>
                         </td>
                       </tr>
-                    )
+                    );
                   })
                 ) : (
                   <tr>
@@ -577,15 +859,23 @@ export default function UserAdminPanel() {
                           <Icon
                             icon="solar:users-group-two-rounded-linear"
                             width={36}
-                            style={{ color: 'var(--mantine-color-dimmed)', opacity: 0.4 }}
+                            style={{
+                              color: "var(--mantine-color-dimmed)",
+                              opacity: 0.4,
+                            }}
                           />
-                          <Text size="sm" c="dimmed">No users found</Text>
-                          {(searchQuery || activeRole !== 'ALL') && (
+                          <Text size="sm" c="dimmed">
+                            No users found
+                          </Text>
+                          {(searchQuery || activeRole !== "ALL") && (
                             <Button
                               variant="subtle"
                               size="xs"
                               style={{ color: BRAND.purpleDark }}
-                              onClick={() => { setSearchQuery(''); setActiveRole('ALL') }}
+                              onClick={() => {
+                                setSearchQuery("");
+                                setActiveRole("ALL");
+                              }}
                             >
                               Clear filters
                             </Button>
@@ -604,31 +894,44 @@ export default function UserAdminPanel() {
             px="md"
             py="sm"
             style={{
-              borderTop: '0.5px solid var(--mantine-color-default-border)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
+              borderTop: "0.5px solid var(--mantine-color-default-border)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
             }}
           >
             <Text size="xs" c="dimmed">
-              Showing{' '}
-              <span style={{ fontWeight: 500, color: 'var(--mantine-color-text)' }}>
+              Showing{" "}
+              <span
+                style={{ fontWeight: 500, color: "var(--mantine-color-text)" }}
+              >
                 {displayUsers.length}
-              </span>{' '}
-              of{' '}
-              <span style={{ fontWeight: 500, color: 'var(--mantine-color-text)' }}>
+              </span>{" "}
+              of{" "}
+              <span
+                style={{ fontWeight: 500, color: "var(--mantine-color-text)" }}
+              >
                 {users.length}
-              </span>{' '}
+              </span>{" "}
               users
-              {(searchQuery || activeRole !== 'ALL') && ' · filtered'}
+              {(searchQuery || activeRole !== "ALL") && " · filtered"}
             </Text>
-            {(searchQuery || activeRole !== 'ALL') && (
+            {(searchQuery || activeRole !== "ALL") && (
               <Button
                 variant="subtle"
                 size="xs"
-                style={{ color: BRAND.purpleDark, padding: '0 4px', height: 'auto' }}
-                leftSection={<Icon icon="solar:close-circle-linear" width={12} />}
-                onClick={() => { setSearchQuery(''); setActiveRole('ALL') }}
+                style={{
+                  color: BRAND.purpleDark,
+                  padding: "0 4px",
+                  height: "auto",
+                }}
+                leftSection={
+                  <Icon icon="solar:close-circle-linear" width={12} />
+                }
+                onClick={() => {
+                  setSearchQuery("");
+                  setActiveRole("ALL");
+                }}
               >
                 Clear filters
               </Button>
@@ -644,26 +947,33 @@ export default function UserAdminPanel() {
         title={
           <Group gap={8}>
             <Icon
-              icon={editingUser ? 'solar:pen-2-bold-duotone' : 'solar:user-plus-bold-duotone'}
+              icon={
+                editingUser
+                  ? "solar:pen-2-bold-duotone"
+                  : "solar:user-plus-bold-duotone"
+              }
               width={18}
               style={{ color: BRAND.purple }}
             />
             <Text fw={500} size="sm">
-              {editingUser ? 'Edit user' : 'Create new user'}
+              {editingUser ? "Edit user" : "Create new user"}
             </Text>
           </Group>
         }
         size="md"
         radius="md"
         styles={{
-          header: { borderBottom: '0.5px solid var(--mantine-color-default-border)', paddingBottom: 12 },
-          body:   { paddingTop: 16 },
+          header: {
+            borderBottom: "0.5px solid var(--mantine-color-default-border)",
+            paddingBottom: 12,
+          },
+          body: { paddingTop: 16 },
         }}
       >
         <LoadingOverlay
           visible={createUserMutation.isPending || updateUserMutation.isPending}
           zIndex={1000}
-          overlayProps={{ radius: 'sm', blur: 2 }}
+          overlayProps={{ radius: "sm", blur: 2 }}
         />
 
         <Stack gap="md">
@@ -673,9 +983,13 @@ export default function UserAdminPanel() {
               label="Username"
               placeholder="e.g. john_doe"
               required
-              value={formData.username ?? ''}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              styles={{ label: { fontSize: 12, fontWeight: 500, marginBottom: 4 } }}
+              value={formData.username ?? ""}
+              onChange={(e) =>
+                setFormData({ ...formData, username: e.target.value })
+              }
+              styles={{
+                label: { fontSize: 12, fontWeight: 500, marginBottom: 4 },
+              }}
             />
           )}
 
@@ -686,8 +1000,12 @@ export default function UserAdminPanel() {
             type="email"
             required
             value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            styles={{ label: { fontSize: 12, fontWeight: 500, marginBottom: 4 } }}
+            onChange={(e) =>
+              setFormData({ ...formData, email: e.target.value })
+            }
+            styles={{
+              label: { fontSize: 12, fontWeight: 500, marginBottom: 4 },
+            }}
           />
 
           {/* Name row */}
@@ -697,16 +1015,24 @@ export default function UserAdminPanel() {
               placeholder="John"
               required
               value={formData.first_name}
-              onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-              styles={{ label: { fontSize: 12, fontWeight: 500, marginBottom: 4 } }}
+              onChange={(e) =>
+                setFormData({ ...formData, first_name: e.target.value })
+              }
+              styles={{
+                label: { fontSize: 12, fontWeight: 500, marginBottom: 4 },
+              }}
             />
             <TextInput
               label="Last name"
               placeholder="Doe"
               required
               value={formData.last_name}
-              onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-              styles={{ label: { fontSize: 12, fontWeight: 500, marginBottom: 4 } }}
+              onChange={(e) =>
+                setFormData({ ...formData, last_name: e.target.value })
+              }
+              styles={{
+                label: { fontSize: 12, fontWeight: 500, marginBottom: 4 },
+              }}
             />
           </Group>
 
@@ -715,15 +1041,20 @@ export default function UserAdminPanel() {
             label="Role"
             placeholder="Select a role"
             data={[
-              { value: 'MANAGER',  label: 'Manager'  },
-              { value: 'EMPLOYEE', label: 'Employee' },
-              { value: 'CUSTOMER', label: 'Customer' },
+              { value: "MANAGER", label: "Manager" },
+              { value: "EMPLOYEE", label: "Employee" },
+              { value: "CUSTOMER", label: "Customer" },
             ]}
             value={formData.role}
             onChange={(value) =>
-              setFormData({ ...formData, role: (value as FormData['role']) ?? 'EMPLOYEE' })
+              setFormData({
+                ...formData,
+                role: (value as FormData["role"]) ?? "EMPLOYEE",
+              })
             }
-            styles={{ label: { fontSize: 12, fontWeight: 500, marginBottom: 4 } }}
+            styles={{
+              label: { fontSize: 12, fontWeight: 500, marginBottom: 4 },
+            }}
           />
 
           {/* Password (create only) */}
@@ -732,9 +1063,13 @@ export default function UserAdminPanel() {
               label="Password"
               placeholder="Min. 8 characters"
               required
-              value={formData.password ?? ''}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              styles={{ label: { fontSize: 12, fontWeight: 500, marginBottom: 4 } }}
+              value={formData.password ?? ""}
+              onChange={(e) =>
+                setFormData({ ...formData, password: e.target.value })
+              }
+              styles={{
+                label: { fontSize: 12, fontWeight: 500, marginBottom: 4 },
+              }}
             />
           )}
 
@@ -747,15 +1082,17 @@ export default function UserAdminPanel() {
             </Button>
             <Button
               size="sm"
-              style={{ background: BRAND.purpleDark, border: 'none' }}
+              style={{ background: BRAND.purpleDark, border: "none" }}
               onClick={handleSubmit}
-              loading={createUserMutation.isPending || updateUserMutation.isPending}
+              loading={
+                createUserMutation.isPending || updateUserMutation.isPending
+              }
             >
-              {editingUser ? 'Save changes' : 'Create user'}
+              {editingUser ? "Save changes" : "Create user"}
             </Button>
           </Group>
         </Stack>
       </Modal>
     </Container>
-  )
+  );
 }

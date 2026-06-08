@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   Paper,
   ScrollArea,
@@ -13,237 +19,282 @@ import {
   Box,
   Tooltip,
   useMantineColorScheme,
-} from '@mantine/core'
-import { Icon } from '@iconify-icon/react'
-import { notifications } from '@mantine/notifications'
-import { useWebSocketContext } from '@/hooks/useWebSocketContext'
-import { fetchChatMessages, type ChatMessage } from '@/api/tickets.api'
+} from "@mantine/core";
+import { Icon } from "@iconify-icon/react";
+import { notifications } from "@/utils/customNotifications";
+import { useWebSocketContext } from "@/hooks/useWebSocketContext";
+import { fetchChatMessages, type ChatMessage } from "@/api/tickets.api";
 
 // ─── Brand palette ─────────────────────────────────────────────────────────────
 
 const BRAND = {
-  purple:      '#7F77DD',
-  purpleDark:  '#534AB7',
-  purpleLight: '#EEEDFE',
-  purpleText:  '#3C3489',
-  red:         '#E24B4A',
-  redLight:    '#FCEBEB',
-  green:       '#639922',
-  greenLight:  '#EAF3DE',
-  greenText:   '#27500A',
-}
+  purple: "#7F77DD",
+  purpleDark: "#534AB7",
+  purpleLight: "#EEEDFE",
+  purpleText: "#3C3489",
+  red: "#E24B4A",
+  redLight: "#FCEBEB",
+  green: "#639922",
+  greenLight: "#EAF3DE",
+  greenText: "#27500A",
+};
 
 const AVATAR_PALETTES = [
-  { bg: '#EEEDFE', color: '#3C3489' },
-  { bg: '#E1F5EE', color: '#085041' },
-  { bg: '#FAEEDA', color: '#633806' },
-  { bg: '#FAECE7', color: '#712B13' },
-  { bg: '#E6F1FB', color: '#0C447C' },
-  { bg: '#FBEAF0', color: '#72243E' },
-]
+  { bg: "#EEEDFE", color: "#3C3489" },
+  { bg: "#E1F5EE", color: "#085041" },
+  { bg: "#FAEEDA", color: "#633806" },
+  { bg: "#FAECE7", color: "#712B13" },
+  { bg: "#E6F1FB", color: "#0C447C" },
+  { bg: "#FBEAF0", color: "#72243E" },
+];
 
 function getAvatarPalette(username: string) {
-  const idx = username.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
-  return AVATAR_PALETTES[idx % AVATAR_PALETTES.length]
+  const idx = username.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  return AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
 }
 
 function getInitials(name: string) {
   return name
     .split(/[\s._-]/)
     .map((n) => n[0])
-    .join('')
+    .join("")
     .toUpperCase()
-    .slice(0, 2)
+    .slice(0, 2);
 }
 
 function formatTime(timestamp: string) {
   return new Date(timestamp).toLocaleTimeString(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function formatDate(dateStr: string) {
-  const date = new Date(dateStr)
-  const today = new Date()
-  const yesterday = new Date(today)
-  yesterday.setDate(today.getDate() - 1)
+  const date = new Date(dateStr);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
 
-  if (date.toDateString() === today.toDateString()) return 'Today'
-  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+  if (date.toDateString() === today.toDateString()) return "Today";
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 // ─── Props ─────────────────────────────────────────────────────────────────────
 
 interface ChatSectionProps {
-  ticketId: number
-  currentUserId: number
+  ticketId: number;
+  currentUserId: number;
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 
 export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
-  const [messages, setMessages]   = useState<ChatMessage[]>([])
-  const [inputValue, setInputValue] = useState('')
-  const [loading, setLoading]     = useState(true)
-  const [sending, setSending]     = useState(false)
-  const [joined, setJoined]       = useState(false)
-  const scrollRef                  = useRef<HTMLDivElement>(null)
-  const inputRef                   = useRef<HTMLTextAreaElement>(null)
-  const { ws, isConnected }        = useWebSocketContext()
-  const { colorScheme }            = useMantineColorScheme()
-  const isDark                     = colorScheme === 'dark'
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputValue, setInputValue] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [joined, setJoined] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const { ws, isConnected } = useWebSocketContext();
+  const { colorScheme } = useMantineColorScheme();
+  const isDark = colorScheme === "dark";
 
   const scrollToBottom = (delay = 50) => {
     setTimeout(() => {
       if (scrollRef.current)
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    }, delay)
-  }
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }, delay);
+  };
 
   // ── Load initial messages ──
   useEffect(() => {
     const load = async () => {
       try {
-        setLoading(true)
-        const data = await fetchChatMessages(ticketId)
-        setMessages(data)
-        scrollToBottom(100)
+        setLoading(true);
+        const data = await fetchChatMessages(ticketId);
+        setMessages(data);
+        scrollToBottom(100);
       } catch {
-        notifications.show({ title: 'Error', message: 'Failed to load chat messages', color: 'red' })
+        notifications.show({
+          title: "Error",
+          message: "Failed to load chat messages",
+          color: "red",
+        });
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    load()
-  }, [ticketId])
+    };
+    load();
+  }, [ticketId]);
 
   // ── Join chat room ──
   useEffect(() => {
     if (!ws || !isConnected || ws.readyState !== WebSocket.OPEN) {
-      setJoined(false)
-      return
+      setJoined(false);
+      return;
     }
     try {
-      ws.send(JSON.stringify({ type: 'join_chat', ticket_id: ticketId }))
-      setJoined(true)
+      ws.send(JSON.stringify({ type: "join_chat", ticket_id: ticketId }));
+      setJoined(true);
     } catch {
-      setJoined(false)
+      setJoined(false);
     }
-  }, [ws, isConnected, ticketId])
+  }, [ws, isConnected, ticketId]);
 
   // ── Receive messages ──
-  const handleChatMessage = useCallback((event: Event) => {
-    try {
-      const data = (event as CustomEvent).detail
-      if (data.type === 'chat_message' && data.ticket_id === ticketId) {
-        const msg: ChatMessage = {
-          id: data.message_id || data.id,
-          ticket_id: data.ticket_id,
-          message: data.message,
-          sender_id: data.sender_id,
-          sender_username: data.sender_username,
-          timestamp: data.timestamp || data.created_at,
+  const handleChatMessage = useCallback(
+    (event: Event) => {
+      try {
+        const data = (event as CustomEvent).detail;
+        if (data.type === "chat_message" && data.ticket_id === ticketId) {
+          const msg: ChatMessage = {
+            id: data.message_id || data.id,
+            ticket_id: data.ticket_id,
+            message: data.message,
+            sender_id: data.sender_id,
+            sender_username: data.sender_username,
+            timestamp: data.timestamp || data.created_at,
+          };
+          setMessages((prev) => [...prev, msg]);
+          scrollToBottom(0);
         }
-        setMessages((prev) => [...prev, msg])
-        scrollToBottom(0)
+      } catch {
+        /* noop */
       }
-    } catch { /* noop */ }
-  }, [ticketId])
+    },
+    [ticketId],
+  );
 
   useEffect(() => {
-    window.addEventListener('ws_chat_message', handleChatMessage)
-    return () => window.removeEventListener('ws_chat_message', handleChatMessage)
-  }, [handleChatMessage])
+    window.addEventListener("ws_chat_message", handleChatMessage);
+    return () =>
+      window.removeEventListener("ws_chat_message", handleChatMessage);
+  }, [handleChatMessage]);
 
-  useEffect(() => { scrollToBottom() }, [messages])
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   // ── Send ──
   const handleSend = async () => {
     if (!inputValue.trim() || !ws || !isConnected || !joined) {
       notifications.show({
-        title: 'Cannot send',
-        message: !inputValue.trim() ? 'Message is empty' : 'Connection not ready — please wait.',
-        color: 'yellow',
-      })
-      return
+        title: "Cannot send",
+        message: !inputValue.trim()
+          ? "Message is empty"
+          : "Connection not ready — please wait.",
+        color: "yellow",
+      });
+      return;
     }
     try {
-      setSending(true)
-      ws.send(JSON.stringify({ type: 'chat_message', ticket_id: ticketId, sender_id: currentUserId, message: inputValue.trim() }))
-      setInputValue('')
-      inputRef.current?.focus()
+      setSending(true);
+      ws.send(
+        JSON.stringify({
+          type: "chat_message",
+          ticket_id: ticketId,
+          sender_id: currentUserId,
+          message: inputValue.trim(),
+        }),
+      );
+      setInputValue("");
+      inputRef.current?.focus();
     } catch {
-      notifications.show({ title: 'Error', message: 'Failed to send message. Please try again.', color: 'red' })
+      notifications.show({
+        title: "Error",
+        message: "Failed to send message. Please try again.",
+        color: "red",
+      });
     } finally {
-      setSending(false)
+      setSending(false);
     }
-  }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
-  }
+  };
 
   // ── Group by date ──
   const groupedMessages = useMemo(() => {
-    const groups: Record<string, ChatMessage[]> = {}
+    const groups: Record<string, ChatMessage[]> = {};
     messages.forEach((msg) => {
-      const key = new Date(msg.timestamp).toLocaleDateString()
-      if (!groups[key]) groups[key] = []
-      groups[key].push(msg)
-    })
-    return groups
-  }, [messages])
+      const key = new Date(msg.timestamp).toLocaleDateString();
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(msg);
+    });
+    return groups;
+  }, [messages]);
 
   // ── Loading ──
   if (loading) {
     return (
-      <Paper radius="md" style={{ border: '0.5px solid var(--mantine-color-default-border)' }}>
-        <Center h={320}><Loader color={BRAND.purple} /></Center>
+      <Paper
+        radius="md"
+        style={{ border: "0.5px solid var(--mantine-color-default-border)" }}
+      >
+        <Center h={320}>
+          <Loader color={BRAND.purple} />
+        </Center>
       </Paper>
-    )
+    );
   }
 
-  const canSend = !!inputValue.trim() && isConnected && joined && !sending
+  const canSend = !!inputValue.trim() && isConnected && joined && !sending;
 
   return (
     <Paper
       radius="md"
       style={{
-        border: '0.5px solid var(--mantine-color-default-border)',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
+        border: "0.5px solid var(--mantine-color-default-border)",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
       }}
     >
       {/* ── Header ── */}
       <Box
         px="md"
         py="sm"
-        style={{ borderBottom: '0.5px solid var(--mantine-color-default-border)', flexShrink: 0 }}
+        style={{
+          borderBottom: "0.5px solid var(--mantine-color-default-border)",
+          flexShrink: 0,
+        }}
       >
         <Group justify="space-between" align="center">
           <Group gap={8}>
-            <Icon icon="solar:chat-round-dots-bold-duotone" width={16} style={{ color: BRAND.purple }} />
+            <Icon
+              icon="solar:chat-round-dots-bold-duotone"
+              width={16}
+              style={{ color: BRAND.purple }}
+            />
             <Box>
-              <Text fw={600} size="sm" style={{ lineHeight: 1.2 }}>Messages</Text>
-              <Text size="xs" c="dimmed">Ticket live chat</Text>
+              <Text fw={600} size="sm" style={{ lineHeight: 1.2 }}>
+                Messages
+              </Text>
+              <Text size="xs" c="dimmed">
+                Ticket live chat
+              </Text>
             </Box>
           </Group>
 
           {/* Connection status */}
           <span
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
+              display: "inline-flex",
+              alignItems: "center",
               gap: 5,
               fontSize: 11,
               fontWeight: 500,
-              padding: '3px 10px',
+              padding: "3px 10px",
               borderRadius: 20,
               background: isConnected ? BRAND.greenLight : BRAND.redLight,
               color: isConnected ? BRAND.greenText : BRAND.red,
@@ -253,13 +304,15 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
               style={{
                 width: 6,
                 height: 6,
-                borderRadius: '50%',
+                borderRadius: "50%",
                 background: isConnected ? BRAND.green : BRAND.red,
-                display: 'inline-block',
-                ...(isConnected ? { boxShadow: `0 0 0 2px ${BRAND.greenLight}` } : {}),
+                display: "inline-block",
+                ...(isConnected
+                  ? { boxShadow: `0 0 0 2px ${BRAND.greenLight}` }
+                  : {}),
               }}
             />
-            {isConnected ? 'Connected' : 'Offline'}
+            {isConnected ? "Connected" : "Offline"}
           </span>
         </Group>
       </Box>
@@ -280,14 +333,20 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
                   height: 44,
                   borderRadius: 12,
                   background: BRAND.purpleLight,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                <Icon icon="solar:chat-round-dots-bold-duotone" width={22} style={{ color: BRAND.purple }} />
+                <Icon
+                  icon="solar:chat-round-dots-bold-duotone"
+                  width={22}
+                  style={{ color: BRAND.purple }}
+                />
               </Box>
-              <Text size="sm" c="dimmed" fw={500}>No messages yet</Text>
+              <Text size="sm" c="dimmed" fw={500}>
+                No messages yet
+              </Text>
               <Text size="xs" c="dimmed" style={{ opacity: 0.6 }}>
                 Start the conversation below
               </Text>
@@ -299,44 +358,63 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
               <Box key={dateKey}>
                 {/* Date separator */}
                 <Group justify="center" my="md" gap={10}>
-                  <Box style={{ flex: 1, height: 1, background: 'var(--mantine-color-default-border)' }} />
+                  <Box
+                    style={{
+                      flex: 1,
+                      height: 1,
+                      background: "var(--mantine-color-default-border)",
+                    }}
+                  />
                   <Text
                     size="xs"
                     c="dimmed"
                     fw={500}
                     style={{
                       fontSize: 10,
-                      letterSpacing: '0.05em',
-                      textTransform: 'uppercase',
-                      whiteSpace: 'nowrap',
+                      letterSpacing: "0.05em",
+                      textTransform: "uppercase",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {formatDate(dateKey)}
                   </Text>
-                  <Box style={{ flex: 1, height: 1, background: 'var(--mantine-color-default-border)' }} />
+                  <Box
+                    style={{
+                      flex: 1,
+                      height: 1,
+                      background: "var(--mantine-color-default-border)",
+                    }}
+                  />
                 </Group>
 
                 {/* Messages */}
                 <Stack gap={6}>
                   {dateMessages.map((msg, msgIdx) => {
-                    const isOwn = msg.sender_id === currentUserId
-                    const pal = getAvatarPalette(msg.sender_username)
+                    const isOwn = msg.sender_id === currentUserId;
+                    const pal = getAvatarPalette(msg.sender_username);
 
                     // Show avatar only on first message in a run from same sender
-                    const prevMsg = dateMessages[msgIdx - 1]
-                    const isFirstInRun = !prevMsg || prevMsg.sender_id !== msg.sender_id
+                    const prevMsg = dateMessages[msgIdx - 1];
+                    const isFirstInRun =
+                      !prevMsg || prevMsg.sender_id !== msg.sender_id;
 
                     return (
                       <Group
                         key={msg.id}
-                        justify={isOwn ? 'flex-end' : 'flex-start'}
+                        justify={isOwn ? "flex-end" : "flex-start"}
                         align="flex-end"
                         gap={8}
                         wrap="nowrap"
                       >
                         {/* Other user avatar (left side) */}
                         {!isOwn && (
-                          <Box style={{ width: 28, flexShrink: 0, alignSelf: 'flex-end' }}>
+                          <Box
+                            style={{
+                              width: 28,
+                              flexShrink: 0,
+                              alignSelf: "flex-end",
+                            }}
+                          >
                             {isFirstInRun ? (
                               <Avatar
                                 size={28}
@@ -358,13 +436,18 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
                         <Stack
                           gap={2}
                           style={{
-                            maxWidth: '62%',
-                            alignItems: isOwn ? 'flex-end' : 'flex-start',
+                            maxWidth: "62%",
+                            alignItems: isOwn ? "flex-end" : "flex-start",
                           }}
                         >
                           {/* Sender name (other users, first in run only) */}
                           {!isOwn && isFirstInRun && (
-                            <Text size="xs" fw={600} c="dimmed" style={{ paddingLeft: 2 }}>
+                            <Text
+                              size="xs"
+                              fw={600}
+                              c="dimmed"
+                              style={{ paddingLeft: 2 }}
+                            >
                               {msg.sender_username}
                             </Text>
                           )}
@@ -374,24 +457,26 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
                             py={7}
                             style={{
                               borderRadius: isOwn
-                                ? '14px 14px 4px 14px'
-                                : '14px 14px 14px 4px',
+                                ? "14px 14px 4px 14px"
+                                : "14px 14px 14px 4px",
                               background: isOwn
                                 ? BRAND.purpleDark
                                 : isDark
-                                ? 'var(--mantine-color-dark-5)'
-                                : 'var(--mantine-color-gray-1)',
-                              color: isOwn ? '#fff' : 'var(--mantine-color-text)',
-                              maxWidth: '100%',
+                                  ? "var(--mantine-color-dark-5)"
+                                  : "var(--mantine-color-gray-1)",
+                              color: isOwn
+                                ? "#fff"
+                                : "var(--mantine-color-text)",
+                              maxWidth: "100%",
                             }}
                           >
                             <Text
                               size="sm"
                               style={{
                                 lineHeight: 1.45,
-                                color: 'inherit',
-                                wordBreak: 'break-word',
-                                whiteSpace: 'pre-wrap',
+                                color: "inherit",
+                                wordBreak: "break-word",
+                                whiteSpace: "pre-wrap",
                               }}
                             >
                               {msg.message}
@@ -403,7 +488,7 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
                             size="xs"
                             style={{
                               fontSize: 10,
-                              color: 'var(--mantine-color-dimmed)',
+                              color: "var(--mantine-color-dimmed)",
                               opacity: 0.65,
                               paddingInline: 2,
                             }}
@@ -414,7 +499,13 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
 
                         {/* Own avatar (right side) */}
                         {isOwn && (
-                          <Box style={{ width: 28, flexShrink: 0, alignSelf: 'flex-end' }}>
+                          <Box
+                            style={{
+                              width: 28,
+                              flexShrink: 0,
+                              alignSelf: "flex-end",
+                            }}
+                          >
                             {isFirstInRun ? (
                               <Avatar
                                 size={28}
@@ -432,7 +523,7 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
                           </Box>
                         )}
                       </Group>
-                    )
+                    );
                   })}
                 </Stack>
               </Box>
@@ -444,8 +535,8 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
       {/* ── Input area ── */}
       <Box
         style={{
-          borderTop: '0.5px solid var(--mantine-color-default-border)',
-          padding: '10px 12px',
+          borderTop: "0.5px solid var(--mantine-color-default-border)",
+          padding: "10px 12px",
           flexShrink: 0,
         }}
       >
@@ -462,7 +553,11 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
               border: `0.5px solid ${BRAND.red}33`,
             }}
           >
-            <Icon icon="solar:danger-triangle-linear" width={13} style={{ color: BRAND.red, flexShrink: 0 }} />
+            <Icon
+              icon="solar:danger-triangle-linear"
+              width={13}
+              style={{ color: BRAND.red, flexShrink: 0 }}
+            />
             <Text size="xs" style={{ color: BRAND.red }}>
               You're offline — messages cannot be sent
             </Text>
@@ -485,16 +580,16 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
               input: {
                 fontSize: 13,
                 borderRadius: 10,
-                border: '0.5px solid var(--mantine-color-default-border)',
-                padding: '8px 12px',
-                resize: 'none',
-                transition: 'border-color .15s',
+                border: "0.5px solid var(--mantine-color-default-border)",
+                padding: "8px 12px",
+                resize: "none",
+                transition: "border-color .15s",
               },
             }}
           />
 
           <Tooltip
-            label={canSend ? 'Send message' : 'Type a message first'}
+            label={canSend ? "Send message" : "Type a message first"}
             withArrow
             fz={11}
             position="top"
@@ -506,32 +601,43 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
               disabled={!canSend}
               loading={sending}
               style={{
-                background: canSend ? BRAND.purpleDark : 'var(--mantine-color-default-hover)',
-                border: 'none',
+                background: canSend
+                  ? BRAND.purpleDark
+                  : "var(--mantine-color-default-hover)",
+                border: "none",
                 flexShrink: 0,
-                transition: 'background .15s, transform .15s',
+                transition: "background .15s, transform .15s",
               }}
               onMouseEnter={(e) => {
                 if (canSend)
-                  (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.05)'
+                  (e.currentTarget as HTMLButtonElement).style.transform =
+                    "scale(1.05)";
               }}
               onMouseLeave={(e) => {
-                ;(e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'
+                (e.currentTarget as HTMLButtonElement).style.transform =
+                  "scale(1)";
               }}
             >
               <Icon
                 icon="solar:send-bold-duotone"
                 width={16}
-                style={{ color: canSend ? '#fff' : 'var(--mantine-color-dimmed)' }}
+                style={{
+                  color: canSend ? "#fff" : "var(--mantine-color-dimmed)",
+                }}
               />
             </ActionIcon>
           </Tooltip>
         </Group>
 
-        <Text size="xs" c="dimmed" mt={4} style={{ fontSize: 10, opacity: 0.6 }}>
+        <Text
+          size="xs"
+          c="dimmed"
+          mt={4}
+          style={{ fontSize: 10, opacity: 0.6 }}
+        >
           Enter to send · Shift+Enter for new line
         </Text>
       </Box>
     </Paper>
-  )
+  );
 }

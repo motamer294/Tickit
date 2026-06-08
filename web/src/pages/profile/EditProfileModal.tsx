@@ -7,7 +7,7 @@ import {
   fetchUserProfile,
   updateUserProfile,
 } from "../../api/user.api";
-import { notifications } from "@mantine/notifications";
+import { notifications } from "@/utils/customNotifications";
 
 interface EditProfileModalProps {
   open: boolean;

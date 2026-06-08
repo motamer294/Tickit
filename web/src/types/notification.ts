@@ -42,6 +42,7 @@ export interface NotificationState {
   addNotification: (notification: Omit<Notification, 'id' | 'createdAt' | 'read'>) => void
   markAsRead: (id: string) => void
   markAsUnread: (id: string) => void
+  markAllAsRead: () => void
   deleteNotification: (id: string) => void
   clearAll: () => void
 

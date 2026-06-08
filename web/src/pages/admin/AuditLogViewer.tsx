@@ -230,7 +230,6 @@ export default function AuditLogViewer() {
         PAGE_SIZE,
         page * PAGE_SIZE,
       ),
-    refetchInterval: 3000,
   })
 
   const handleViewDetails = (log: AuditLog) => {
@@ -263,6 +262,12 @@ export default function AuditLogViewer() {
 
   return (
     <Container size="lg" py="lg">
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { box-shadow: 0 0 0 2px ${BRAND.greenLight}; }
+          50%       { box-shadow: 0 0 0 5px ${BRAND.greenLight}; }
+        }
+      `}</style>
       <Stack gap="lg">
 
         {/* ── Header ── */}

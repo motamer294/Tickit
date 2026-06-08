@@ -90,15 +90,18 @@ export const NotificationCenter = () => {
   const [filter, setFilter] = useState<NotificationType | 'ALL'>('ALL')
 
   const {
-    notifications,
-    unreadCount,
+    notifications: allNotifications,
     getByType,
     clearAll,
     markAllAsRead,
   } = useNotifications()
 
+  // Exclude inline toasts (isCustomAlert) — those belong to CustomToastContainer, not the bell
+  const notifications = allNotifications.filter((n) => !n.isCustomAlert)
+  const unreadCount = notifications.filter((n) => !n.read).length
+
   const filteredNotifications =
-    filter === 'ALL' ? notifications : getByType(filter as NotificationType)
+    filter === 'ALL' ? notifications : notifications.filter((n) => n.type === (filter as NotificationType))
   const hasNotifications = notifications.length > 0
 
   return (

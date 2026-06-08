@@ -9,7 +9,7 @@ import {
   Divider,
 } from "@mantine/core";
 import { Icon } from "@iconify-icon/react";
-import { notifications } from "@mantine/notifications";
+import { notifications } from "@/utils/customNotifications";
 
 const B = {
   purple: "#7F77DD",

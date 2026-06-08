@@ -23,7 +23,7 @@ import {
 } from '@/api/tickets.api'
 import { queryKeys } from '@/api/queryKeys'
 import { useAuth } from './useAuth'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '@/utils/customNotifications'
 import { parseError, toNotificationPayload } from '@/utils/error-handling'
 import type { TicketCreatePayload, TicketStatus } from '@/types/ticket'
 

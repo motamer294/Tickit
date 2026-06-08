@@ -23,7 +23,8 @@ import {
   SimpleGrid,
 } from "@mantine/core";
 import { Icon } from "@iconify-icon/react";
-import { notifications } from "@mantine/notifications";
+import { notifications } from "@/utils/customNotifications";
+import { CustomAlert } from "@/components/CustomAlert";
 import { fetchCategoriesApi } from "@/api/tickets.api";
 import {
   listSLAs,

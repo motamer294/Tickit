@@ -1,5 +1,5 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import {
   Container,
   TextInput,
@@ -17,78 +17,130 @@ import {
   MultiSelect,
   Box,
   Avatar,
-} from '@mantine/core'
-import { useForm } from '@mantine/form'
-import { Icon } from '@iconify-icon/react'
-import { notifications } from '@mantine/notifications'
+} from "@mantine/core";
+import { useForm } from "@mantine/form";
+import { Icon } from "@iconify-icon/react";
+import { notifications } from "@/utils/customNotifications";
+import { CustomAlert } from "@/components/CustomAlert";
 import {
   createTicketApi,
   fetchCategoriesApi,
   fetchTagsApi,
-} from '@/api/tickets.api'
+} from "@/api/tickets.api";
 import {
   fetchEmployeesWithTeamApi,
   groupEmployeesByTeamOnly,
-} from '@/api/departments.api'
-import { useAuth } from '@/hooks/useAuth'
-import type { Ticket } from '@/types/ticket'
-import { useState } from 'react'
+} from "@/api/departments.api";
+import { useAuth } from "@/hooks/useAuth";
+import type { Ticket } from "@/types/ticket";
+import { useState } from "react";
 
 // ─── Brand palette ─────────────────────────────────────────────────────────────
 
 const BRAND = {
-  purple:      '#7F77DD',
-  purpleDark:  '#534AB7',
-  purpleLight: '#EEEDFE',
-  purpleText:  '#3C3489',
-  red:         '#E24B4A',
-  redLight:    '#FCEBEB',
-  redText:     '#791F1F',
-  amber:       '#EF9F27',
-  amberLight:  '#FAEEDA',
-  amberText:   '#633806',
-  green:       '#639922',
-  greenLight:  '#EAF3DE',
-  greenText:   '#27500A',
-  gray:        '#B4B2A9',
-  grayLight:   '#F1EFE8',
-  grayText:    '#444441',
-  blue:        '#378ADD',
-  blueLight:   '#E6F1FB',
-  blueText:    '#0C447C',
-}
+  purple: "#7F77DD",
+  purpleDark: "#534AB7",
+  purpleLight: "#EEEDFE",
+  purpleText: "#3C3489",
+  red: "#E24B4A",
+  redLight: "#FCEBEB",
+  redText: "#791F1F",
+  amber: "#EF9F27",
+  amberLight: "#FAEEDA",
+  amberText: "#633806",
+  green: "#639922",
+  greenLight: "#EAF3DE",
+  greenText: "#27500A",
+  gray: "#B4B2A9",
+  grayLight: "#F1EFE8",
+  grayText: "#444441",
+  blue: "#378ADD",
+  blueLight: "#E6F1FB",
+  blueText: "#0C447C",
+};
 
 // ─── Priority / Sentiment metadata ────────────────────────────────────────────
 
-const PRIORITY_META: Record<string, { bg: string; text: string; dot: string; icon: string }> = {
-  URGENT: { bg: BRAND.redLight,   text: BRAND.redText,   dot: BRAND.red,   icon: 'solar:fire-bold-duotone'       },
-  HIGH:   { bg: BRAND.redLight,   text: BRAND.redText,   dot: BRAND.red,   icon: 'solar:bolt-bold-duotone'       },
-  MEDIUM: { bg: BRAND.amberLight, text: BRAND.amberText, dot: BRAND.amber, icon: 'solar:bolt-bold-duotone'       },
-  LOW:    { bg: BRAND.greenLight, text: BRAND.greenText, dot: BRAND.green, icon: 'solar:bolt-bold-duotone'       },
-}
+const PRIORITY_META: Record<
+  string,
+  { bg: string; text: string; dot: string; icon: string }
+> = {
+  URGENT: {
+    bg: BRAND.redLight,
+    text: BRAND.redText,
+    dot: BRAND.red,
+    icon: "solar:fire-bold-duotone",
+  },
+  HIGH: {
+    bg: BRAND.redLight,
+    text: BRAND.redText,
+    dot: BRAND.red,
+    icon: "solar:bolt-bold-duotone",
+  },
+  MEDIUM: {
+    bg: BRAND.amberLight,
+    text: BRAND.amberText,
+    dot: BRAND.amber,
+    icon: "solar:bolt-bold-duotone",
+  },
+  LOW: {
+    bg: BRAND.greenLight,
+    text: BRAND.greenText,
+    dot: BRAND.green,
+    icon: "solar:bolt-bold-duotone",
+  },
+};
 
-const SENTIMENT_META: Record<string, { bg: string; text: string; dot: string; icon: string }> = {
-  Positive: { bg: BRAND.greenLight, text: BRAND.greenText, dot: BRAND.green, icon: 'solar:smile-circle-bold-duotone'   },
-  Neutral:  { bg: BRAND.blueLight,  text: BRAND.blueText,  dot: BRAND.blue,  icon: 'solar:face-id-bold-duotone'        },
-  Negative: { bg: BRAND.redLight,   text: BRAND.redText,   dot: BRAND.red,   icon: 'solar:sad-circle-bold-duotone'     },
-}
+const SENTIMENT_META: Record<
+  string,
+  { bg: string; text: string; dot: string; icon: string }
+> = {
+  Positive: {
+    bg: BRAND.greenLight,
+    text: BRAND.greenText,
+    dot: BRAND.green,
+    icon: "solar:smile-circle-bold-duotone",
+  },
+  Neutral: {
+    bg: BRAND.blueLight,
+    text: BRAND.blueText,
+    dot: BRAND.blue,
+    icon: "solar:face-id-bold-duotone",
+  },
+  Negative: {
+    bg: BRAND.redLight,
+    text: BRAND.redText,
+    dot: BRAND.red,
+    icon: "solar:sad-circle-bold-duotone",
+  },
+};
 
 const STATUS_META: Record<string, { bg: string; text: string; dot: string }> = {
-  OPEN:        { bg: BRAND.redLight,   text: BRAND.redText,   dot: BRAND.red   },
-  IN_PROGRESS: { bg: BRAND.amberLight, text: BRAND.amberText, dot: BRAND.amber },
-  RESOLVED:    { bg: BRAND.greenLight, text: BRAND.greenText, dot: BRAND.green },
-  CLOSED:      { bg: BRAND.grayLight,  text: BRAND.grayText,  dot: BRAND.gray  },
-  PENDING:     { bg: BRAND.blueLight,  text: BRAND.blueText,  dot: BRAND.blue  },
-}
+  OPEN: { bg: BRAND.redLight, text: BRAND.redText, dot: BRAND.red },
+  IN_PROGRESS: {
+    bg: BRAND.amberLight,
+    text: BRAND.amberText,
+    dot: BRAND.amber,
+  },
+  RESOLVED: { bg: BRAND.greenLight, text: BRAND.greenText, dot: BRAND.green },
+  CLOSED: { bg: BRAND.grayLight, text: BRAND.grayText, dot: BRAND.gray },
+  PENDING: { bg: BRAND.blueLight, text: BRAND.blueText, dot: BRAND.blue },
+};
 
 // ─── Shared sub-components ─────────────────────────────────────────────────────
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <Text size="xs" tt="uppercase" fw={500} c="dimmed" style={{ letterSpacing: '0.05em' }}>
+    <Text
+      size="xs"
+      tt="uppercase"
+      fw={500}
+      c="dimmed"
+      style={{ letterSpacing: "0.05em" }}
+    >
       {children}
     </Text>
-  )
+  );
 }
 
 function InfoPill({
@@ -99,80 +151,96 @@ function InfoPill({
   dot,
   icon,
 }: {
-  label: string
-  value: string
-  bg: string
-  text: string
-  dot: string
-  icon?: string
+  label: string;
+  value: string;
+  bg: string;
+  text: string;
+  dot: string;
+  icon?: string;
 }) {
   return (
     <Paper
       p="md"
       radius="md"
-      style={{ border: '0.5px solid var(--mantine-color-default-border)' }}
+      style={{ border: "0.5px solid var(--mantine-color-default-border)" }}
     >
       <Group justify="space-between" mb={8}>
-        <Text size="xs" c="dimmed" fw={500}>{label}</Text>
-        {icon && <Icon icon={icon} width={14} style={{ color: dot, opacity: 0.8 }} />}
+        <Text size="xs" c="dimmed" fw={500}>
+          {label}
+        </Text>
+        {icon && (
+          <Icon icon={icon} width={14} style={{ color: dot, opacity: 0.8 }} />
+        )}
       </Group>
       <span
         style={{
-          display: 'inline-flex',
-          alignItems: 'center',
+          display: "inline-flex",
+          alignItems: "center",
           gap: 5,
           fontSize: 13,
           fontWeight: 600,
-          padding: '4px 10px',
+          padding: "4px 10px",
           borderRadius: 20,
           background: bg,
           color: text,
         }}
       >
-        <span style={{ width: 6, height: 6, borderRadius: '50%', background: dot, flexShrink: 0 }} />
+        <span
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            background: dot,
+            flexShrink: 0,
+          }}
+        />
         {value}
       </span>
     </Paper>
-  )
+  );
 }
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function CreateTicket() {
-  const navigate = useNavigate()
-  const { user } = useAuth()
-  const [createdTicket, setCreatedTicket] = useState<Ticket | null>(null)
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null)
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [createdTicket, setCreatedTicket] = useState<Ticket | null>(null);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(
+    null,
+  );
 
   const { data: employees = [], isLoading: employeesLoading } = useQuery({
-    queryKey: ['employees-with-team'],
+    queryKey: ["employees-with-team"],
     queryFn: fetchEmployeesWithTeamApi,
-    enabled: user?.role === 'MANAGER',
-  })
+    enabled: user?.role === "MANAGER",
+  });
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ['categories'],
+    queryKey: ["categories"],
     queryFn: fetchCategoriesApi,
-  })
+  });
 
   const { data: tags = [], isLoading: tagsLoading } = useQuery({
-    queryKey: ['tags'],
+    queryKey: ["tags"],
     queryFn: fetchTagsApi,
-  })
+  });
 
   const form = useForm({
     initialValues: {
-      title: '',
-      description: '',
-      priority: 'MEDIUM',
+      title: "",
+      description: "",
+      priority: "MEDIUM",
       category_id: null as number | null,
       tag_ids: [] as number[],
     },
     validate: {
-      title: (val) => val.length < 3 ? 'Title must be at least 3 characters' : null,
-      description: (val) => val.length < 10 ? 'Description must be at least 10 characters' : null,
+      title: (val) =>
+        val.length < 3 ? "Title must be at least 3 characters" : null,
+      description: (val) =>
+        val.length < 10 ? "Description must be at least 10 characters" : null,
     },
-  })
+  });
 
   const createMutation = useMutation({
     mutationFn: (data: typeof form.values) => {
@@ -182,44 +250,46 @@ export default function CreateTicket() {
         priority: data.priority,
         category_id: data.category_id,
         tag_ids: data.tag_ids,
+      };
+      if (user?.role === "MANAGER" && selectedEmployeeId) {
+        payload.assignedToId = Number(selectedEmployeeId);
       }
-      if (user?.role === 'MANAGER' && selectedEmployeeId) {
-        payload.assignedToId = Number(selectedEmployeeId)
-      }
-      return createTicketApi(payload)
+      return createTicketApi(payload);
     },
     onSuccess: (data) => {
-      setCreatedTicket(data)
+      setCreatedTicket(data);
       const assignmentText =
-        data.assigned_to_username && data.assigned_to_username !== 'Unassigned'
+        data.assigned_to_username && data.assigned_to_username !== "Unassigned"
           ? ` · Assigned to ${data.assigned_to_username}`
-          : ''
+          : "";
       notifications.show({
-        title: 'Ticket created',
+        title: "Ticket created",
         message: `Ticket #${data.id} · ${data.priority} priority${assignmentText}`,
-        color: 'green',
-      })
+        color: "green",
+      });
     },
     onError: (error: any) => {
       notifications.show({
-        title: 'Error',
-        message: error.message || 'Failed to create ticket',
-        color: 'red',
-      })
+        title: "Error",
+        message: error.message || "Failed to create ticket",
+        color: "red",
+      });
     },
-  })
+  });
 
   // ── Success / AI analysis screen ──────────────────────────────────────────────
 
   if (createdTicket) {
-    const priorityM  = PRIORITY_META[createdTicket.priority ?? 'MEDIUM']  ?? PRIORITY_META.MEDIUM
-    const sentimentM = SENTIMENT_META[createdTicket.sentiment ?? 'Neutral'] ?? SENTIMENT_META.Neutral
-    const statusM    = STATUS_META[createdTicket.status]                   ?? STATUS_META.OPEN
+    const priorityM =
+      PRIORITY_META[createdTicket.priority ?? "MEDIUM"] ?? PRIORITY_META.MEDIUM;
+    const sentimentM =
+      SENTIMENT_META[createdTicket.sentiment ?? "Neutral"] ??
+      SENTIMENT_META.Neutral;
+    const statusM = STATUS_META[createdTicket.status] ?? STATUS_META.OPEN;
 
     return (
       <Container size="md" py="lg">
         <Stack gap="lg">
-
           {/* ── Success header ── */}
           <Paper
             p="lg"
@@ -236,19 +306,29 @@ export default function CreateTicket() {
                   height: 40,
                   borderRadius: 12,
                   background: BRAND.green,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   flexShrink: 0,
                 }}
               >
-                <Icon icon="solar:check-circle-bold-duotone" width={22} style={{ color: '#fff' }} />
+                <Icon
+                  icon="solar:check-circle-bold-duotone"
+                  width={22}
+                  style={{ color: "#fff" }}
+                />
               </Box>
               <Box>
-                <Text fw={600} style={{ color: BRAND.greenText, lineHeight: 1.2 }}>
+                <Text
+                  fw={600}
+                  style={{ color: BRAND.greenText, lineHeight: 1.2 }}
+                >
                   Ticket created successfully
                 </Text>
-                <Text size="xs" style={{ color: BRAND.greenText, opacity: 0.75 }}>
+                <Text
+                  size="xs"
+                  style={{ color: BRAND.greenText, opacity: 0.75 }}
+                >
                   #{createdTicket.id} · {createdTicket.title}
                 </Text>
               </Box>
@@ -259,18 +339,26 @@ export default function CreateTicket() {
           <Paper
             p="lg"
             radius="md"
-            style={{ border: '0.5px solid var(--mantine-color-default-border)' }}
+            style={{
+              border: "0.5px solid var(--mantine-color-default-border)",
+            }}
           >
             <Group justify="space-between" align="center" mb="md">
               <Group gap={8}>
-                <Icon icon="solar:cpu-bolt-bold-duotone" width={18} style={{ color: BRAND.purple }} />
-                <Text fw={600} size="sm">AI analysis results</Text>
+                <Icon
+                  icon="solar:cpu-bolt-bold-duotone"
+                  width={18}
+                  style={{ color: BRAND.purple }}
+                />
+                <Text fw={600} size="sm">
+                  AI analysis results
+                </Text>
               </Group>
               <span
                 style={{
                   fontSize: 10,
                   fontWeight: 600,
-                  padding: '2px 8px',
+                  padding: "2px 8px",
                   borderRadius: 20,
                   background: BRAND.purpleLight,
                   color: BRAND.purpleText,
@@ -287,11 +375,19 @@ export default function CreateTicket() {
               <Paper
                 p="md"
                 radius="md"
-                style={{ border: '0.5px solid var(--mantine-color-default-border)' }}
+                style={{
+                  border: "0.5px solid var(--mantine-color-default-border)",
+                }}
               >
                 <Group justify="space-between" mb={8}>
-                  <Text size="xs" c="dimmed" fw={500}>Category</Text>
-                  <Icon icon="solar:folder-bold-duotone" width={14} style={{ color: 'var(--mantine-color-dimmed)' }} />
+                  <Text size="xs" c="dimmed" fw={500}>
+                    Category
+                  </Text>
+                  <Icon
+                    icon="solar:folder-bold-duotone"
+                    width={14}
+                    style={{ color: "var(--mantine-color-dimmed)" }}
+                  />
                 </Group>
                 {createdTicket.category ? (
                   <Group gap={8}>
@@ -299,23 +395,27 @@ export default function CreateTicket() {
                       style={{
                         width: 10,
                         height: 10,
-                        borderRadius: '50%',
+                        borderRadius: "50%",
                         background: createdTicket.category.color || BRAND.gray,
                         flexShrink: 0,
                         boxShadow: `0 0 0 2px ${createdTicket.category.color || BRAND.gray}33`,
                       }}
                     />
-                    <Text fw={600} size="sm">{createdTicket.category.name}</Text>
+                    <Text fw={600} size="sm">
+                      {createdTicket.category.name}
+                    </Text>
                   </Group>
                 ) : (
-                  <Text fw={500} size="sm" c="dimmed">Uncategorized</Text>
+                  <Text fw={500} size="sm" c="dimmed">
+                    Uncategorized
+                  </Text>
                 )}
               </Paper>
 
               {/* Priority */}
               <InfoPill
                 label="Priority"
-                value={createdTicket.priority ?? 'MEDIUM'}
+                value={createdTicket.priority ?? "MEDIUM"}
                 icon={priorityM.icon}
                 {...priorityM}
               />
@@ -323,7 +423,7 @@ export default function CreateTicket() {
               {/* Sentiment */}
               <InfoPill
                 label="Sentiment"
-                value={createdTicket.sentiment ?? 'Neutral'}
+                value={createdTicket.sentiment ?? "Neutral"}
                 icon={sentimentM.icon}
                 {...sentimentM}
               />
@@ -348,18 +448,25 @@ export default function CreateTicket() {
                       <span
                         key={tag.id}
                         style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
+                          display: "inline-flex",
+                          alignItems: "center",
                           gap: 4,
                           fontSize: 11,
                           fontWeight: 500,
-                          padding: '3px 9px',
+                          padding: "3px 9px",
                           borderRadius: 20,
-                          background: (tag.color || BRAND.gray) + '22',
+                          background: (tag.color || BRAND.gray) + "22",
                           color: tag.color || BRAND.gray,
                         }}
                       >
-                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: tag.color || BRAND.gray }} />
+                        <span
+                          style={{
+                            width: 5,
+                            height: 5,
+                            borderRadius: "50%",
+                            background: tag.color || BRAND.gray,
+                          }}
+                        />
                         #{tag.name}
                       </span>
                     ))}
@@ -370,24 +477,33 @@ export default function CreateTicket() {
 
             {/* Assignment */}
             {createdTicket.assigned_to_username &&
-              createdTicket.assigned_to_username !== 'Unassigned' && (
-              <>
-                <Divider mb="md" />
-                <Box mb="md">
-                  <SectionLabel>Assigned to</SectionLabel>
-                  <Group gap={8} mt={8}>
-                    <Avatar
-                      size={26}
-                      radius="xl"
-                      style={{ background: BRAND.purpleLight, color: BRAND.purpleText, fontSize: 9, fontWeight: 700 }}
-                    >
-                      {createdTicket.assigned_to_username.slice(0, 2).toUpperCase()}
-                    </Avatar>
-                    <Text size="sm" fw={500}>{createdTicket.assigned_to_username}</Text>
-                  </Group>
-                </Box>
-              </>
-            )}
+              createdTicket.assigned_to_username !== "Unassigned" && (
+                <>
+                  <Divider mb="md" />
+                  <Box mb="md">
+                    <SectionLabel>Assigned to</SectionLabel>
+                    <Group gap={8} mt={8}>
+                      <Avatar
+                        size={26}
+                        radius="xl"
+                        style={{
+                          background: BRAND.purpleLight,
+                          color: BRAND.purpleText,
+                          fontSize: 9,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {createdTicket.assigned_to_username
+                          .slice(0, 2)
+                          .toUpperCase()}
+                      </Avatar>
+                      <Text size="sm" fw={500}>
+                        {createdTicket.assigned_to_username}
+                      </Text>
+                    </Group>
+                  </Box>
+                </>
+              )}
 
             {/* AI Suggested Solution */}
             {createdTicket.ai_suggested_solution && (
@@ -396,18 +512,32 @@ export default function CreateTicket() {
                 <Box
                   p="md"
                   style={{
-                    borderRadius: 'var(--mantine-radius-md)',
+                    borderRadius: "var(--mantine-radius-md)",
                     background: BRAND.purpleLight,
                     border: `0.5px solid ${BRAND.purple}33`,
                   }}
                 >
                   <Group gap={8} mb={8}>
-                    <Icon icon="solar:lightbulb-bold-duotone" width={15} style={{ color: BRAND.purple }} />
-                    <Text size="xs" fw={600} style={{ color: BRAND.purpleText }}>
+                    <Icon
+                      icon="solar:lightbulb-bold-duotone"
+                      width={15}
+                      style={{ color: BRAND.purple }}
+                    />
+                    <Text
+                      size="xs"
+                      fw={600}
+                      style={{ color: BRAND.purpleText }}
+                    >
                       AI suggested solution
                     </Text>
                   </Group>
-                  <Text size="sm" style={{ lineHeight: 1.6, color: 'var(--mantine-color-text)' }}>
+                  <Text
+                    size="sm"
+                    style={{
+                      lineHeight: 1.6,
+                      color: "var(--mantine-color-text)",
+                    }}
+                  >
                     {createdTicket.ai_suggested_solution}
                   </Text>
                 </Box>
@@ -421,17 +551,19 @@ export default function CreateTicket() {
               variant="default"
               size="sm"
               onClick={() => {
-                setCreatedTicket(null)
-                setSelectedEmployeeId(null)
-                form.reset()
+                setCreatedTicket(null);
+                setSelectedEmployeeId(null);
+                form.reset();
               }}
             >
               Create another
             </Button>
             <Button
               size="sm"
-              style={{ background: BRAND.purpleDark, border: 'none' }}
-              leftSection={<Icon icon="solar:arrow-right-bold-duotone" width={15} />}
+              style={{ background: BRAND.purpleDark, border: "none" }}
+              leftSection={
+                <Icon icon="solar:arrow-right-bold-duotone" width={15} />
+              }
               onClick={() => navigate(`../${createdTicket.id}`)}
             >
               View ticket
@@ -439,7 +571,7 @@ export default function CreateTicket() {
           </Group>
         </Stack>
       </Container>
-    )
+    );
   }
 
   // ── Create form ───────────────────────────────────────────────────────────────
@@ -447,16 +579,18 @@ export default function CreateTicket() {
   return (
     <Container size="md" py="lg">
       <Stack gap="lg">
-
         {/* ── Header ── */}
         <Group justify="space-between" align="flex-end">
           <Box>
-            <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>Create ticket</Text>
+            <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>
+              Create ticket
+            </Text>
             <Text size="sm" c="dimmed" mt={2}>
-              Submit a support request — AI will analyze and categorize it automatically
+              Submit a support request — AI will analyze and categorize it
+              automatically
             </Text>
           </Box>
-          <Button variant="default" size="sm" onClick={() => navigate('..')}>
+          <Button variant="default" size="sm" onClick={() => navigate("..")}>
             Cancel
           </Button>
         </Group>
@@ -477,20 +611,32 @@ export default function CreateTicket() {
                 height: 32,
                 borderRadius: 9,
                 background: BRAND.purpleDark,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 flexShrink: 0,
               }}
             >
-              <Icon icon="solar:cpu-bolt-bold-duotone" width={16} style={{ color: '#fff' }} />
+              <Icon
+                icon="solar:cpu-bolt-bold-duotone"
+                width={16}
+                style={{ color: "#fff" }}
+              />
             </Box>
             <Box>
-              <Text size="sm" fw={600} style={{ color: BRAND.purpleText, lineHeight: 1.2 }}>
+              <Text
+                size="sm"
+                fw={600}
+                style={{ color: BRAND.purpleText, lineHeight: 1.2 }}
+              >
                 AI-Powered Analysis
               </Text>
-              <Text size="xs" style={{ color: BRAND.purpleText, opacity: 0.75 }}>
-                Our AI engine will automatically categorize your ticket, assess priority, and suggest a solution.
+              <Text
+                size="xs"
+                style={{ color: BRAND.purpleText, opacity: 0.75 }}
+              >
+                Our AI engine will automatically categorize your ticket, assess
+                priority, and suggest a solution.
               </Text>
             </Box>
           </Group>
@@ -499,7 +645,10 @@ export default function CreateTicket() {
         {/* ── Form ── */}
         <Paper
           radius="md"
-          style={{ border: '0.5px solid var(--mantine-color-default-border)', overflow: 'hidden' }}
+          style={{
+            border: "0.5px solid var(--mantine-color-default-border)",
+            overflow: "hidden",
+          }}
         >
           {createMutation.isPending ? (
             <Center py={80}>
@@ -510,47 +659,74 @@ export default function CreateTicket() {
                     height: 48,
                     borderRadius: 14,
                     background: BRAND.purpleLight,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
                   <Loader color={BRAND.purple} size="sm" />
                 </Box>
                 <Box ta="center">
-                  <Text fw={500} size="sm">Creating ticket…</Text>
-                  <Text size="xs" c="dimmed">AI is analyzing your request</Text>
+                  <Text fw={500} size="sm">
+                    Creating ticket…
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    AI is analyzing your request
+                  </Text>
                 </Box>
               </Stack>
             </Center>
           ) : (
-            <form onSubmit={form.onSubmit((values) => createMutation.mutate(values))}>
+            <form
+              onSubmit={form.onSubmit((values) =>
+                createMutation.mutate(values),
+              )}
+            >
               <Stack gap={0}>
-
                 {/* Title */}
                 <Box px="lg" pt="lg" pb="md">
                   <SectionLabel>Issue details</SectionLabel>
                   <Stack gap="md" mt="sm">
                     <TextInput
                       required
-                      label={<Text size="xs" fw={500} mb={4}>Title</Text>}
+                      label={
+                        <Text size="xs" fw={500} mb={4}>
+                          Title
+                        </Text>
+                      }
                       placeholder="e.g. Cannot login to my account"
                       description="Brief, specific summary of your issue"
-                      leftSection={<Icon icon="solar:clipboard-list-linear" width={14} style={{ color: 'var(--mantine-color-dimmed)' }} />}
-                      styles={{ input: { fontSize: 13 }, description: { fontSize: 11 } }}
-                      {...form.getInputProps('title')}
+                      leftSection={
+                        <Icon
+                          icon="solar:clipboard-list-linear"
+                          width={14}
+                          style={{ color: "var(--mantine-color-dimmed)" }}
+                        />
+                      }
+                      styles={{
+                        input: { fontSize: 13 },
+                        description: { fontSize: 11 },
+                      }}
+                      {...form.getInputProps("title")}
                     />
 
                     <Textarea
                       required
-                      label={<Text size="xs" fw={500} mb={4}>Description</Text>}
+                      label={
+                        <Text size="xs" fw={500} mb={4}>
+                          Description
+                        </Text>
+                      }
                       placeholder="Describe your issue in detail — include any error messages, steps to reproduce, and what you've already tried."
                       description="The more detail you provide, the better we can help"
                       minRows={7}
                       maxRows={14}
                       autosize
-                      styles={{ input: { fontSize: 13 }, description: { fontSize: 11 } }}
-                      {...form.getInputProps('description')}
+                      styles={{
+                        input: { fontSize: 13 },
+                        description: { fontSize: 11 },
+                      }}
+                      {...form.getInputProps("description")}
                     />
                   </Stack>
                 </Box>
@@ -563,42 +739,84 @@ export default function CreateTicket() {
                   <Stack gap="md" mt="sm">
                     <Group grow gap="md">
                       <Select
-                        label={<Text size="xs" fw={500} mb={4}>Priority</Text>}
+                        label={
+                          <Text size="xs" fw={500} mb={4}>
+                            Priority
+                          </Text>
+                        }
                         data={[
-                          { value: 'LOW',    label: 'Low'    },
-                          { value: 'MEDIUM', label: 'Medium' },
-                          { value: 'HIGH',   label: 'High'   },
-                          { value: 'URGENT', label: 'Urgent' },
+                          { value: "LOW", label: "Low" },
+                          { value: "MEDIUM", label: "Medium" },
+                          { value: "HIGH", label: "High" },
+                          { value: "URGENT", label: "Urgent" },
                         ]}
-                        leftSection={<Icon icon="solar:bolt-linear" width={14} style={{ color: 'var(--mantine-color-dimmed)' }} />}
+                        leftSection={
+                          <Icon
+                            icon="solar:bolt-linear"
+                            width={14}
+                            style={{ color: "var(--mantine-color-dimmed)" }}
+                          />
+                        }
                         styles={{ input: { fontSize: 13 } }}
-                        {...form.getInputProps('priority')}
+                        {...form.getInputProps("priority")}
                         searchable
                       />
 
                       <Select
-                        label={<Text size="xs" fw={500} mb={4}>Category <Text span size="xs" c="dimmed">(optional)</Text></Text>}
+                        label={
+                          <Text size="xs" fw={500} mb={4}>
+                            Category{" "}
+                            <Text span size="xs" c="dimmed">
+                              (optional)
+                            </Text>
+                          </Text>
+                        }
                         placeholder="Any category"
-                        data={categories.map((c) => ({ value: c.id.toString(), label: c.name }))}
-                        leftSection={<Icon icon="solar:folder-linear" width={14} style={{ color: 'var(--mantine-color-dimmed)' }} />}
+                        data={categories.map((c) => ({
+                          value: c.id.toString(),
+                          label: c.name,
+                        }))}
+                        leftSection={
+                          <Icon
+                            icon="solar:folder-linear"
+                            width={14}
+                            style={{ color: "var(--mantine-color-dimmed)" }}
+                          />
+                        }
                         searchable
                         clearable
                         disabled={categoriesLoading}
                         styles={{ input: { fontSize: 13 } }}
-                        {...form.getInputProps('category_id')}
+                        {...form.getInputProps("category_id")}
                       />
                     </Group>
 
                     <MultiSelect
-                      label={<Text size="xs" fw={500} mb={4}>Tags <Text span size="xs" c="dimmed">(optional)</Text></Text>}
+                      label={
+                        <Text size="xs" fw={500} mb={4}>
+                          Tags{" "}
+                          <Text span size="xs" c="dimmed">
+                            (optional)
+                          </Text>
+                        </Text>
+                      }
                       placeholder="Add tags…"
-                      data={tags.map((t) => ({ value: t.id.toString(), label: `#${t.name}` }))}
-                      leftSection={<Icon icon="solar:tag-linear" width={14} style={{ color: 'var(--mantine-color-dimmed)' }} />}
+                      data={tags.map((t) => ({
+                        value: t.id.toString(),
+                        label: `#${t.name}`,
+                      }))}
+                      leftSection={
+                        <Icon
+                          icon="solar:tag-linear"
+                          width={14}
+                          style={{ color: "var(--mantine-color-dimmed)" }}
+                        />
+                      }
                       searchable
                       clearable
                       disabled={tagsLoading}
                       styles={{ input: { fontSize: 13 } }}
-                      {...form.getInputProps('tag_ids')}
+                      {...form.getInputProps("tag_ids")}
                     />
                   </Stack>
                 </Box>
@@ -606,28 +824,50 @@ export default function CreateTicket() {
                 <Divider />
 
                 {/* Assignment (manager only) */}
-                {user?.role === 'MANAGER' && (
+                {user?.role === "MANAGER" && (
                   <>
                     <Box px="lg" py="md">
                       <SectionLabel>Assignment</SectionLabel>
                       <Stack gap="md" mt="sm">
                         <Select
-                          label={<Text size="xs" fw={500} mb={4}>Assign to employee <Text span size="xs" c="dimmed">(optional)</Text></Text>}
-                          placeholder={employeesLoading ? 'Loading employees…' : 'Auto-assign or choose an employee'}
+                          label={
+                            <Text size="xs" fw={500} mb={4}>
+                              Assign to employee{" "}
+                              <Text span size="xs" c="dimmed">
+                                (optional)
+                              </Text>
+                            </Text>
+                          }
+                          placeholder={
+                            employeesLoading
+                              ? "Loading employees…"
+                              : "Auto-assign or choose an employee"
+                          }
                           data={groupEmployeesByTeamOnly(employees)}
                           value={selectedEmployeeId}
                           onChange={setSelectedEmployeeId}
                           disabled={employeesLoading || employees.length === 0}
                           searchable
                           clearable
-                          leftSection={<Icon icon="solar:user-check-linear" width={14} style={{ color: 'var(--mantine-color-dimmed)' }} />}
+                          leftSection={
+                            <Icon
+                              icon="solar:user-check-linear"
+                              width={14}
+                              style={{ color: "var(--mantine-color-dimmed)" }}
+                            />
+                          }
                           styles={{ input: { fontSize: 13 } }}
                         />
                         {!selectedEmployeeId && (
                           <Group gap={6}>
-                            <Icon icon="solar:info-circle-linear" width={12} style={{ color: 'var(--mantine-color-dimmed)' }} />
+                            <Icon
+                              icon="solar:info-circle-linear"
+                              width={12}
+                              style={{ color: "var(--mantine-color-dimmed)" }}
+                            />
                             <Text size="xs" c="dimmed">
-                              Leave blank to auto-assign to the employee with the lowest workload
+                              Leave blank to auto-assign to the employee with
+                              the lowest workload
                             </Text>
                           </Group>
                         )}
@@ -638,13 +878,27 @@ export default function CreateTicket() {
                 )}
 
                 {/* Auto-assign info (non-managers) */}
-                {user?.role !== 'MANAGER' && (
+                {user?.role !== "MANAGER" && (
                   <>
                     <Box px="lg" py="md">
-                      <Group gap={8} px="sm" py="sm" style={{ borderRadius: 8, background: BRAND.blueLight, border: `0.5px solid ${BRAND.blue}33` }}>
-                        <Icon icon="solar:info-circle-linear" width={13} style={{ color: BRAND.blue, flexShrink: 0 }} />
+                      <Group
+                        gap={8}
+                        px="sm"
+                        py="sm"
+                        style={{
+                          borderRadius: 8,
+                          background: BRAND.blueLight,
+                          border: `0.5px solid ${BRAND.blue}33`,
+                        }}
+                      >
+                        <Icon
+                          icon="solar:info-circle-linear"
+                          width={13}
+                          style={{ color: BRAND.blue, flexShrink: 0 }}
+                        />
                         <Text size="xs" style={{ color: BRAND.blueText }}>
-                          This ticket will be automatically assigned to the available employee with the lowest current workload.
+                          This ticket will be automatically assigned to the
+                          available employee with the lowest current workload.
                         </Text>
                       </Group>
                     </Box>
@@ -655,15 +909,24 @@ export default function CreateTicket() {
                 {/* Submit */}
                 <Box px="lg" py="md">
                   <Group justify="flex-end" gap={8}>
-                    <Button variant="default" size="sm" onClick={() => navigate('..')}>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => navigate("..")}
+                    >
                       Cancel
                     </Button>
                     <Button
                       type="submit"
                       size="sm"
-                      style={{ background: BRAND.purpleDark, border: 'none' }}
+                      style={{ background: BRAND.purpleDark, border: "none" }}
                       disabled={createMutation.isPending}
-                      leftSection={<Icon icon="solar:check-circle-bold-duotone" width={15} />}
+                      leftSection={
+                        <Icon
+                          icon="solar:check-circle-bold-duotone"
+                          width={15}
+                        />
+                      }
                     >
                       Submit ticket
                     </Button>
@@ -678,38 +941,49 @@ export default function CreateTicket() {
         <Paper
           p="md"
           radius="md"
-          style={{ border: '0.5px solid var(--mantine-color-default-border)' }}
+          style={{ border: "0.5px solid var(--mantine-color-default-border)" }}
         >
           <Group gap={8} mb="sm">
-            <Icon icon="solar:lightbulb-bold-duotone" width={15} style={{ color: BRAND.amber }} />
-            <Text size="xs" fw={600} tt="uppercase" style={{ letterSpacing: '0.05em' }}>
+            <Icon
+              icon="solar:lightbulb-bold-duotone"
+              width={15}
+              style={{ color: BRAND.amber }}
+            />
+            <Text
+              size="xs"
+              fw={600}
+              tt="uppercase"
+              style={{ letterSpacing: "0.05em" }}
+            >
               Tips for faster resolution
             </Text>
           </Group>
           <Stack gap={4}>
             {[
-              'Be specific and detailed — vague reports take longer to resolve',
-              'Include any error messages, codes, or screenshots if applicable',
-              'Describe what you already tried so we don\'t repeat steps',
-              'Our AI auto-assigns priority and category — you\'ll see it instantly after submission',
+              "Be specific and detailed — vague reports take longer to resolve",
+              "Include any error messages, codes, or screenshots if applicable",
+              "Describe what you already tried so we don't repeat steps",
+              "Our AI auto-assigns priority and category — you'll see it instantly after submission",
             ].map((tip, i) => (
               <Group key={i} gap={6} wrap="nowrap" align="flex-start">
                 <Box
                   style={{
                     width: 4,
                     height: 4,
-                    borderRadius: '50%',
+                    borderRadius: "50%",
                     background: BRAND.amber,
                     flexShrink: 0,
                     marginTop: 6,
                   }}
                 />
-                <Text size="xs" c="dimmed">{tip}</Text>
+                <Text size="xs" c="dimmed">
+                  {tip}
+                </Text>
               </Group>
             ))}
           </Stack>
         </Paper>
       </Stack>
     </Container>
-  )
+  );
 }

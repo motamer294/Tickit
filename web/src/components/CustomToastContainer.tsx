@@ -98,17 +98,6 @@ export function CustomToastContainer() {
               }}
               onClick={() => deleteNotification(toast.id)}
             >
-              {/* Debug: verify upstream variant */}
-              {(() => {
-                console.log("[ToastDebug]", {
-                  id: toast.id,
-                  title: toast.title,
-                  message: toast.message,
-                  alertVariant: toast.alertVariant,
-                  autoCloseDuration: toast.autoCloseDuration,
-                });
-                return null;
-              })()}
               <CustomAlert
                 variant={toast.alertVariant ?? "info"}
                 title={toast.title}
