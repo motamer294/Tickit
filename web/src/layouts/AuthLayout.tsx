@@ -1,62 +1,99 @@
-import { Box, Group, Text, Container, Stack } from '@mantine/core'
-import { Outlet } from 'react-router-dom'
-import ThemeToggle from '@/components/ThemeToggle'
+import { Box, Group, Text, Container, Stack } from "@mantine/core";
+import { Outlet, useNavigate } from "react-router-dom";
+import { Icon } from "@iconify-icon/react";
+import ThemeToggle from "@/components/ThemeToggle";
+
+const B = {
+  purple: "#7F77DD",
+  purpleDark: "#534AB7",
+  purpleLight: "#EEEDFE",
+};
 
 const AuthLayout = () => {
+  const navigate = useNavigate();
+
   return (
     <Box
       style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        // Dynamic Mesh Background: Adapts to theme colors via CSS variables
-        background: `radial-gradient(circle at 15% 15%, var(--mantine-color-blue-light) 0%, transparent 25%), 
-                  radial-gradient(circle at 85% 85%, var(--mantine-color-cyan-light) 0%, transparent 25%),
-                  var(--mantine-color-body)`,
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        background: `
+          radial-gradient(ellipse at 10% 0%,   ${B.purpleLight}CC 0%, transparent 40%),
+          radial-gradient(ellipse at 90% 100%, ${B.purpleLight}88 0%, transparent 40%),
+          var(--mantine-color-body)
+        `,
       }}
     >
-      {/* ✨ MINIMALIST HEADER */}
+      {/* ── Header ── */}
       <Container
         size="xl"
         w="100%"
-        h={90}
+        h={60}
         display="flex"
-        style={{ alignItems: 'center' }}
+        style={{ alignItems: "center" }}
       >
         <Group justify="space-between" w="100%">
-          <Text
-            fw={900}
-            size="xl"
-            style={{
-              letterSpacing: '4px',
-              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
-            }}
+          {/* Logo */}
+          <Group
+            gap={9}
+            style={{ cursor: "pointer" }}
+            onClick={() => navigate("/login")}
           >
-            HELP DESK APP
-          </Text>
+            <Box
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 9,
+                background: B.purpleDark,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Icon
+                icon="solar:ticket-bold-duotone"
+                width={16}
+                style={{ color: "#fff" }}
+              />
+            </Box>
+            <Text
+              fw={700}
+              size="sm"
+              style={{
+                letterSpacing: "0.12em",
+                color: B.purpleDark,
+                textTransform: "uppercase",
+              }}
+            >
+              TicketMe
+            </Text>
+          </Group>
+
           <ThemeToggle />
         </Group>
       </Container>
 
-      {/* 🌪️ IMMERSIVE CONTENT AREA */}
-      <Stack flex={1} justify="center" align="center" px="md" py={40}>
+      {/* ── Content ── */}
+      <Stack flex={1} justify="center" align="center" px="md" py={32}>
         <Box
           style={{
-            width: '100%',
-            animation: 'reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1)', // Smooth high-end entrance
+            width: "100%",
+            animation: "auth-reveal 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
           }}
         >
           <Outlet />
         </Box>
 
-        {/* 🏢 ELITE FOOTER */}
-        <Group gap="xl" mt={40} style={{ opacity: 0.4 }}>
-          {['SECURITY', 'PRIVACY', 'SYSTEM STATUS'].map((link) => (
+        {/* Footer */}
+        <Group gap="lg" mt={32} style={{ opacity: 0.45 }}>
+          {["Security", "Privacy", "System Status"].map((link) => (
             <Text
               key={link}
-              size="10px"
-              fw={800}
-              style={{ cursor: 'pointer', letterSpacing: '1px' }}
+              size="xs"
+              fw={500}
+              style={{ cursor: "pointer", letterSpacing: "0.04em" }}
             >
               {link}
             </Text>
@@ -64,15 +101,14 @@ const AuthLayout = () => {
         </Group>
       </Stack>
 
-      {/* 🎭 HIGH-END REVEAL ANIMATION */}
       <style>{`
-        @keyframes reveal {
-          from { opacity: 0; transform: scale(0.98) translateY(10px); filter: blur(10px); }
-          to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+        @keyframes auth-reveal {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0);   }
         }
       `}</style>
     </Box>
-  )
-}
+  );
+};
 
-export default AuthLayout
+export default AuthLayout;
