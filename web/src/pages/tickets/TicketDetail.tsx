@@ -1034,7 +1034,7 @@ export default function TicketDetail() {
         {/* ── Hero card ────────────────────────────────────────────────────── */}
         <Card>
           {/* Title area */}
-          <Box px="lg" pt="lg" pb="md">
+          <Box px={{ base: "md", sm: "lg" }} pt={{ base: "md", sm: "lg" }} pb="md">
             <Text
               size="xs"
               fw={500}
@@ -1098,7 +1098,7 @@ export default function TicketDetail() {
 
           {/* Meta bar */}
           <Box
-            px="lg"
+            px={{ base: "md", sm: "lg" }}
             py="sm"
             style={{
               borderTop: "0.5px solid var(--mantine-color-default-border)",
@@ -1106,6 +1106,7 @@ export default function TicketDetail() {
               display: "flex",
               alignItems: "center",
               gap: 28,
+              rowGap: 10,
               flexWrap: "wrap",
             }}
           >
@@ -1224,14 +1225,7 @@ export default function TicketDetail() {
         </Card>
 
         {/* ── Two-column body ───────────────────────────────────────────────── */}
-        <Box
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 300px",
-            gap: 12,
-            alignItems: "start",
-          }}
-        >
+        <Box className="td-grid">
           {/* LEFT column */}
           <Stack gap={12}>
             {/* Description */}
@@ -1248,7 +1242,7 @@ export default function TicketDetail() {
                   </>
                 }
               />
-              <Box p="lg">
+              <Box p={{ base: "md", sm: "lg" }}>
                 <Text
                   size="sm"
                   style={{
@@ -1276,13 +1270,13 @@ export default function TicketDetail() {
                   </>
                 }
                 right={
-                  <Text size="xs" c="dimmed">
+                  <Text size="xs" c="dimmed" className="td-ai-hint">
                     Auto-analyzed by ML Engine
                   </Text>
                 }
               />
               <Box p="md">
-                <SimpleGrid cols={4} spacing={10} mb="md">
+                <SimpleGrid cols={{ base: 2, sm: 4 }} spacing={10} mb="md">
                   {/* Category */}
                   <Box
                     p="sm"
@@ -2094,8 +2088,14 @@ export default function TicketDetail() {
         <ChatSection ticketId={ticketIdNum} currentUserId={user!.id} />
       </Modal>
 
-      {/* Pulse animation for live dot */}
-      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }`}</style>
+      <style>{`
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+        .td-grid { display:grid; grid-template-columns:1fr 300px; gap:12px; align-items:start; }
+        @media (max-width:768px) {
+          .td-grid { grid-template-columns:1fr; }
+          .td-ai-hint { display:none; }
+        }
+      `}</style>
     </Container>
   );
 }
