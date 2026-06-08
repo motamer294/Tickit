@@ -9,6 +9,7 @@ import {
   Avatar,
   Divider,
 } from '@mantine/core'
+import logoSvg from '@/assets/logo.svg'
 import { useDisclosure } from '@mantine/hooks'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { Icon } from '@iconify-icon/react'
@@ -180,33 +181,7 @@ const DashboardLayout = () => {
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
 
             {/* Logo mark */}
-            <Group gap={8} align="center">
-              <Box
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 8,
-                  background: BRAND.purpleDark,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <Icon icon="solar:ticket-bold-duotone" width={16} style={{ color: '#fff' }} />
-              </Box>
-              <Text
-                fw={700}
-                size="sm"
-                style={{
-                  letterSpacing: '0.12em',
-                  color: BRAND.purpleDark,
-                  textTransform: 'uppercase',
-                }}
-              >
-                TicketMe
-              </Text>
-            </Group>
+            <img src={logoSvg} alt="TicketMe" style={{ height: 26, width: 'auto', display: 'block' }} />
           </Group>
 
           <Group gap={6}>

@@ -1,7 +1,7 @@
 import { Box, Group, Text, Container, Stack } from "@mantine/core";
 import { Outlet, useNavigate } from "react-router-dom";
-import { Icon } from "@iconify-icon/react";
 import ThemeToggle from "@/components/ThemeToggle";
+import logoSvg from "@/assets/logo.svg";
 
 const B = {
   purple: "#7F77DD",
@@ -35,41 +35,9 @@ const AuthLayout = () => {
       >
         <Group justify="space-between" w="100%">
           {/* Logo */}
-          <Group
-            gap={9}
-            style={{ cursor: "pointer" }}
-            onClick={() => navigate("/login")}
-          >
-            <Box
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: 9,
-                background: B.purpleDark,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <Icon
-                icon="solar:ticket-bold-duotone"
-                width={16}
-                style={{ color: "#fff" }}
-              />
-            </Box>
-            <Text
-              fw={700}
-              size="sm"
-              style={{
-                letterSpacing: "0.12em",
-                color: B.purpleDark,
-                textTransform: "uppercase",
-              }}
-            >
-              TicketMe
-            </Text>
-          </Group>
+          <Box style={{ cursor: "pointer" }} onClick={() => navigate("/login")}>
+            <img src={logoSvg} alt="TicketMe" style={{ height: 28, width: "auto", display: "block" }} />
+          </Box>
 
           <ThemeToggle />
         </Group>
