@@ -1,5 +1,4 @@
 import {
-  Anchor,
   Button,
   Divider,
   Group,
@@ -9,101 +8,106 @@ import {
   Text,
   TextInput,
   Box,
-} from '@mantine/core'
-import { useForm } from '@mantine/form'
-import { useNavigate } from 'react-router-dom'
-import { Icon } from '@iconify-icon/react'
-import { useLogin } from '@/hooks/useAuth'
+  Anchor,
+} from "@mantine/core";
+import { useForm } from "@mantine/form";
+import { useNavigate } from "react-router-dom";
+import { Icon } from "@iconify-icon/react";
+import { useLogin } from "@/hooks/useAuth";
+
+// ─── Brand ────────────────────────────────────────────────────────────────────
+
+const B = {
+  purple: "#7F77DD",
+  purpleDark: "#534AB7",
+  purpleLight: "#EEEDFE",
+  purpleText: "#3C3489",
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Login() {
-  const navigate = useNavigate()
-  const login = useLogin()
+  const navigate = useNavigate();
+  const login = useLogin();
 
   const form = useForm({
-    initialValues: {
-      username: '',
-      password: '',
-    },
+    initialValues: { username: "", password: "" },
     validate: {
       username: (val) =>
-        val.length < 3 ? 'Username must be at least 3 characters' : null,
+        val.length < 3 ? "Username must be at least 3 characters" : null,
       password: (val) =>
-        val.length < 6 ? 'Password must be at least 6 characters' : null,
+        val.length < 6 ? "Password must be at least 6 characters" : null,
     },
-  })
+  });
 
   return (
-    <Box maw={480} mx="auto" style={{ position: 'relative', padding: '1px' }}>
-      {/* 🛡️ WORM TRACK */}
-      <svg
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          pointerEvents: 'none',
-          zIndex: 2,
-        }}
-      >
-        <rect
-          x="0"
-          y="0"
-          width="100%"
-          height="100%"
-          rx="32"
-          fill="none"
-          stroke="url(#worm-gradient)"
-          strokeWidth="2.5"
-          strokeDasharray="120 1000"
-          style={{ animation: 'worm-move 5s linear infinite' }}
-        />
-        <defs>
-          <linearGradient id="worm-gradient">
-            <stop offset="0%" stopColor="transparent" />
-            <stop offset="50%" stopColor="var(--mantine-color-blue-5)" />
-            <stop offset="100%" stopColor="transparent" />
-          </linearGradient>
-        </defs>
-      </svg>
-
+    <Box maw={440} mx="auto">
       <Paper
-        radius="32px"
-        p={40}
+        radius={20}
+        p={36}
         withBorder
         style={{
-          boxShadow: 'var(--mantine-shadow-xl)',
-          backgroundColor: 'rgba(var(--mantine-color-body-rgb), 0.85)',
-          backdropFilter: 'blur(20px)',
-          position: 'relative',
-          zIndex: 1,
+          background: "var(--mantine-color-body)",
+          border: "0.5px solid var(--mantine-color-default-border)",
         }}
       >
-        <Stack gap={4} mb={30} ta="center">
-          <Text size="xl" fw={900} style={{ letterSpacing: '-0.5px' }}>
+        {/* Header */}
+        <Stack gap={4} mb={28} ta="center">
+          <Text size="xl" fw={700} style={{ letterSpacing: "-0.3px" }}>
             Welcome back
           </Text>
-          <Text size="sm" c="dimmed" fw={500}>
-            Sign in to your Linco account
+          <Text size="sm" c="dimmed">
+            Sign in to your TicketMe account
           </Text>
         </Stack>
 
+        {/* Google SSO */}
         <Button
           variant="default"
-          leftSection={<Icon icon="logos:google-icon" width="18" />}
+          leftSection={
+            <svg width="16" height="16" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              />
+            </svg>
+          }
           radius="md"
-          h={45}
-          fw={600}
+          h={42}
           fullWidth
+          fw={500}
+          fz="sm"
         >
           Continue with Google
         </Button>
 
-        <Divider label="Or secure login" labelPosition="center" my="lg" />
+        <Divider
+          label={
+            <Text size="xs" c="dimmed">
+              or sign in with credentials
+            </Text>
+          }
+          labelPosition="center"
+          my="lg"
+        />
 
+        {/* Form */}
         <form
           onSubmit={form.onSubmit((values) =>
             login.mutate(values, {
-              onSuccess: () => navigate('/app'),
+              onSuccess: () => navigate("/app"),
             }),
           )}
         >
@@ -112,54 +116,82 @@ export default function Login() {
               required
               label="Username"
               radius="md"
-              size="md"
-              leftSection={<Icon icon="solar:user-bold-duotone" width="20" />}
+              size="sm"
+              leftSection={<Icon icon="solar:user-bold-duotone" width={16} />}
               placeholder="Enter your username"
-              {...form.getInputProps('username')}
+              styles={{
+                label: { fontSize: 12, fontWeight: 500, marginBottom: 5 },
+                input: {
+                  borderColor: "var(--mantine-color-default-border)",
+                  transition: "border-color .15s, box-shadow .15s",
+                },
+              }}
+              {...form.getInputProps("username")}
             />
 
             <PasswordInput
               required
               label="Password"
               radius="md"
-              size="md"
+              size="sm"
               leftSection={
-                <Icon icon="solar:lock-password-bold-duotone" width="20" />
+                <Icon icon="solar:lock-password-bold-duotone" width={16} />
               }
-              {...form.getInputProps('password')}
+              placeholder="Enter your password"
+              styles={{
+                label: { fontSize: 12, fontWeight: 500, marginBottom: 5 },
+                input: {
+                  borderColor: "var(--mantine-color-default-border)",
+                  transition: "border-color .15s, box-shadow .15s",
+                },
+              }}
+              {...form.getInputProps("password")}
             />
 
+            {/* Submit */}
             <Button
               type="submit"
               radius="md"
-              size="md"
+              size="sm"
+              h={42}
               fullWidth
-              h={50}
               loading={login.isPending}
-              variant="gradient"
-              gradient={{ from: 'blue.6', to: 'cyan.6' }}
-              rightSection={<Icon icon="solar:arrow-right-linear" width="20" />}
+              rightSection={
+                !login.isPending && (
+                  <Icon icon="solar:arrow-right-linear" width={16} />
+                )
+              }
+              style={{
+                background: B.purpleDark,
+                marginTop: 4,
+              }}
+              styles={{
+                root: {
+                  "&:hover": { background: B.purple },
+                },
+              }}
             >
-              Login
+              Sign in
             </Button>
 
             <Group justify="center">
-              <Anchor
-                component="button"
-                type="button"
-                c="dimmed"
-                size="sm"
-                fw={700}
-                onClick={() => navigate('/signup')}
-              >
-                DON'T HAVE AN ACCOUNT? REGISTER
-              </Anchor>
+              <Text size="xs" c="dimmed">
+                Don't have an account?{" "}
+                <Anchor
+                  component="button"
+                  type="button"
+                  size="xs"
+                  fw={600}
+                  style={{ color: B.purpleText }}
+                  onClick={() => navigate("/signup")}
+                >
+                  Register here
+                </Anchor>
+              </Text>
             </Group>
           </Stack>
         </form>
       </Paper>
-
-      <style>{`@keyframes worm-move { from { stroke-dashoffset: 1200; } to { stroke-dashoffset: 0; } }`}</style>
     </Box>
-  )
+  );
 }
