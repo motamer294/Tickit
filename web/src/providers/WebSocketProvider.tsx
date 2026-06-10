@@ -259,6 +259,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
           }
 
           if (data.type === 'data_changed') {
+            // AI triage finished — only refetch the one ticket, skip list/dashboard churn
+            if (data.event === 'ticket_ai_complete') {
+              if (data.ticketId) {
+                queryClient.invalidateQueries({ queryKey: ['ticket', data.ticketId] })
+              }
+              return
+            }
+
             queryClient.invalidateQueries({ queryKey: ['my-tickets'] })
             queryClient.invalidateQueries({ queryKey: ['employee', 'tasks'], exact: false })
             queryClient.invalidateQueries({ queryKey: ['tickets'], exact: false })
