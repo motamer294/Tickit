@@ -21,6 +21,7 @@ import {
   Divider,
   Tooltip,
   Avatar,
+  Skeleton,
 } from "@mantine/core";
 import { Icon } from "@iconify-icon/react";
 import { notifications } from "@/utils/customNotifications";
@@ -1276,104 +1277,96 @@ export default function TicketDetail() {
                 }
               />
               <Box p="md">
+                {/* ── AI processing states ── */}
+                {(ticket.ai_status === "PENDING" || ticket.ai_status === "PROCESSING") && (
+                  <Box
+                    p="sm"
+                    mb="md"
+                    style={{
+                      borderRadius: 10,
+                      background: B.purpleLight,
+                      border: `0.5px solid ${B.purpleMid}44`,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                    }}
+                  >
+                    <Loader size={14} color={B.purple} type="dots" />
+                    <Text size="xs" fw={500} style={{ color: B.purpleDeep }}>
+                      {ticket.ai_status === "PROCESSING"
+                        ? "AI is analysing your ticket…"
+                        : "AI analysis queued — results will appear shortly"}
+                    </Text>
+                  </Box>
+                )}
+
+                {ticket.ai_status === "FAILED" && (
+                  <Box
+                    p="sm"
+                    mb="md"
+                    style={{
+                      borderRadius: 10,
+                      background: "#FCEBEB",
+                      border: `0.5px solid ${B.red}33`,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <Icon icon="solar:danger-triangle-bold-duotone" width={14} style={{ color: B.red, flexShrink: 0 }} />
+                    <Text size="xs" fw={500} style={{ color: B.redText }}>
+                      AI analysis failed. The ticket has been saved — a support agent will triage it manually.
+                    </Text>
+                  </Box>
+                )}
+
+                {/* ── Stat cards (show skeleton while AI is running) ── */}
                 <SimpleGrid cols={{ base: 2, sm: 4 }} spacing={10} mb="md">
                   {/* Category */}
-                  <Box
-                    p="sm"
-                    style={{
-                      borderRadius: 8,
-                      border: "0.5px solid var(--mantine-color-default-border)",
-                    }}
-                  >
+                  <Box p="sm" style={{ borderRadius: 8, border: "0.5px solid var(--mantine-color-default-border)" }}>
                     <Group justify="space-between" mb={6}>
-                      <Text size="xs" c="dimmed" fw={500}>
-                        Category
-                      </Text>
-                      <Icon
-                        icon="solar:folder-bold-duotone"
-                        width={13}
-                        style={{ color: "var(--mantine-color-dimmed)" }}
-                      />
+                      <Text size="xs" c="dimmed" fw={500}>Category</Text>
+                      <Icon icon="solar:folder-bold-duotone" width={13} style={{ color: "var(--mantine-color-dimmed)" }} />
                     </Group>
-                    {ticket.category ? (
+                    {ticket.ai_status === "PENDING" || ticket.ai_status === "PROCESSING" ? (
+                      <Skeleton height={18} width="70%" radius="sm" />
+                    ) : ticket.category ? (
                       <Group gap={6} wrap="nowrap">
-                        <Box
-                          style={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: "50%",
-                            background: ticket.category.color,
-                            boxShadow: `0 0 0 2px ${ticket.category.color}33`,
-                            flexShrink: 0,
-                          }}
-                        />
-                        <Text size="xs" fw={600}>
-                          {ticket.category.name}
-                        </Text>
+                        <Box style={{ width: 8, height: 8, borderRadius: "50%", background: ticket.category.color, boxShadow: `0 0 0 2px ${ticket.category.color}33`, flexShrink: 0 }} />
+                        <Text size="xs" fw={600}>{ticket.category.name}</Text>
                       </Group>
                     ) : (
-                      <Text size="xs" c="dimmed">
-                        —
-                      </Text>
+                      <Text size="xs" c="dimmed">—</Text>
                     )}
                   </Box>
+
                   {/* Priority */}
-                  <Box
-                    p="sm"
-                    style={{
-                      borderRadius: 8,
-                      border: "0.5px solid var(--mantine-color-default-border)",
-                    }}
-                  >
+                  <Box p="sm" style={{ borderRadius: 8, border: "0.5px solid var(--mantine-color-default-border)" }}>
                     <Group justify="space-between" mb={6}>
-                      <Text size="xs" c="dimmed" fw={500}>
-                        Priority
-                      </Text>
-                      <Icon
-                        icon="solar:bolt-bold-duotone"
-                        width={13}
-                        style={{ color: priorityM.dot }}
-                      />
+                      <Text size="xs" c="dimmed" fw={500}>Priority</Text>
+                      <Icon icon="solar:bolt-bold-duotone" width={13} style={{ color: priorityM.dot }} />
                     </Group>
                     <Pill label={ticket.priority ?? "—"} {...priorityM} />
                   </Box>
+
                   {/* Sentiment */}
-                  <Box
-                    p="sm"
-                    style={{
-                      borderRadius: 8,
-                      border: "0.5px solid var(--mantine-color-default-border)",
-                    }}
-                  >
+                  <Box p="sm" style={{ borderRadius: 8, border: "0.5px solid var(--mantine-color-default-border)" }}>
                     <Group justify="space-between" mb={6}>
-                      <Text size="xs" c="dimmed" fw={500}>
-                        Sentiment
-                      </Text>
-                      <Icon
-                        icon={sentimentM.icon}
-                        width={13}
-                        style={{ color: sentimentM.dot }}
-                      />
+                      <Text size="xs" c="dimmed" fw={500}>Sentiment</Text>
+                      <Icon icon={sentimentM.icon} width={13} style={{ color: sentimentM.dot }} />
                     </Group>
-                    <Pill label={ticket.sentiment ?? "—"} {...sentimentM} />
+                    {ticket.ai_status === "PENDING" || ticket.ai_status === "PROCESSING" ? (
+                      <Skeleton height={18} width="60%" radius="sm" />
+                    ) : (
+                      <Pill label={ticket.sentiment ?? "—"} {...sentimentM} />
+                    )}
                   </Box>
+
                   {/* Status */}
-                  <Box
-                    p="sm"
-                    style={{
-                      borderRadius: 8,
-                      border: "0.5px solid var(--mantine-color-default-border)",
-                    }}
-                  >
+                  <Box p="sm" style={{ borderRadius: 8, border: "0.5px solid var(--mantine-color-default-border)" }}>
                     <Group justify="space-between" mb={6}>
-                      <Text size="xs" c="dimmed" fw={500}>
-                        Status
-                      </Text>
-                      <Icon
-                        icon="solar:clipboard-list-bold-duotone"
-                        width={13}
-                        style={{ color: statusM.dot }}
-                      />
+                      <Text size="xs" c="dimmed" fw={500}>Status</Text>
+                      <Icon icon="solar:clipboard-list-bold-duotone" width={13} style={{ color: statusM.dot }} />
                     </Group>
                     <Pill label={statusM.label} {...statusM} />
                   </Box>
@@ -1382,14 +1375,7 @@ export default function TicketDetail() {
                 {/* Tags */}
                 {ticket.tags?.length > 0 && (
                   <Group gap={6} wrap="wrap" mb="md">
-                    <Text
-                      size="xs"
-                      c="dimmed"
-                      fw={500}
-                      style={{ alignSelf: "center" }}
-                    >
-                      Tags
-                    </Text>
+                    <Text size="xs" c="dimmed" fw={500} style={{ alignSelf: "center" }}>Tags</Text>
                     {ticket.tags.map((tag: any) => (
                       <span
                         key={tag.id}
@@ -1405,14 +1391,7 @@ export default function TicketDetail() {
                           color: tag.color || B.gray,
                         }}
                       >
-                        <span
-                          style={{
-                            width: 5,
-                            height: 5,
-                            borderRadius: "50%",
-                            background: tag.color || B.gray,
-                          }}
-                        />
+                        <span style={{ width: 5, height: 5, borderRadius: "50%", background: tag.color || B.gray }} />
                         #{tag.name}
                       </span>
                     ))}
@@ -1420,29 +1399,25 @@ export default function TicketDetail() {
                 )}
 
                 {/* AI Suggested Solution */}
-                {ticket.ai_suggested_solution && (
-                  <Box
-                    p="md"
-                    style={{
-                      borderRadius: 10,
-                      background: B.purpleLight,
-                      border: `0.5px solid ${B.purpleMid}44`,
-                    }}
-                  >
-                    <Group gap={7} mb={8}>
-                      <Icon
-                        icon="solar:lightbulb-bold-duotone"
-                        width={14}
-                        style={{ color: B.purple }}
-                      />
-                      <Text size="xs" fw={600} style={{ color: B.purpleDeep }}>
-                        AI suggested solution
-                      </Text>
+                {(ticket.ai_status === "PENDING" || ticket.ai_status === "PROCESSING") && (
+                  <Box p="md" style={{ borderRadius: 10, background: B.purpleLight, border: `0.5px solid ${B.purpleMid}44` }}>
+                    <Group gap={7} mb={10}>
+                      <Icon icon="solar:lightbulb-bold-duotone" width={14} style={{ color: B.purple }} />
+                      <Text size="xs" fw={600} style={{ color: B.purpleDeep }}>AI suggested solution</Text>
                     </Group>
-                    <Text
-                      size="sm"
-                      style={{ lineHeight: 1.65, color: B.purpleDark }}
-                    >
+                    <Skeleton height={12} mb={6} radius="sm" />
+                    <Skeleton height={12} mb={6} width="90%" radius="sm" />
+                    <Skeleton height={12} width="75%" radius="sm" />
+                  </Box>
+                )}
+
+                {ticket.ai_status === "DONE" && ticket.ai_suggested_solution && (
+                  <Box p="md" style={{ borderRadius: 10, background: B.purpleLight, border: `0.5px solid ${B.purpleMid}44` }}>
+                    <Group gap={7} mb={8}>
+                      <Icon icon="solar:lightbulb-bold-duotone" width={14} style={{ color: B.purple }} />
+                      <Text size="xs" fw={600} style={{ color: B.purpleDeep }}>AI suggested solution</Text>
+                    </Group>
+                    <Text size="sm" style={{ lineHeight: 1.65, color: B.purpleDark }}>
                       {ticket.ai_suggested_solution}
                     </Text>
                   </Box>

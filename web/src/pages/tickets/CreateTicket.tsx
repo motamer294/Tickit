@@ -17,6 +17,7 @@ import {
   MultiSelect,
   Box,
   Avatar,
+  Skeleton,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { Icon } from "@iconify-icon/react";
@@ -354,88 +355,87 @@ export default function CreateTicket() {
                   AI analysis results
                 </Text>
               </Group>
-              <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 600,
-                  padding: "2px 8px",
-                  borderRadius: 20,
-                  background: BRAND.purpleLight,
-                  color: BRAND.purpleText,
-                }}
-              >
-                Auto-categorized
-              </span>
+              {(createdTicket.ai_status === "PENDING" ||
+                createdTicket.ai_status === "PROCESSING") ? (
+                <Group gap={6}>
+                  <Loader size={12} color={BRAND.purple} type="dots" />
+                  <Text size="xs" fw={500} style={{ color: BRAND.purpleText }}>
+                    Analysing…
+                  </Text>
+                </Group>
+              ) : (
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    padding: "2px 8px",
+                    borderRadius: 20,
+                    background: BRAND.purpleLight,
+                    color: BRAND.purpleText,
+                  }}
+                >
+                  Auto-categorized
+                </span>
+              )}
             </Group>
 
             <Divider mb="md" />
 
-            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing={10} mb="md">
-              {/* Category */}
-              <Paper
+            {/* ── While AI is still running ── */}
+            {(createdTicket.ai_status === "PENDING" ||
+              createdTicket.ai_status === "PROCESSING") && (
+              <Box
                 p="md"
-                radius="md"
+                mb="md"
                 style={{
-                  border: "0.5px solid var(--mantine-color-default-border)",
+                  borderRadius: 10,
+                  background: BRAND.purpleLight,
+                  border: `0.5px solid ${BRAND.purple}22`,
                 }}
               >
-                <Group justify="space-between" mb={8}>
-                  <Text size="xs" c="dimmed" fw={500}>
-                    Category
-                  </Text>
-                  <Icon
-                    icon="solar:folder-bold-duotone"
-                    width={14}
-                    style={{ color: "var(--mantine-color-dimmed)" }}
-                  />
-                </Group>
-                {createdTicket.category ? (
-                  <Group gap={8}>
-                    <Box
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        background: createdTicket.category.color || BRAND.gray,
-                        flexShrink: 0,
-                        boxShadow: `0 0 0 2px ${createdTicket.category.color || BRAND.gray}33`,
-                      }}
-                    />
-                    <Text fw={600} size="sm">
-                      {createdTicket.category.name}
-                    </Text>
+                <Text size="xs" fw={500} style={{ color: BRAND.purpleText }} mb={12}>
+                  AI is processing your ticket in the background. You can open
+                  the ticket at any time — results will appear automatically
+                  when ready.
+                </Text>
+                <Skeleton height={12} mb={6} radius="sm" />
+                <Skeleton height={12} mb={6} width="85%" radius="sm" />
+                <Skeleton height={12} width="65%" radius="sm" />
+              </Box>
+            )}
+
+            {/* ── Normal stat cards (shown once AI is done / for old tickets) ── */}
+            {(!createdTicket.ai_status ||
+              createdTicket.ai_status === "DONE" ||
+              createdTicket.ai_status === "FAILED") && (
+              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing={10} mb="md">
+                {/* Category */}
+                <Paper
+                  p="md"
+                  radius="md"
+                  style={{
+                    border: "0.5px solid var(--mantine-color-default-border)",
+                  }}
+                >
+                  <Group justify="space-between" mb={8}>
+                    <Text size="xs" c="dimmed" fw={500}>Category</Text>
+                    <Icon icon="solar:folder-bold-duotone" width={14} style={{ color: "var(--mantine-color-dimmed)" }} />
                   </Group>
-                ) : (
-                  <Text fw={500} size="sm" c="dimmed">
-                    Uncategorized
-                  </Text>
-                )}
-              </Paper>
+                  {createdTicket.category ? (
+                    <Group gap={8}>
+                      <Box style={{ width: 10, height: 10, borderRadius: "50%", background: createdTicket.category.color || BRAND.gray, flexShrink: 0, boxShadow: `0 0 0 2px ${createdTicket.category.color || BRAND.gray}33` }} />
+                      <Text fw={600} size="sm">{createdTicket.category.name}</Text>
+                    </Group>
+                  ) : (
+                    <Text fw={500} size="sm" c="dimmed">Uncategorized</Text>
+                  )}
+                </Paper>
 
-              {/* Priority */}
-              <InfoPill
-                label="Priority"
-                value={createdTicket.priority ?? "MEDIUM"}
-                icon={priorityM.icon}
-                {...priorityM}
-              />
-
-              {/* Sentiment */}
-              <InfoPill
-                label="Sentiment"
-                value={createdTicket.sentiment ?? "Neutral"}
-                icon={sentimentM.icon}
-                {...sentimentM}
-              />
-
-              {/* Status */}
-              <InfoPill
-                label="Status"
-                value={createdTicket.status}
-                icon="solar:clipboard-list-bold-duotone"
-                {...statusM}
-              />
-            </SimpleGrid>
+                <InfoPill label="Priority" value={createdTicket.priority ?? "MEDIUM"} icon={priorityM.icon} {...priorityM} />
+                <InfoPill label="Sentiment" value={createdTicket.sentiment ?? "—"} icon={sentimentM.icon} {...sentimentM} />
+                <InfoPill label="Status" value={createdTicket.status} icon="solar:clipboard-list-bold-duotone" {...statusM} />
+              </SimpleGrid>
+            )}
 
             {/* Tags */}
             {createdTicket.tags && createdTicket.tags.length > 0 && (
@@ -459,14 +459,7 @@ export default function CreateTicket() {
                           color: tag.color || BRAND.gray,
                         }}
                       >
-                        <span
-                          style={{
-                            width: 5,
-                            height: 5,
-                            borderRadius: "50%",
-                            background: tag.color || BRAND.gray,
-                          }}
-                        />
+                        <span style={{ width: 5, height: 5, borderRadius: "50%", background: tag.color || BRAND.gray }} />
                         #{tag.name}
                       </span>
                     ))}
@@ -483,66 +476,31 @@ export default function CreateTicket() {
                   <Box mb="md">
                     <SectionLabel>Assigned to</SectionLabel>
                     <Group gap={8} mt={8}>
-                      <Avatar
-                        size={26}
-                        radius="xl"
-                        style={{
-                          background: BRAND.purpleLight,
-                          color: BRAND.purpleText,
-                          fontSize: 9,
-                          fontWeight: 700,
-                        }}
-                      >
-                        {createdTicket.assigned_to_username
-                          .slice(0, 2)
-                          .toUpperCase()}
+                      <Avatar size={26} radius="xl" style={{ background: BRAND.purpleLight, color: BRAND.purpleText, fontSize: 9, fontWeight: 700 }}>
+                        {createdTicket.assigned_to_username.slice(0, 2).toUpperCase()}
                       </Avatar>
-                      <Text size="sm" fw={500}>
-                        {createdTicket.assigned_to_username}
-                      </Text>
+                      <Text size="sm" fw={500}>{createdTicket.assigned_to_username}</Text>
                     </Group>
                   </Box>
                 </>
               )}
 
-            {/* AI Suggested Solution */}
-            {createdTicket.ai_suggested_solution && (
-              <>
-                <Divider mb="md" />
-                <Box
-                  p="md"
-                  style={{
-                    borderRadius: "var(--mantine-radius-md)",
-                    background: BRAND.purpleLight,
-                    border: `0.5px solid ${BRAND.purple}33`,
-                  }}
-                >
-                  <Group gap={8} mb={8}>
-                    <Icon
-                      icon="solar:lightbulb-bold-duotone"
-                      width={15}
-                      style={{ color: BRAND.purple }}
-                    />
-                    <Text
-                      size="xs"
-                      fw={600}
-                      style={{ color: BRAND.purpleText }}
-                    >
-                      AI suggested solution
+            {/* AI Suggested Solution — only when DONE */}
+            {(!createdTicket.ai_status || createdTicket.ai_status === "DONE") &&
+              createdTicket.ai_suggested_solution && (
+                <>
+                  <Divider mb="md" />
+                  <Box p="md" style={{ borderRadius: "var(--mantine-radius-md)", background: BRAND.purpleLight, border: `0.5px solid ${BRAND.purple}33` }}>
+                    <Group gap={8} mb={8}>
+                      <Icon icon="solar:lightbulb-bold-duotone" width={15} style={{ color: BRAND.purple }} />
+                      <Text size="xs" fw={600} style={{ color: BRAND.purpleText }}>AI suggested solution</Text>
+                    </Group>
+                    <Text size="sm" style={{ lineHeight: 1.6, color: "var(--mantine-color-text)" }}>
+                      {createdTicket.ai_suggested_solution}
                     </Text>
-                  </Group>
-                  <Text
-                    size="sm"
-                    style={{
-                      lineHeight: 1.6,
-                      color: "var(--mantine-color-text)",
-                    }}
-                  >
-                    {createdTicket.ai_suggested_solution}
-                  </Text>
-                </Box>
-              </>
-            )}
+                  </Box>
+                </>
+              )}
           </Paper>
 
           {/* ── Action buttons ── */}

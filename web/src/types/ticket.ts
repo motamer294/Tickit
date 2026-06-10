@@ -55,6 +55,8 @@ export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
 
 export type TicketSentiment = 'Positive' | 'Neutral' | 'Negative'
 
+export type AiStatus = 'PENDING' | 'PROCESSING' | 'DONE' | 'FAILED'
+
 export interface Ticket {
   id: number
   title: string
@@ -66,6 +68,9 @@ export interface Ticket {
   priority: TicketPriority
   tags: Tag[]
   attachments?: Attachment[]
+
+  // AI triage status
+  ai_status?: AiStatus
 
   // Sentiment (from AI, if available)
   sentiment?: string
