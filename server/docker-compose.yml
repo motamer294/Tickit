@@ -77,6 +77,40 @@ services:
       - helpdesk
 
   # ============================================
+  # Celery Worker (AI triage background tasks)
+  # ============================================
+  celery_worker:
+    build: .
+    container_name: helpdesk_celery_worker
+    restart: always
+    command: celery -A core worker -l info -Q celery --concurrency=2
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      - DEBUG=${DEBUG:-True}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DB_ENGINE=${DB_ENGINE:-django.db.backends.postgresql}
+      - DB_HOST=${DB_HOST:-db}
+      - DB_NAME=${DB_NAME:-helpdesk_db}
+      - DB_USER=${DB_USER:-admin}
+      - DB_PASSWORD=${DB_PASSWORD:-password123}
+      - DB_PORT=${DB_PORT:-5432}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_DB=${REDIS_DB:-0}
+      - ML_SERVICE_URL=${ML_SERVICE_URL:-http://host.docker.internal:8001/ticket}
+      - ML_SERVICE_TIMEOUT=${ML_SERVICE_TIMEOUT:-45}
+    depends_on:
+      - db
+      - redis
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - helpdesk
+
+  # ============================================
   # Django Backend (Internal Only)
   # ============================================
   backend:

@@ -4,8 +4,11 @@ FROM python:3.12-slim
 # Set environment variables
 # PYTHONDONTWRITEBYTECODE: Prevents Python from writing pyc files to disc
 # PYTHONUNBUFFERED: Ensures python output is sent straight to terminal (logs)
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+# Make pip tolerant of slow/flaky networks (e.g. WSL2)
+ENV PIP_DEFAULT_TIMEOUT=120
+ENV PIP_RETRIES=10
 
 # Set the working directory in the container
 WORKDIR /app
@@ -20,8 +23,8 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt /app/
 
 # Install Python dependencies
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+# (pip 25.x from the base image is fine; no separate upgrade step needed)
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code
 COPY . /app/
