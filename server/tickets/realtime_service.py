@@ -105,6 +105,21 @@ class RealtimeService:
             payload
         )
 
+    def broadcast_ai_complete(self, ticket):
+        """Broadcast when background AI triage finishes — frontend auto-refetches the ticket."""
+        payload = {
+            'type': 'data_changed',
+            'event': 'ticket_ai_complete',
+            'ticketId': ticket.id,
+            'aiStatus': ticket.ai_status,
+            'timestamp': datetime.now().isoformat(),
+        }
+        async_to_sync(self.channel_layer.group_send)('realtime_updates', payload)
+        async_to_sync(self.channel_layer.group_send)(
+            f'user_realtime_{ticket.created_by_id}', payload
+        )
+        print(f"🤖 Broadcast: AI triage complete for ticket #{ticket.id} ({ticket.ai_status})")
+
     def broadcast_audit_log_created(self, audit_log):
         """Broadcast when a new audit log is created"""
         payload = {

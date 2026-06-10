@@ -60,6 +60,7 @@ class TicketOutSchema(Schema):
     tags: List[TagSchema] = []
     attachments: List[AttachmentOutSchema] = []
 
+    ai_status: str = "PENDING"
     sentiment: Optional[str] = None
     ai_suggested_solution: Optional[str] = None
 

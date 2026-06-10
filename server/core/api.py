@@ -15,7 +15,7 @@ from accounts.models import User
 from accounts.schemas import UserProfileSchema, UserUpdateSchema, PasswordChangeSchema, UserStatsSchema
 from accounts.services import get_user_stats, update_user_profile, change_password
 from tickets.models import Ticket, Comment, Category, Tag, Attachment
-from tickets.services import update_ticket_status, create_ticket_with_ai
+from tickets.services import update_ticket_status, create_ticket as create_ticket_record
 from tickets.schemas import (
     TicketCreateSchema,
     TicketOutSchema,
@@ -40,6 +40,7 @@ from tickets.realtime_service import realtime_service
 from tickets.audit_service import audit_service
 # Import departments router
 from departments.views import router as departments_router
+from tickets.tasks import ai_triage_ticket
 
 
 # Custom AccessToken that includes user role
@@ -400,8 +401,8 @@ def create_ticket(request, data: TicketCreateSchema):
             status=400
         )
 
-    # Pass all parameters to service
-    ticket = create_ticket_with_ai(
+    # Save ticket instantly — no AI call here
+    ticket = create_ticket_record(
         title=data.title,
         description=data.description,
         user=request.user,
@@ -410,6 +411,9 @@ def create_ticket(request, data: TicketCreateSchema):
         priority=data.priority,
         assigned_to_id=data.assigned_to_id
     )
+
+    # Dispatch AI triage as a background Celery task (non-blocking)
+    ai_triage_ticket.delay(ticket.id)
 
     # 🔔 Send real-time notifications to managers
     notification_service.ticket_created(ticket, request.user)

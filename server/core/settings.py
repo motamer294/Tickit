@@ -181,3 +181,18 @@ CHANNEL_LAYERS = {
 #         "BACKEND": "channels.layers.InMemoryChannelLayer"
 #     }
 # }
+
+# ============================================
+# Celery Configuration (reuses the same Redis)
+# ============================================
+_REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+
+CELERY_BROKER_URL          = _REDIS_URL
+CELERY_RESULT_BACKEND      = _REDIS_URL
+CELERY_ACCEPT_CONTENT      = ['json']
+CELERY_TASK_SERIALIZER     = 'json'
+CELERY_RESULT_SERIALIZER   = 'json'
+CELERY_TIMEZONE            = TIME_ZONE
+CELERY_TASK_TRACK_STARTED  = True
+CELERY_TASK_ACKS_LATE      = True   # task not lost if worker crashes mid-run
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # one task at a time per worker (AI is slow)

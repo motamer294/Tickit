@@ -1,5 +1,6 @@
 # tickets/services.py
 
+import os
 import requests
 import logging
 from django.db import transaction
@@ -10,8 +11,8 @@ from accounts.models import User
 
 logger = logging.getLogger(__name__)
 
-# Most important change: using the Docker gateway IP to communicate with Ubuntu
-ML_SERVICE_URL = "http://host.docker.internal:8001/ticket"
+ML_SERVICE_URL = os.environ.get('ML_SERVICE_URL', 'http://host.docker.internal:8001/ticket')
+ML_SERVICE_TIMEOUT = int(os.environ.get('ML_SERVICE_TIMEOUT', '300'))
 
 def get_employee_with_least_workload() -> 'User':
     """
@@ -41,7 +42,7 @@ def analyze_ticket_with_ai(title: str, description: str) -> dict:
     }
 
     try:
-        response = requests.post(ML_SERVICE_URL, json=payload, timeout=45)
+        response = requests.post(ML_SERVICE_URL, json=payload, timeout=ML_SERVICE_TIMEOUT)
         response.raise_for_status()
 
         data = response.json()
@@ -53,14 +54,19 @@ def analyze_ticket_with_ai(title: str, description: str) -> dict:
 
         return data
 
-    except requests.exceptions.RequestException as e:
-        logger.error(f"⚠️ ML Service connection failed: {e}")
+    except requests.exceptions.ConnectionError as e:
+        # ML service is completely unreachable — no point retrying from here
+        logger.error(f"⚠️ ML Service unreachable: {e}")
         return {
             "category": "General IT",
-            "priority": "LOW", # Keep it capitalized
+            "priority": "LOW",
             "sentiment": "Neutral",
             "suggested_solution": "Your ticket has been received. Our IT team will review it shortly. (AI Engine Offline)"
         }
+    except requests.exceptions.RequestException as e:
+        # Timeout or HTTP error — re-raise so Celery retries with back-off
+        logger.error(f"⚠️ ML Service request failed (will retry): {e}")
+        raise
 
 
 def update_ticket_status(ticket: Ticket, new_status: str, user):
@@ -104,7 +110,7 @@ def update_ticket_status(ticket: Ticket, new_status: str, user):
 
     return ticket
 
-def create_ticket_with_ai(
+def create_ticket(
     title: str,
     description: str,
     user,
@@ -115,18 +121,15 @@ def create_ticket_with_ai(
     auto_assign: bool = False
 ) -> Ticket:
     """
-    Creates a new ticket with AI analysis, category, tags, and optional assignment.
+    Saves a new ticket immediately and returns it.
+    AI triage (sentiment, solution, category) runs asynchronously via Celery.
+    ai_status starts as PENDING and is updated by the background task.
     """
-    ai_data = analyze_ticket_with_ai(title, description)
-
     assigned_to = None
 
     if assigned_to_id:
         try:
-            assigned_to = User.objects.get(
-                id=assigned_to_id,
-                role=User.Role.EMPLOYEE
-            )
+            assigned_to = User.objects.get(id=assigned_to_id, role=User.Role.EMPLOYEE)
         except User.DoesNotExist:
             logger.warning(f"Employee with ID {assigned_to_id} not found")
 
@@ -135,7 +138,6 @@ def create_ticket_with_ai(
         if assigned_to:
             logger.info(f"Auto-assigned ticket to {assigned_to.username}")
 
-    # Get category if provided, otherwise try to create/get default
     category = None
     if category_id:
         try:
@@ -143,7 +145,6 @@ def create_ticket_with_ai(
         except Category.DoesNotExist:
             logger.warning(f"Category with ID {category_id} not found")
 
-    # Create ticket
     ticket = Ticket.objects.create(
         title=title,
         description=description,
@@ -151,12 +152,10 @@ def create_ticket_with_ai(
         assigned_to=assigned_to,
         category=category,
         status='IN_PROGRESS' if assigned_to else 'OPEN',
-        priority=priority or ai_data.get("priority", "MEDIUM"),
-        sentiment=ai_data.get("sentiment", "Neutral"),
-        ai_suggested_solution=ai_data.get("suggested_solution", "")
+        priority=priority or 'MEDIUM',
+        ai_status=Ticket.AiStatus.PENDING,
     )
 
-    # Add tags
     if tag_ids:
         tags = Tag.objects.filter(id__in=tag_ids)
         ticket.tags.set(tags)
@@ -169,3 +168,7 @@ def create_ticket_with_ai(
     )
 
     return ticket
+
+
+# Keep old name as an alias so nothing outside breaks during the transition
+create_ticket_with_ai = create_ticket

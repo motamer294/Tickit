@@ -114,6 +114,19 @@ class Ticket(models.Model):
     # ==========================================
     # 🤖 AI Fields (Indexed for Dashboard Analytics)
     # ==========================================
+
+    class AiStatus(models.TextChoices):
+        PENDING    = "PENDING",    "Pending"
+        PROCESSING = "PROCESSING", "Processing"
+        DONE       = "DONE",       "Done"
+        FAILED     = "FAILED",     "Failed"
+
+    ai_status = models.CharField(
+        max_length=20,
+        choices=AiStatus.choices,
+        default=AiStatus.PENDING,
+        db_index=True,
+    )
     sentiment = models.CharField(max_length=50, blank=True, null=True)
     ai_suggested_solution = models.TextField(blank=True, null=True)
 
