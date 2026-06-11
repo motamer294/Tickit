@@ -236,6 +236,8 @@ def create_category(request, data: CategoryCreateSchema):
         description=data.description,
         color=data.color
     )
+    from tickets.audit_service import audit_service
+    audit_service.log_category_created(category, request.user, request)
     return category
 
 class CategoryUpdateSchema(Schema):
@@ -260,13 +262,18 @@ def update_category(request, category_id: int, data: CategoryUpdateSchema):
             )
         category.name = data.name
 
+    changed_fields = {}
     if data.description is not None:
+        changed_fields['description'] = data.description
         category.description = data.description
 
     if data.color is not None:
+        changed_fields['color'] = data.color
         category.color = data.color
 
     category.save()
+    from tickets.audit_service import audit_service
+    audit_service.log_category_updated(category, changed_fields, request.user, request)
     return category
 
 @api.delete("/categories/{category_id}")
@@ -276,7 +283,10 @@ def delete_category(request, category_id: int):
         return api.create_response(request, {"message": "Permission denied"}, status=403)
 
     category = get_object_or_404(Category, id=category_id)
+    cat_id, cat_name = category.id, category.name
     category.delete()
+    from tickets.audit_service import audit_service
+    audit_service.log_category_deleted(cat_id, cat_name, request.user, request)
     return api.create_response(request, {"message": "Category deleted successfully"})
 
 # ==========================================
@@ -309,6 +319,8 @@ def create_tag(request, data: TagCreateSchema):
         name=tag_name,
         color=data.color
     )
+    from tickets.audit_service import audit_service
+    audit_service.log_tag_created(tag, request.user, request)
     return tag
 
 class TagUpdateSchema(Schema):
@@ -334,10 +346,14 @@ def update_tag(request, tag_id: int, data: TagUpdateSchema):
             )
         tag.name = tag_name
 
+    tag_changed_fields = {}
     if data.color is not None:
+        tag_changed_fields['color'] = data.color
         tag.color = data.color
 
     tag.save()
+    from tickets.audit_service import audit_service
+    audit_service.log_tag_updated(tag, tag_changed_fields, request.user, request)
     return tag
 
 @api.delete("/tags/{tag_id}")
@@ -347,7 +363,10 @@ def delete_tag(request, tag_id: int):
         return api.create_response(request, {"message": "Permission denied"}, status=403)
 
     tag = get_object_or_404(Tag, id=tag_id)
+    tag_id_saved, tag_name_saved = tag.id, tag.name
     tag.delete()
+    from tickets.audit_service import audit_service
+    audit_service.log_tag_deleted(tag_id_saved, tag_name_saved, request.user, request)
     return api.create_response(request, {"message": "Tag deleted successfully"})
 
 ####################
@@ -362,12 +381,15 @@ def assign_ticket(request, ticket_id: int, employee_id: int):
     ticket = get_object_or_404(Ticket, id=ticket_id)
     employee = get_object_or_404(User, id=employee_id, role=User.Role.EMPLOYEE) # Check employee role too!
 
+    from tickets.audit_service import audit_service
+    audit_service.log_ticket_assigned(ticket, employee, request.user, request)
+
     # Use our Service to handle history & status safely
     ticket.assigned_to = employee
     update_ticket_status(ticket, "IN_PROGRESS", request.user)
     ticket.save()
 
-    # � Send real-time notifications
+    # Send real-time notifications
     notification_service.ticket_assigned(ticket, employee, request.user)
 
     # 🔄 Broadcast real-time data update
@@ -1041,12 +1063,15 @@ def update_profile(request, data: UserUpdateSchema):
     Can update: first_name, last_name, email
     """
     try:
+        changed_fields = {k: v for k, v in {'first_name': data.first_name, 'last_name': data.last_name, 'email': data.email}.items() if v is not None}
         user = update_user_profile(
             request.user,
             first_name=data.first_name,
             last_name=data.last_name,
             email=data.email
         )
+        from tickets.audit_service import audit_service
+        audit_service.log_user_profile_updated(user, changed_fields, request.user, request)
         return user
     except ValueError as e:
         return api.create_response(
@@ -1076,6 +1101,8 @@ def change_user_password(request, data: PasswordChangeSchema):
             data.current_password,
             data.new_password
         )
+        from tickets.audit_service import audit_service
+        audit_service.log_user_password_changed(request.user, request)
         return api.create_response(
             request,
             {"message": "Password changed successfully"},
@@ -1414,6 +1441,9 @@ def delete_attachment(request, attachment_id: int):
     # Delete the attachment record
     attachment.delete()
 
+    from tickets.audit_service import audit_service
+    audit_service.log_attachment_deleted(ticket, filename, request.user, request)
+
     # 🔄 Broadcast real-time data update
     realtime_service.broadcast_ticket_updated(ticket, ['attachments'])
 
@@ -1517,6 +1547,9 @@ def delete_user(request, user_id: int):
     user = get_object_or_404(User, id=user_id)
     user.is_active = False
     user.save()
+
+    from tickets.audit_service import audit_service
+    audit_service.log_user_deactivated(user, request.user, request)
 
     return {'message': f'User {user.username} deactivated'}
 

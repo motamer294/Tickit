@@ -189,6 +189,120 @@ class AuditService:
             request=request,
         )
 
+    @staticmethod
+    def log_attachment_deleted(ticket, filename: str, performed_by: User, request: Optional[HttpRequest] = None):
+        """Log attachment deletion"""
+        AuditService.log_action(
+            action_type='ATTACHMENT_DELETED',
+            performed_by=performed_by,
+            description=f"Attachment '{filename}' deleted from ticket #{ticket.id}",
+            ticket=ticket,
+            old_value=filename,
+            metadata={'filename': filename, 'ticket_id': ticket.id},
+            request=request,
+        )
+
+    @staticmethod
+    def log_category_created(category, performed_by: User, request: Optional[HttpRequest] = None):
+        """Log category creation"""
+        AuditService.log_action(
+            action_type='CATEGORY_CREATED',
+            performed_by=performed_by,
+            description=f"Category '{category.name}' created",
+            metadata={'category_id': category.id, 'name': category.name},
+            request=request,
+        )
+
+    @staticmethod
+    def log_category_updated(category, changed_fields: Dict[str, Any], performed_by: User, request: Optional[HttpRequest] = None):
+        """Log category update"""
+        AuditService.log_action(
+            action_type='CATEGORY_UPDATED',
+            performed_by=performed_by,
+            description=f"Category '{category.name}' updated",
+            metadata={'category_id': category.id, 'changed_fields': changed_fields},
+            request=request,
+        )
+
+    @staticmethod
+    def log_category_deleted(category_id: int, category_name: str, performed_by: User, request: Optional[HttpRequest] = None):
+        """Log category deletion"""
+        AuditService.log_action(
+            action_type='CATEGORY_DELETED',
+            performed_by=performed_by,
+            description=f"Category '{category_name}' deleted",
+            metadata={'category_id': category_id, 'name': category_name},
+            request=request,
+        )
+
+    @staticmethod
+    def log_tag_created(tag, performed_by: User, request: Optional[HttpRequest] = None):
+        """Log tag creation"""
+        AuditService.log_action(
+            action_type='TAG_CREATED',
+            performed_by=performed_by,
+            description=f"Tag '#{tag.name}' created",
+            metadata={'tag_id': tag.id, 'name': tag.name},
+            request=request,
+        )
+
+    @staticmethod
+    def log_tag_updated(tag, changed_fields: Dict[str, Any], performed_by: User, request: Optional[HttpRequest] = None):
+        """Log tag update"""
+        AuditService.log_action(
+            action_type='TAG_UPDATED',
+            performed_by=performed_by,
+            description=f"Tag '#{tag.name}' updated",
+            metadata={'tag_id': tag.id, 'changed_fields': changed_fields},
+            request=request,
+        )
+
+    @staticmethod
+    def log_tag_deleted(tag_id: int, tag_name: str, performed_by: User, request: Optional[HttpRequest] = None):
+        """Log tag deletion"""
+        AuditService.log_action(
+            action_type='TAG_DELETED',
+            performed_by=performed_by,
+            description=f"Tag '#{tag_name}' deleted",
+            metadata={'tag_id': tag_id, 'name': tag_name},
+            request=request,
+        )
+
+    @staticmethod
+    def log_user_profile_updated(user: User, changed_fields: Dict[str, Any], performed_by: User, request: Optional[HttpRequest] = None):
+        """Log user profile update"""
+        AuditService.log_action(
+            action_type='USER_PROFILE_UPDATED',
+            performed_by=performed_by,
+            description=f"User {user.username} profile updated",
+            user=user,
+            metadata={'changed_fields': changed_fields},
+            request=request,
+        )
+
+    @staticmethod
+    def log_user_password_changed(user: User, request: Optional[HttpRequest] = None):
+        """Log password change (no old/new values for security)"""
+        AuditService.log_action(
+            action_type='USER_PASSWORD_CHANGED',
+            performed_by=user,
+            description=f"User {user.username} changed their password",
+            user=user,
+            request=request,
+        )
+
+    @staticmethod
+    def log_user_deactivated(user: User, performed_by: User, request: Optional[HttpRequest] = None):
+        """Log user deactivation"""
+        AuditService.log_action(
+            action_type='USER_DEACTIVATED',
+            performed_by=performed_by,
+            description=f"User {user.username} deactivated",
+            user=user,
+            metadata={'username': user.username, 'email': user.email},
+            request=request,
+        )
+
 
 # Export singleton instance
 audit_service = AuditService()
