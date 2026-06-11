@@ -553,7 +553,7 @@ function HBar({
         size={6}
         radius="xl"
         styles={{
-          bar: { background: barColor },
+          section: { background: barColor },
           root: { background: "var(--mantine-color-default-hover)" },
         }}
       />
@@ -1263,7 +1263,7 @@ const Dashboard = () => {
                                   size={5}
                                   radius="xl"
                                   styles={{
-                                    bar: { background: BRAND.purple },
+                                    section: { background: BRAND.purple },
                                     root: {
                                       background:
                                         "var(--mantine-color-default-hover)",
