@@ -295,7 +295,12 @@ export async function withRetry<T>(
  * Convert error to notification payload
  * Compatible with Mantine notifications API
  */
-export function toNotificationPayload(error: ErrorInfo) {
+export function toNotificationPayload(error: ErrorInfo): {
+  title: string
+  message: string
+  color: string
+  autoClose: number | false
+} {
   return {
     title: getErrorTitle(error.type),
     message: error.userMessage,
