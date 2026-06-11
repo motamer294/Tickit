@@ -20,7 +20,6 @@ import {
   Textarea,
 } from '@mantine/core'
 import { Icon } from '@iconify-icon/react'
-import { useRealtimeData } from '@/hooks/useRealtimeData'
 import { listAuditLogs, type AuditLog } from '@/api/admin.api'
 
 // ─── Brand palette (matches all other pages) ───────────────────────────────────
@@ -62,17 +61,27 @@ const BRAND = {
 // ─── Action type metadata ──────────────────────────────────────────────────────
 
 const ACTION_META: Record<string, { label: string; bg: string; text: string; dot: string; icon: string }> = {
-  TICKET_CREATED:    { label: 'Ticket Created',    bg: BRAND.blueLight,   text: BRAND.blueText,   dot: BRAND.blue,   icon: 'solar:ticket-bold-duotone'              },
-  TICKET_UPDATED:    { label: 'Ticket Updated',    bg: BRAND.cyanLight,   text: BRAND.cyanText,   dot: BRAND.cyan,   icon: 'solar:pen-2-bold-duotone'               },
-  TICKET_ASSIGNED:   { label: 'Ticket Assigned',   bg: BRAND.purpleLight, text: BRAND.purpleText, dot: BRAND.purple, icon: 'solar:user-check-bold-duotone'          },
-  STATUS_CHANGED:    { label: 'Status Changed',    bg: BRAND.violetLight, text: BRAND.violetText, dot: BRAND.violet, icon: 'solar:refresh-circle-bold-duotone'      },
-  COMMENT_ADDED:     { label: 'Comment Added',     bg: BRAND.blueLight,   text: BRAND.blueText,   dot: BRAND.blue,   icon: 'solar:chat-round-dots-bold-duotone'     },
-  ATTACHMENT_ADDED:  { label: 'Attachment Added',  bg: BRAND.tealLight,   text: BRAND.tealText,   dot: BRAND.teal,   icon: 'solar:paperclip-bold-duotone'           },
-  ATTACHMENT_DELETED:{ label: 'Attachment Deleted',bg: BRAND.redLight,    text: BRAND.redText,    dot: BRAND.red,    icon: 'solar:trash-bin-2-bold-duotone'         },
-  USER_CREATED:      { label: 'User Created',      bg: BRAND.greenLight,  text: BRAND.greenText,  dot: BRAND.green,  icon: 'solar:user-plus-bold-duotone'           },
-  USER_UPDATED:      { label: 'User Updated',      bg: BRAND.amberLight,  text: BRAND.amberText,  dot: BRAND.amber,  icon: 'solar:user-id-bold-duotone'             },
-  USER_ROLE_CHANGED: { label: 'Role Changed',      bg: BRAND.orangeLight, text: BRAND.orangeText, dot: BRAND.orange, icon: 'solar:shield-user-bold-duotone'         },
-  OTHER:             { label: 'Other',             bg: BRAND.grayLight,   text: BRAND.grayText,   dot: BRAND.gray,   icon: 'solar:info-circle-bold-duotone'         },
+  TICKET_CREATED:        { label: 'Ticket Created',        bg: BRAND.blueLight,   text: BRAND.blueText,   dot: BRAND.blue,   icon: 'solar:ticket-bold-duotone'              },
+  TICKET_UPDATED:        { label: 'Ticket Updated',        bg: BRAND.cyanLight,   text: BRAND.cyanText,   dot: BRAND.cyan,   icon: 'solar:pen-2-bold-duotone'               },
+  TICKET_DELETED:        { label: 'Ticket Deleted',        bg: BRAND.redLight,    text: BRAND.redText,    dot: BRAND.red,    icon: 'solar:trash-bin-minimalistic-bold-duotone'},
+  TICKET_ASSIGNED:       { label: 'Ticket Assigned',       bg: BRAND.purpleLight, text: BRAND.purpleText, dot: BRAND.purple, icon: 'solar:user-check-bold-duotone'          },
+  STATUS_CHANGED:        { label: 'Status Changed',        bg: BRAND.violetLight, text: BRAND.violetText, dot: BRAND.violet, icon: 'solar:refresh-circle-bold-duotone'      },
+  COMMENT_ADDED:         { label: 'Comment Added',         bg: BRAND.blueLight,   text: BRAND.blueText,   dot: BRAND.blue,   icon: 'solar:chat-round-dots-bold-duotone'     },
+  ATTACHMENT_ADDED:      { label: 'Attachment Added',      bg: BRAND.tealLight,   text: BRAND.tealText,   dot: BRAND.teal,   icon: 'solar:paperclip-bold-duotone'           },
+  ATTACHMENT_DELETED:    { label: 'Attachment Deleted',    bg: BRAND.redLight,    text: BRAND.redText,    dot: BRAND.red,    icon: 'solar:trash-bin-2-bold-duotone'         },
+  CATEGORY_CREATED:      { label: 'Category Created',      bg: BRAND.greenLight,  text: BRAND.greenText,  dot: BRAND.green,  icon: 'solar:tag-bold-duotone'                 },
+  CATEGORY_UPDATED:      { label: 'Category Updated',      bg: BRAND.amberLight,  text: BRAND.amberText,  dot: BRAND.amber,  icon: 'solar:tag-bold-duotone'                 },
+  CATEGORY_DELETED:      { label: 'Category Deleted',      bg: BRAND.redLight,    text: BRAND.redText,    dot: BRAND.red,    icon: 'solar:tag-bold-duotone'                 },
+  TAG_CREATED:           { label: 'Tag Created',           bg: BRAND.greenLight,  text: BRAND.greenText,  dot: BRAND.green,  icon: 'solar:hashtag-bold-duotone'             },
+  TAG_UPDATED:           { label: 'Tag Updated',           bg: BRAND.amberLight,  text: BRAND.amberText,  dot: BRAND.amber,  icon: 'solar:hashtag-bold-duotone'             },
+  TAG_DELETED:           { label: 'Tag Deleted',           bg: BRAND.redLight,    text: BRAND.redText,    dot: BRAND.red,    icon: 'solar:hashtag-bold-duotone'             },
+  USER_CREATED:          { label: 'User Created',          bg: BRAND.greenLight,  text: BRAND.greenText,  dot: BRAND.green,  icon: 'solar:user-plus-bold-duotone'           },
+  USER_UPDATED:          { label: 'User Updated',          bg: BRAND.amberLight,  text: BRAND.amberText,  dot: BRAND.amber,  icon: 'solar:user-id-bold-duotone'             },
+  USER_ROLE_CHANGED:     { label: 'Role Changed',          bg: BRAND.orangeLight, text: BRAND.orangeText, dot: BRAND.orange, icon: 'solar:shield-user-bold-duotone'         },
+  USER_PROFILE_UPDATED:  { label: 'Profile Updated',       bg: BRAND.cyanLight,   text: BRAND.cyanText,   dot: BRAND.cyan,   icon: 'solar:user-rounded-bold-duotone'        },
+  USER_PASSWORD_CHANGED: { label: 'Password Changed',      bg: BRAND.orangeLight, text: BRAND.orangeText, dot: BRAND.orange, icon: 'solar:lock-password-bold-duotone'       },
+  USER_DEACTIVATED:      { label: 'User Deactivated',      bg: BRAND.redLight,    text: BRAND.redText,    dot: BRAND.red,    icon: 'solar:user-block-bold-duotone'          },
+  OTHER:                 { label: 'Other',                 bg: BRAND.grayLight,   text: BRAND.grayText,   dot: BRAND.gray,   icon: 'solar:info-circle-bold-duotone'         },
 }
 
 const AVATAR_PALETTES = [
@@ -214,8 +223,6 @@ export default function AuditLogViewer() {
   const [page, setPage]       = useState(0)
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
   const [modalOpened, setModalOpened] = useState(false)
-
-  useRealtimeData()
 
   const {
     data: logs = [],

@@ -115,15 +115,19 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
           if (msg.type === 'data_changed') {
             const msgData = msg.data as Record<string, unknown>
-            queryClient.invalidateQueries({ queryKey: ['my-tickets'] })
-            queryClient.invalidateQueries({ queryKey: ['employee', 'tasks'], exact: false })
-            queryClient.invalidateQueries({ queryKey: ['tickets'], exact: false })
-            queryClient.invalidateQueries({ queryKey: ['ticket'], exact: false })
-            queryClient.invalidateQueries({ queryKey: ['analytics-dashboard'] })
-            if (msgData.ticketId) {
-              queryClient.invalidateQueries({ queryKey: ['ticket', msgData.ticketId] })
-              if (msgData.event === 'comment_added') {
-                queryClient.invalidateQueries({ queryKey: ['ticket-comments', msgData.ticketId] })
+            if (msgData.event === 'audit_log_created') {
+              queryClient.invalidateQueries({ queryKey: ['audit-logs'] })
+            } else {
+              queryClient.invalidateQueries({ queryKey: ['my-tickets'] })
+              queryClient.invalidateQueries({ queryKey: ['employee', 'tasks'], exact: false })
+              queryClient.invalidateQueries({ queryKey: ['tickets'], exact: false })
+              queryClient.invalidateQueries({ queryKey: ['ticket'], exact: false })
+              queryClient.invalidateQueries({ queryKey: ['analytics-dashboard'] })
+              if (msgData.ticketId) {
+                queryClient.invalidateQueries({ queryKey: ['ticket', msgData.ticketId] })
+                if (msgData.event === 'comment_added') {
+                  queryClient.invalidateQueries({ queryKey: ['ticket-comments', msgData.ticketId] })
+                }
               }
             }
           }
@@ -264,6 +268,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
               if (data.ticketId) {
                 queryClient.invalidateQueries({ queryKey: ['ticket', data.ticketId] })
               }
+              return
+            }
+
+            // Audit log created — invalidate the audit log list
+            if (data.event === 'audit_log_created') {
+              queryClient.invalidateQueries({ queryKey: ['audit-logs'] })
               return
             }
 
