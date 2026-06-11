@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
-import { useRef, useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import {
   Container,
   Loader,
@@ -273,38 +273,6 @@ function CardHeader({
   );
 }
 
-/** Modal with consistent styling */
-function StyledModal({
-  opened,
-  onClose,
-  title,
-  children,
-  size = "md",
-}: {
-  opened: boolean;
-  onClose: () => void;
-  title: React.ReactNode;
-  children: React.ReactNode;
-  size?: string;
-}) {
-  return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title={title}
-      size={size}
-      centered
-      radius="md"
-      styles={{
-        header: {
-          borderBottom: "0.5px solid var(--mantine-color-default-border)",
-          paddingBottom: 12,
-        },
-        body: { paddingTop: 16 },
-      }}
-    />
-  );
-}
 
 // ─── Attachments ──────────────────────────────────────────────────────────────
 
@@ -467,7 +435,7 @@ function AttachmentsSection({
                   size="sm"
                   radius="xl"
                   styles={{
-                    bar: { background: uploadPct === 100 ? B.green : B.purple },
+                    section: { background: uploadPct === 100 ? B.green : B.purple },
                   }}
                 />
               </Box>
@@ -832,7 +800,7 @@ export default function TicketDetail() {
 
   const { data: employees = [], isLoading: empLoading } = useQuery({
     queryKey: ["employees-with-team"],
-    queryFn: fetchEmployeesWithTeamApi,
+    queryFn: () => fetchEmployeesWithTeamApi(),
     enabled: isManager,
   });
   const { data: categories = [] } = useQuery({
@@ -1053,7 +1021,7 @@ export default function TicketDetail() {
             </Text>
             {/* Badges row */}
             <Group gap={8} wrap="wrap">
-              <Pill label={statusM.label} {...statusM} />
+              <Pill {...statusM} />
               {ticket.priority && (
                 <Pill
                   label={
@@ -1368,7 +1336,7 @@ export default function TicketDetail() {
                       <Text size="xs" c="dimmed" fw={500}>Status</Text>
                       <Icon icon="solar:clipboard-list-bold-duotone" width={13} style={{ color: statusM.dot }} />
                     </Group>
-                    <Pill label={statusM.label} {...statusM} />
+                    <Pill {...statusM} />
                   </Box>
                 </SimpleGrid>
 
@@ -1610,7 +1578,7 @@ export default function TicketDetail() {
           {/* RIGHT sidebar */}
           <Stack gap={12}>
             {/* Update status */}
-            {canUpdateStatus && ticket.available_transitions?.length > 0 && (
+            {canUpdateStatus && (ticket.available_transitions?.length ?? 0) > 0 && (
               <Card>
                 <CardHeader
                   left={
@@ -1627,7 +1595,7 @@ export default function TicketDetail() {
                 <Box p="md">
                   <Select
                     placeholder="Select new status…"
-                    data={ticket.available_transitions.map((t: any) => ({
+                    data={(ticket.available_transitions ?? []).map((t: any) => ({
                       value: t.status,
                       label: t.label,
                     }))}
