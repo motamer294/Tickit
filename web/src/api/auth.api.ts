@@ -56,7 +56,6 @@ export async function loginApi(payload: LoginPayload): Promise<AuthResponse> {
     console.log('  - Status:', response.status)
     console.log('  - Has access token:', !!response.data.access)
     console.log('  - Has refresh token:', !!response.data.refresh)
-    console.log('  - Has user:', !!response.data.user)
     console.log('  - Response keys:', Object.keys(response.data))
     console.log('  - Full data:', response.data)
 

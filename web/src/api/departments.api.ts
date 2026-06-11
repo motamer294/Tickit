@@ -15,6 +15,7 @@ export interface Department {
   description: string
   manager_id?: number
   teams?: Team[]
+  team_count?: number
   created_at?: string
   updated_at?: string
 }
@@ -26,6 +27,7 @@ export interface Team {
   department_id: number
   team_lead_id?: number
   members?: User[]
+  employee_count?: number
   created_at?: string
   updated_at?: string
 }

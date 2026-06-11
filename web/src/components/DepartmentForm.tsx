@@ -13,7 +13,6 @@ import {
   Group,
   LoadingOverlay,
   Text,
-  Box,
   Divider,
   Paper,
 } from '@mantine/core'

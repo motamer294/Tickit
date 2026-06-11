@@ -152,7 +152,7 @@ const PERMISSIONS: Record<string, { can: string[]; cannot: string[] }> = {
 
 export default function TeamsAndRoles() {
   const { user } = useAuth();
-  const [teamMembers, setTeamMembers] = useState([
+  const [teamMembers] = useState([
     {
       id: "1",
       name: user?.username || "User",
@@ -207,7 +207,7 @@ export default function TeamsAndRoles() {
         description="Current members and their assigned roles"
       >
         <Stack gap={6}>
-          {teamMembers.map((m, i) => {
+          {teamMembers.map((m) => {
             const pal = getAvatarPal(m.name);
             const meta = ROLE_META[m.role] ?? ROLE_META.Employee;
             return (

@@ -305,7 +305,7 @@ export default function CategoryAdminPanel() {
             label="Shown"
             value={displayCategories.length}
             icon="solar:filter-linear"
-            accentColor={BRAND.blue}
+            accentColor={BRAND.purple}
           />
         </Group>
 

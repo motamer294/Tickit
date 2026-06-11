@@ -206,7 +206,7 @@ export function TeamForm({
             placeholder={employees.length === 0 ? 'No employees available' : 'Search and select…'}
             value={teamLeadId}
             onChange={setTeamLeadId}
-            data={employees.map((e, i) => ({
+            data={employees.map((e) => ({
               value: e.id.toString(),
               label: leadDisplayName(e),
             }))}
