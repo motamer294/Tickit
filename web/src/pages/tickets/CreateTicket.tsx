@@ -22,7 +22,6 @@ import {
 import { useForm } from "@mantine/form";
 import { Icon } from "@iconify-icon/react";
 import { notifications } from "@/utils/customNotifications";
-import { CustomAlert } from "@/components/CustomAlert";
 import {
   createTicketApi,
   fetchCategoriesApi,
@@ -213,7 +212,7 @@ export default function CreateTicket() {
 
   const { data: employees = [], isLoading: employeesLoading } = useQuery({
     queryKey: ["employees-with-team"],
-    queryFn: fetchEmployeesWithTeamApi,
+    queryFn: () => fetchEmployeesWithTeamApi(),
     enabled: user?.role === "MANAGER",
   });
 
@@ -431,8 +430,8 @@ export default function CreateTicket() {
                   )}
                 </Paper>
 
-                <InfoPill label="Priority" value={createdTicket.priority ?? "MEDIUM"} icon={priorityM.icon} {...priorityM} />
-                <InfoPill label="Sentiment" value={createdTicket.sentiment ?? "—"} icon={sentimentM.icon} {...sentimentM} />
+                <InfoPill label="Priority" value={createdTicket.priority ?? "MEDIUM"} {...priorityM} />
+                <InfoPill label="Sentiment" value={createdTicket.sentiment ?? "—"} {...sentimentM} />
                 <InfoPill label="Status" value={createdTicket.status} icon="solar:clipboard-list-bold-duotone" {...statusM} />
               </SimpleGrid>
             )}
