@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
+import { logger } from '@/utils/logger'
 
 /**
  * Real-Time Data Hook
@@ -18,7 +19,7 @@ export const useRealtimeData = () => {
     if (!accessToken || !user || isConnectingRef.current) return
 
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      console.log('✅ Real-time WebSocket already connected')
+      logger.debug('Real-time WebSocket already connected')
       return
     }
 
@@ -32,12 +33,12 @@ export const useRealtimeData = () => {
       // ✅ FIXED: Token NOT in URL anymore
       const wsURL = `${protocol}//${host}${port}/ws/realtime/`
 
-      console.log('🔌 Connecting to Real-Time WebSocket:', wsURL)
+      logger.debug('Connecting to Real-Time WebSocket:', wsURL)
 
       wsRef.current = new WebSocket(wsURL)
 
       wsRef.current.onopen = () => {
-        console.log('✅ Real-time WebSocket connected')
+        logger.debug('Real-time WebSocket connected')
         isConnectingRef.current = false
 
         // ✅ SECURE: Send token in message, not URL
@@ -65,27 +66,27 @@ export const useRealtimeData = () => {
           // Skip pong responses
           if (data.type === 'pong') return
 
-          console.log('🔄 Real-time data update:', data.event)
+          logger.debug('Real-time data update:', data.event)
 
           // Handle different event types
           switch (data.event) {
             case 'ticket_created':
               // Invalidate ticket list to trigger refetch
-              console.log('📌 Invalidating ticket lists...')
+              logger.debug('Invalidating ticket lists')
               queryClient.invalidateQueries({ queryKey: ['tickets'] })
               queryClient.invalidateQueries({ queryKey: ['myTickets'] })
               queryClient.invalidateQueries({ queryKey: ['dashboard'] })
               break
 
             case 'ticket_deleted':
-              console.log('📌 Invalidating ticket lists (deleted)...')
+              logger.debug('Invalidating ticket lists (deleted)')
               queryClient.invalidateQueries({ queryKey: ['tickets'] })
               queryClient.invalidateQueries({ queryKey: ['myTickets'] })
               queryClient.invalidateQueries({ queryKey: ['dashboard'] })
               break
 
             case 'ticket_updated':
-              console.log('📌 Invalidating ticket details & lists...')
+              logger.debug('Invalidating ticket details and lists')
               queryClient.invalidateQueries({ queryKey: ['tickets'] })
               queryClient.invalidateQueries({ queryKey: ['myTickets'] })
               queryClient.invalidateQueries({ queryKey: ['ticket', data.ticketId] })
@@ -93,13 +94,13 @@ export const useRealtimeData = () => {
               break
 
             case 'comment_added':
-              console.log('📌 Invalidating comments...')
+              logger.debug('Invalidating comments')
               queryClient.invalidateQueries({ queryKey: ['ticket-comments', data.ticketId] })
               queryClient.invalidateQueries({ queryKey: ['ticket', data.ticketId] })
               break
 
             case 'audit_log_created':
-              console.log('📌 Invalidating audit logs...')
+              logger.debug('Invalidating audit logs')
               queryClient.invalidateQueries({ queryKey: ['audit-logs'] })
               break
 
@@ -109,27 +110,27 @@ export const useRealtimeData = () => {
               break
           }
         } catch (error) {
-          console.error('❌ Error parsing real-time message:', error)
+          logger.error('Error parsing real-time message:', error)
         }
       }
 
       wsRef.current.onerror = (event) => {
-        console.error('❌ Real-time WebSocket error:', event)
+        logger.error('Real-time WebSocket error:', event)
         isConnectingRef.current = false
       }
 
       wsRef.current.onclose = () => {
-        console.log('❌ Real-time WebSocket disconnected')
+        logger.debug('Real-time WebSocket disconnected')
         isConnectingRef.current = false
 
         // Attempt to reconnect after 5 seconds
         reconnectTimeoutRef.current = setTimeout(() => {
-          console.log('🔄 Attempting to reconnect to real-time...')
+          logger.debug('Attempting to reconnect to real-time')
           connectWebSocket()
         }, 5000)
       }
     } catch (error) {
-      console.error('❌ Error creating real-time WebSocket:', error)
+      logger.error('Error creating real-time WebSocket:', error)
       isConnectingRef.current = false
     }
   }

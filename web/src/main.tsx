@@ -9,6 +9,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { validateTokenApi } from '@/api/auth.api'
 import { fetchNotifications } from '@/api/tickets.api'
 import { useNotificationStore } from '@/store/notification.store'
+import { logger } from '@/utils/logger'
 
 // Initialize API client with DYNAMIC token getter
 // Important: Don't capture store reference - always get fresh state!
@@ -19,60 +20,53 @@ createApiClient(
 
 // Validate stored token on startup
 const initializeAuth = async () => {
-  console.log('[INIT] Starting authentication initialization')
-  // ✅ Ensure isLoading is true while we validate
-  // This signals to ProtectedRoute to wait (show spinner)
+  logger.debug('[INIT] Starting authentication initialization')
   useAuthStore.getState().setLoading(true)
-  console.log('[INIT] Set isLoading=true')
+  logger.debug('[INIT] Set isLoading=true')
 
   try {
     const token = useAuthStore.getState().accessToken
-    console.log('[INIT] Retrieved token from store:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN')
+    logger.debug('[INIT] Retrieved token from store:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN')
 
     if (token) {
-      console.log('[INIT] Token found, validating...')
+      logger.debug('[INIT] Token found, validating...')
       const result = await validateTokenApi(token)
-      console.log('[INIT] Validation result:', result)
+      logger.debug('[INIT] Validation result:', result)
 
       if (!result.valid) {
-        // Token is invalid, logout the user
-        console.log('[INIT] Token invalid, logging out')
+        logger.debug('[INIT] Token invalid, logging out')
         useAuthStore.getState().logout()
         return
       }
 
-      console.log('[INIT] Token valid! Loading notifications...')
-      // Token is valid - load initial notifications
+      logger.debug('[INIT] Token valid! Loading notifications...')
       try {
         const notifications = await fetchNotifications(20)
         if (notifications.length > 0) {
           const notificationStore = useNotificationStore.getState()
           notifications.forEach((notif) => {
             notificationStore.addNotification({
-              type: notif.type as any,  // ✅ Cast to avoid type mismatch
+              type: notif.type,
               title: notif.title,
               message: notif.message,
               relatedTo: notif.ticket_id ? { ticketId: notif.ticket_id } : undefined,
               isGlobal: false,
             })
           })
-          console.log(`✅ Loaded ${notifications.length} notifications from server`)
+          logger.debug(`Loaded ${notifications.length} notifications from server`)
         }
       } catch (notificationError) {
-        console.warn('Failed to load initial notifications:', notificationError)
-        // Don't fail app startup if notifications fail
+        logger.warn('Failed to load initial notifications:', notificationError)
       }
     } else {
-      console.log('[INIT] No token found in store, user will see login page')
+      logger.debug('[INIT] No token found in store, user will see login page')
     }
   } catch (error) {
-    // On any error, treat as invalid token
-    console.error('[INIT] Error during initialization:', error)
+    logger.error('[INIT] Error during initialization:', error)
     useAuthStore.getState().logout()
   } finally {
-    // ✅ Signal that validation is complete so router can render
     useAuthStore.getState().setLoading(false)
-    console.log('[INIT] Set isLoading=false, app ready to render')
+    logger.debug('[INIT] Set isLoading=false, app ready to render')
   }
 }
 
@@ -86,4 +80,3 @@ initializeAuth().finally(() => {
     </React.StrictMode>,
   )
 })
-

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useNotificationStore } from '@/store/notification.store'
 import type { NotificationType, Notification } from '@/types/notification'
 import { useAuth } from './useAuth'
+import { logger } from '@/utils/logger'
 
 /**
  * WebSocket Hook for Real-Time Notifications
@@ -22,7 +23,7 @@ export const useNotificationWebSocket = () => {
     if (!accessToken || !user || isConnectingRef.current) return
 
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      console.log('✅ WebSocket already connected')
+      logger.debug('WebSocket already connected')
       return
     }
 
@@ -36,12 +37,12 @@ export const useNotificationWebSocket = () => {
       // ✅ FIXED: Token NOT in URL anymore
       const wsURL = `${protocol}//${host}${port}/ws/notifications/`
 
-      console.log('🔌 Connecting to WebSocket:', wsURL)
+      logger.debug('Connecting to WebSocket:', wsURL)
 
       wsRef.current = new WebSocket(wsURL)
 
       wsRef.current.onopen = () => {
-        console.log('✅ WebSocket connected')
+        logger.debug('WebSocket connected')
         isConnectingRef.current = false
 
         // ✅ SECURE: Send token in message, not URL
@@ -83,30 +84,30 @@ export const useNotificationWebSocket = () => {
             fromUser: data.fromUser,
           }
 
-          console.log('📬 Received notification:', notification.title)
+          logger.debug('Notification received:', notification.title)
           addNotification(notification)
         } catch (error) {
-          console.error('❌ Error parsing WebSocket message:', error)
+          logger.error('Error parsing WebSocket message:', error)
         }
       }
 
       wsRef.current.onerror = (event) => {
-        console.error('❌ WebSocket error:', event)
+        logger.error('WebSocket error:', event)
         isConnectingRef.current = false
       }
 
       wsRef.current.onclose = () => {
-        console.log('❌ WebSocket disconnected')
+        logger.debug('WebSocket disconnected')
         isConnectingRef.current = false
 
         // Attempt to reconnect after 3 seconds
         reconnectTimeoutRef.current = setTimeout(() => {
-          console.log('🔄 Attempting to reconnect...')
+          logger.debug('Attempting to reconnect')
           connectWebSocket()
         }, 3000)
       }
     } catch (error) {
-      console.error('❌ Error creating WebSocket:', error)
+      logger.error('Error creating WebSocket:', error)
       isConnectingRef.current = false
     }
   }

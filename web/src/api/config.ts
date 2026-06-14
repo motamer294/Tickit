@@ -18,6 +18,11 @@ import axios, {
   AxiosError,
   type InternalAxiosRequestConfig,
 } from 'axios'
+import { logger } from '@/utils/logger'
+
+interface RetryableRequest extends InternalAxiosRequestConfig {
+  _retry?: boolean
+}
 
 // Get API URL from environment or use smart defaults
 const getApiUrl = () => {
@@ -139,16 +144,9 @@ export function createApiClient(
       const token = getToken?.()
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
-        // Debug: Log token being sent (first 20 chars + "...")
-        if (import.meta.env.DEV) {
-          console.log(
-            `[API] Sending request with token: ${token.substring(0, 20)}...`,
-          )
-        }
+        logger.debug(`[API] Sending request with token: ${token.substring(0, 20)}...`)
       } else {
-        if (import.meta.env.DEV) {
-          console.warn('[API] No token available for request')
-        }
+        logger.warn('[API] No token available for request')
       }
       return config
     },
@@ -161,12 +159,10 @@ export function createApiClient(
   axiosInstance.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
-      const originalRequest = error.config as
-        | InternalAxiosRequestConfig
-        | undefined
+      const originalRequest = error.config as RetryableRequest | undefined
 
       // Don't retry if already retried
-      if ((originalRequest as unknown as Record<string, unknown>)?._retry) {
+      if (originalRequest?._retry) {
         return Promise.reject(error)
       }
 
@@ -174,7 +170,7 @@ export function createApiClient(
       if (error.response?.status === 401 && !isRefreshing) {
         isRefreshing = true
         if (originalRequest) {
-          ;(originalRequest as unknown as Record<string, unknown>)._retry = true
+          originalRequest._retry = true
         }
 
         try {
@@ -206,12 +202,8 @@ export function createApiClient(
         })
           .then((token) => {
             if (originalRequest && originalRequest.headers) {
-              ;(
-                originalRequest.headers as unknown as Record<string, unknown>
-              ).Authorization = `Bearer ${token}`
-              return axiosInstance!(
-                originalRequest as InternalAxiosRequestConfig,
-              )
+              originalRequest.headers.Authorization = `Bearer ${token}`
+              return axiosInstance!(originalRequest)
             }
             return Promise.reject(error)
           })

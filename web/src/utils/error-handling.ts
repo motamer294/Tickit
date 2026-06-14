@@ -4,6 +4,7 @@
  */
 
 import { APIError } from '@/api/config'
+import { logger } from '@/utils/logger'
 
 // ============================================
 // Error Types
@@ -358,10 +359,7 @@ export function logError(
     context,
   }
 
-  // In development, log to console
-  if (import.meta.env.DEV) {
-    console.error('[API Error]', logData)
-  }
+  logger.error('[API Error]', logData)
 
   // In production, send to error tracking service
   if (import.meta.env.PROD) {

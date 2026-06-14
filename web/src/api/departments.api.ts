@@ -4,6 +4,7 @@
  */
 
 import { getAxiosInstance, APIError } from './config'
+import { logger } from '@/utils/logger'
 
 // ============================================
 // Types
@@ -71,7 +72,7 @@ export async function fetchDepartmentsApi(): Promise<Department[]> {
     const response = await client.get<Department[]>('/departments')
     return response.data || []
   } catch (error: unknown) {
-    console.error('Failed to fetch departments:', error)
+    logger.error('Failed to fetch departments:', error)
     return []
   }
 }
@@ -182,7 +183,7 @@ export async function fetchTeamsApi(
     const response = await client.get<Team[]>('/teams', { params })
     return response.data || []
   } catch (error: unknown) {
-    console.error('Failed to fetch teams:', error)
+    logger.error('Failed to fetch teams:', error)
     return []
   }
 }
@@ -335,29 +336,14 @@ export async function fetchEmployeesWithTeamApi(filters?: {
   try {
     const client = getAxiosInstance()
     const params = filters || {}
-    console.log('📤 Fetching employees with params:', params)
+    logger.debug('Fetching employees with params:', params)
     const response = await client.get<EmployeeWithTeam[]>('/employees', {
       params,
     })
-    console.log('📥 API Response Status:', response.status)
-    console.log('📥 API Response Data:', response.data)
-    console.log('📥 Response Data Type:', typeof response.data)
-    console.log('📥 Response Data Length:', Array.isArray(response.data) ? response.data.length : 'N/A')
-
-    if (response.data && response.data.length > 0) {
-      console.log('📥 First employee object:', response.data[0])
-      console.log('📥 First employee keys:', Object.keys(response.data[0]))
-      console.log('📥 First employee team:', response.data[0].team)
-      console.log('📥 First employee first_name:', response.data[0].first_name)
-    }
-
+    logger.debug('Employees fetched:', Array.isArray(response.data) ? response.data.length : 'N/A', 'records')
     return response.data || []
   } catch (error: unknown) {
-    console.error('❌ Failed to fetch employees with team info:', error)
-    if (error instanceof Error) {
-      console.error('Error message:', error.message)
-      console.error('Error stack:', error.stack)
-    }
+    logger.error('Failed to fetch employees with team info:', error)
     return []
   }
 }
@@ -399,13 +385,13 @@ export function groupEmployeesByTeamOnly(
   group: string
   items: Array<{ value: string; label: string }>
 }> {
-  console.log('🔄 groupEmployeesByTeamOnly called with:', employees.length, 'employees')
+  logger.debug('groupEmployeesByTeamOnly called with:', employees.length, 'employees')
 
   const grouped = new Map<string, EmployeeWithTeam[]>()
 
   for (const employee of employees) {
     const teamName = employee.team?.name || 'Unassigned'
-    console.log(`   - Employee: ${employee.username}, Team: ${teamName}`)
+    logger.debug(`Employee: ${employee.username}, Team: ${teamName}`)
 
     if (!grouped.has(teamName)) {
       grouped.set(teamName, [])
@@ -424,7 +410,7 @@ export function groupEmployeesByTeamOnly(
     })),
   }))
 
-  console.log('🔄 Grouped result:', result)
+  logger.debug('Grouped result:', result)
 
   return result
 }

@@ -2,6 +2,7 @@
  * JWT Token Utilities
  * Decode JWT tokens to extract user information
  */
+import { logger } from '@/utils/logger'
 
 export interface DecodedToken {
   user_id?: number
@@ -33,7 +34,7 @@ export function decodeJWT(token: string): DecodedToken | null {
 
     return json
   } catch (error) {
-    console.error('Failed to decode JWT:', error)
+    logger.error('Failed to decode JWT:', error)
     return null
   }
 }

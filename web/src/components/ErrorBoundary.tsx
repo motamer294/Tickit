@@ -1,5 +1,6 @@
 import { Component } from "react";
 import type { ReactNode } from "react";
+import { logger } from "@/utils/logger";
 import { Container, Stack, Button, Box, Text, Paper } from "@mantine/core";
 import { Icon } from "@iconify-icon/react";
 
@@ -32,7 +33,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("🚨 Error Boundary caught:", error, errorInfo);
+    logger.error("Error Boundary caught:", error, errorInfo);
   }
 
   handleReset = () => {

@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { notifications } from '@/utils/customNotifications'
 import { parseError, toNotificationPayload } from '@/utils/error-handling'
 import { decodeJWT, getUserIdFromToken } from '@/utils/jwt'
+import { logger } from '@/utils/logger'
 
 /**
  * 🛠️ useAuth: Access current authentication state and user info
@@ -54,55 +55,17 @@ export function useLogin() {
   return useMutation({
     mutationFn: loginApi,
     onSuccess: (data: any, variables) => {
-      console.log('[useLogin✅] onSuccess handler called')
-      console.log('[useLogin✅] Response data:', { access: !!data.access, refresh: !!data.refresh })
-
-      // Decode JWT to get user information
       const decoded = decodeJWT(data.access)
       const userId = getUserIdFromToken(data.access) || 1
+      const userRole = (decoded?.role || 'CUSTOMER') as 'MANAGER' | 'EMPLOYEE' | 'CUSTOMER'
 
-      // Extract user info from token (backend puts this in JWT claims)
-      const userRole = (decoded?.role || 'CUSTOMER') as
-        | 'MANAGER'
-        | 'EMPLOYEE'
-        | 'CUSTOMER'
-
-      console.log('[useLogin✅] About to call loginSuccess() with:', {
-        access: data.access?.substring(0, 30) + '...',
-        refresh: data.refresh?.substring(0, 30) + '...',
-        userId,
-        username: variables.username,
-        role: userRole,
-      })
+      logger.debug('[useLogin] Login successful, role:', userRole)
 
       loginSuccess(data.access, data.refresh, {
         id: userId,
         username: variables.username,
         role: userRole,
       })
-
-      console.log('[useLogin✅] loginSuccess() called!')
-
-      // Verify store was updated
-      setTimeout(() => {
-        const currentState = useAuthStore.getState()
-        console.log('[useLogin✅] Store state after update:', {
-          accessToken: !!currentState.accessToken,
-          accessLength: currentState.accessToken?.length,
-          isAuthenticated: currentState.isAuthenticated,
-          user: currentState.user,
-        })
-
-        // Check localStorage
-        const stored = localStorage.getItem('auth-storage')
-        if (stored) {
-          const parsed = JSON.parse(stored)
-          console.log('[useLogin✅] localStorage auth-storage:', {
-            accessToken: !!parsed.state?.accessToken,
-            tokenLength: parsed.state?.accessToken?.length,
-          })
-        }
-      }, 100)
 
       setError(null)
 
@@ -114,7 +77,7 @@ export function useLogin() {
       })
     },
     onError: (error: any) => {
-      console.error('[useLogin❌] onError handler called')
+      logger.error('[useLogin] Login error:', error)
       const errorInfo = parseError(error)
       setError(errorInfo.message)
 

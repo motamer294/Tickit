@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { apiClient } from '../api/config';
 import { useAuthStore } from '@/store/auth.store';
+import { logger } from '@/utils/logger';
 
 interface PolledMessage {
   type: string;
@@ -58,7 +59,7 @@ export const usePollingFallback = (options: UsePollingFallbackOptions = {}) => {
         await apiClient.delete('/message_queue/clear', token);
       }
     } catch (error) {
-      console.warn('[Polling] Failed to clear queue:', error);
+      logger.warn('[Polling] Failed to clear queue:', error);
     }
   }, []);
 
@@ -73,7 +74,7 @@ export const usePollingFallback = (options: UsePollingFallbackOptions = {}) => {
 
     try {
       if (!token) {
-        console.warn('[Polling] No token available');
+        logger.warn('[Polling] No token available');
         return;
       }
 
@@ -109,7 +110,7 @@ export const usePollingFallback = (options: UsePollingFallbackOptions = {}) => {
           onMessageReceived(messages);
         }
 
-        console.log(`[Polling] Received ${messages.length} messages`);
+        logger.debug(`[Polling] Received ${messages.length} messages`);
       }
 
     } catch (error) {
@@ -123,7 +124,7 @@ export const usePollingFallback = (options: UsePollingFallbackOptions = {}) => {
         maxBackoffInterval
       );
 
-      console.error('[Polling] Poll error, backing off:', backoffRef.current, err.message);
+      logger.error('[Polling] Poll error, backing off:', backoffRef.current, err.message);
 
       if (onError) {
         onError(err);
@@ -137,7 +138,7 @@ export const usePollingFallback = (options: UsePollingFallbackOptions = {}) => {
   const startPolling = useCallback(() => {
     if (!isMountedRef.current) return;
 
-    console.log('[Polling] Starting polling fallback');
+    logger.debug('[Polling] Starting polling fallback');
     setIsPolling(true);
     backoffRef.current = minBackoffInterval;
 
@@ -170,7 +171,7 @@ export const usePollingFallback = (options: UsePollingFallbackOptions = {}) => {
   const stopPolling = useCallback(() => {
     if (!isMountedRef.current) return;
 
-    console.log('[Polling] Stopping polling fallback');
+    logger.debug('[Polling] Stopping polling fallback');
     setIsPolling(false);
     backoffRef.current = minBackoffInterval;
 

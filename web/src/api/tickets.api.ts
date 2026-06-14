@@ -4,6 +4,7 @@
  */
 
 import { getAxiosInstance, APIError } from './config'
+import { logger } from '@/utils/logger'
 import type { Ticket, TicketCreatePayload, TicketStatus, Category, Tag } from '@/types/ticket'
 
 // ============================================
@@ -79,7 +80,7 @@ export async function fetchCategoriesApi(): Promise<Category[]> {
     const response = await client.get<Category[]>('/categories')
     return response.data || []
   } catch (error) {
-    console.error('Failed to fetch categories:', error)
+    logger.error('Failed to fetch categories:', error)
     return []
   }
 }
@@ -93,7 +94,7 @@ export async function fetchTagsApi(): Promise<Tag[]> {
     const response = await client.get<Tag[]>('/tags')
     return response.data || []
   } catch (error) {
-    console.error('Failed to fetch tags:', error)
+    logger.error('Failed to fetch tags:', error)
     return []
   }
 }
@@ -226,7 +227,7 @@ export async function fetchTickets(): Promise<Ticket[]> {
     // Ensure response.data is always an array
     const data = response.data
     if (!Array.isArray(data)) {
-      console.warn('[API] fetchTickets returned non-array data:', data)
+      logger.warn('[API] fetchTickets returned non-array data:', data)
       return []
     }
     return data
@@ -520,7 +521,7 @@ export async function fetchDashboardTrends(): Promise<TrendDataPoint[]> {
     const response = await client.get<TrendDataPoint[]>('/analytics/trends')
     return response.data
   } catch (error) {
-    console.error('❌ Failed to fetch trends:', error)
+    logger.error('Failed to fetch trends:', error)
     throw error
   }
 }
@@ -536,7 +537,7 @@ export async function fetchTeamWorkload(): Promise<TeamMemberWorkload[]> {
         throw new Error('Only managers can view team workload')
       }
     }
-    console.error('❌ Failed to fetch team workload:', error)
+    logger.error('Failed to fetch team workload:', error)
     throw error
   }
 }
@@ -583,7 +584,7 @@ export async function fetchChatMessages(ticketId: number): Promise<ChatMessage[]
 
 export interface NotificationData {
   id: number
-  type: string
+  type: 'TICKET_ASSIGNED' | 'TICKET_UPDATED' | 'COMMENT_ADDED' | 'TICKET_RESOLVED' | 'TICKET_DELETED' | 'TICKET_CREATED' | 'MANAGER_ACTIVITY' | 'PERFORMANCE_ALERT' | 'SYSTEM'
   title: string
   message: string
   ticket_id?: number
@@ -608,7 +609,7 @@ export async function fetchNotifications(limit: number = 20): Promise<Notificati
         return []
       }
     }
-    console.warn('Failed to fetch notifications:', error)
+    logger.warn('Failed to fetch notifications:', error)
     return []
   }
 }
@@ -637,7 +638,7 @@ export async function uploadAttachmentApi(ticketId: number, file: File): Promise
     )
     return response.data
   } catch (error) {
-    console.error('❌ Failed to upload attachment:', error)
+    logger.error('Failed to upload attachment:', error)
     throw error
   }
 }
@@ -651,7 +652,7 @@ export async function deleteAttachmentApi(attachmentId: number): Promise<any> {
     const response = await client.delete(`/attachments/${attachmentId}`)
     return response.data
   } catch (error) {
-    console.error('❌ Failed to delete attachment:', error)
+    logger.error('Failed to delete attachment:', error)
     throw error
   }
 }
@@ -667,7 +668,7 @@ export async function downloadAttachmentBlob(attachmentId: number): Promise<Blob
     })
     return response.data
   } catch (error) {
-    console.error('❌ Failed to download attachment:', error)
+    logger.error('Failed to download attachment:', error)
     throw error
   }
 }
@@ -704,17 +705,13 @@ export async function searchTicketsApi(filters: SearchFilters): Promise<Ticket[]
       ...(filters.created_to && { created_to: filters.created_to }),
     }
 
-    console.log('🔍 Searching with params:', params)
+    logger.debug('Searching with params:', params)
     const response = await client.get<Ticket[]>('/search/tickets', { params })
     const data = response.data
-    console.log('✅ Search results:', data)
+    logger.debug('Search results:', data)
     return Array.isArray(data) ? data : []
   } catch (error: any) {
-    console.error('❌ Failed to search tickets:')
-    console.error('   Error:', error.message)
-    console.error('   Status:', error.response?.status)
-    console.error('   Response:', error.response?.data)
-    console.error('   Full error:', error)
+    logger.error('Failed to search tickets:', error)
     return []
   }
 }

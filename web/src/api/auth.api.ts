@@ -4,6 +4,7 @@
  */
 
 import { getAxiosInstance, APIError } from './config'
+import { logger } from '@/utils/logger'
 
 // ============================================
 // Type Definitions
@@ -43,7 +44,7 @@ export interface SignupResponse {
  */
 export async function loginApi(payload: LoginPayload): Promise<AuthResponse> {
   try {
-    console.log('[loginApi] Starting login for:', payload.username)
+    logger.debug('[loginApi] Starting login for:', payload.username)
     const client = getAxiosInstance()
 
     // Use custom /login endpoint that includes role in JWT
@@ -52,30 +53,17 @@ export async function loginApi(payload: LoginPayload): Promise<AuthResponse> {
       password: payload.password,
     })
 
-    console.log('[loginApi] ✅ Response received:')
-    console.log('  - Status:', response.status)
-    console.log('  - Has access token:', !!response.data.access)
-    console.log('  - Has refresh token:', !!response.data.refresh)
-    console.log('  - Response keys:', Object.keys(response.data))
-    console.log('  - Full data:', response.data)
-
+    logger.debug('[loginApi] Login successful, received tokens')
     return response.data
   } catch (error) {
-    console.error('[loginApi] ❌ Login failed')
+    logger.error('[loginApi] Login failed:', error)
 
     if (error instanceof APIError) {
-      console.error('[loginApi] APIError:', {
-        statusCode: error.statusCode,
-        message: error.message,
-        data: error.data,
-      })
-      // Translate common API errors to user-friendly messages
       if (error.statusCode === 401) {
         throw new Error('Invalid username or password')
       }
     }
 
-    console.error('[loginApi] Error object:', error)
     throw error
   }
 }
@@ -103,8 +91,7 @@ export async function signupApi(
   } catch (error) {
     if (error instanceof APIError) {
       if (error.statusCode === 400) {
-        // Check for specific error from backend
-        const data = error.data as any
+        const data = error.data as { message?: string } | undefined
         if (data?.message?.includes('already taken')) {
           throw new Error('Username already taken')
         }
@@ -130,15 +117,10 @@ export async function validateTokenApi(
     const response = await client.get('/user/me', {
       headers: { Authorization: `Bearer ${token}` },
     })
-    console.log('[AUTH] Token validation successful:', response.data)
+    logger.debug('[AUTH] Token validation successful')
     return { valid: !!response.data }
   } catch (error) {
-    console.warn('[AUTH] Token validation failed:', error)
-    if (error instanceof APIError && error.statusCode === 401) {
-      console.log('[AUTH] Token expired or invalid')
-      return { valid: false }
-    }
-    // Any other error, treat as invalid
+    logger.warn('[AUTH] Token validation failed:', error)
     return { valid: false }
   }
 }
