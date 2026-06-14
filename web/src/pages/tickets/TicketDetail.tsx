@@ -3,8 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import {
   Container,
-  Loader,
-  Center,
   Stack,
   Group,
   Button,
@@ -21,7 +19,10 @@ import {
   Tooltip,
   Avatar,
   Skeleton,
+  Loader,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
+
 import { Icon } from "@iconify-icon/react";
 import { notifications } from "@/utils/customNotifications";
 import { useAuth } from "@/hooks/useAuth";
@@ -54,6 +55,50 @@ import {
 import { Pill, SLabel, Card, CardHeader } from "@/components/ticket/TicketCard";
 import { AttachmentsSection } from "@/components/ticket/AttachmentsSection";
 
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
+function TicketDetailSkeleton() {
+  return (
+    <Container size="xl" py="lg">
+      <Stack gap="md">
+        <Skeleton height={16} width={110} radius="sm" />
+        {/* Hero card */}
+        <Box style={{ border: "0.5px solid var(--mantine-color-default-border)", borderRadius: 12, overflow: "hidden" }}>
+          <Box px="lg" pt="lg" pb="md">
+            <Skeleton height={11} width={80} mb={10} radius="sm" />
+            <Skeleton height={20} mb={8} radius="sm" />
+            <Skeleton height={20} width="55%" mb={12} radius="sm" />
+            <Group gap={8}>
+              <Skeleton height={26} width={68} radius="xl" />
+              <Skeleton height={26} width={92} radius="xl" />
+              <Skeleton height={26} width={76} radius="xl" />
+            </Group>
+          </Box>
+          <Box px="lg" py="sm" style={{ borderTop: "0.5px solid var(--mantine-color-default-border)", background: "var(--mantine-color-default-hover)", display: "flex", gap: 28, flexWrap: "wrap" }}>
+            <Skeleton height={40} width={120} radius="sm" />
+            <Skeleton height={40} width={120} radius="sm" />
+            <Skeleton height={40} width={90} radius="sm" />
+          </Box>
+        </Box>
+        {/* Body */}
+        <SimpleGrid cols={{ base: 1, md: 2 }} spacing={12} style={{ alignItems: "start" }}>
+          <Stack gap={12}>
+            <Skeleton height={140} radius="md" />
+            <Skeleton height={260} radius="md" />
+            <Skeleton height={320} radius="md" />
+          </Stack>
+          <Stack gap={12}>
+            <Skeleton height={120} radius="md" />
+            <Skeleton height={150} radius="md" />
+            <Skeleton height={110} radius="md" />
+            <Skeleton height={200} radius="md" />
+          </Stack>
+        </SimpleGrid>
+      </Stack>
+    </Container>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function TicketDetail() {
@@ -77,6 +122,7 @@ export default function TicketDetail() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [chatModalOpen, setChatModalOpen] = useState(false);
 
+  const isMobile = useMediaQuery("(max-width: 640px)");
   const ticketIdNum = parseInt(ticketId || "0");
   const isManager = user?.role === "MANAGER";
 
@@ -202,12 +248,7 @@ export default function TicketDetail() {
       notifications.show({ title: "Error", message: e.message, color: "red" }),
   });
 
-  if (isLoading)
-    return (
-      <Center h={300}>
-        <Loader color={B.purple} />
-      </Center>
-    );
+  if (isLoading) return <TicketDetailSkeleton />;
 
   if (error || !ticket) {
     return (
@@ -439,35 +480,17 @@ export default function TicketDetail() {
               </Text>
             </Box>
 
-            {/* Actions — push to right */}
+            {/* Actions */}
             {isManager && (
-              <Group gap={6} style={{ marginLeft: "auto" }}>
+              <Group gap={6} style={{ marginLeft: isMobile ? 0 : "auto" }}>
                 <Tooltip label="Edit ticket" withArrow fz={11}>
-                  <ActionIcon
-                    variant="default"
-                    size="md"
-                    radius="md"
-                    onClick={openEdit}
-                  >
-                    <Icon
-                      icon="solar:pen-2-linear"
-                      width={15}
-                      style={{ color: B.purpleDark }}
-                    />
+                  <ActionIcon variant="default" size="md" radius="md" onClick={openEdit}>
+                    <Icon icon="solar:pen-2-linear" width={15} style={{ color: B.purpleDark }} />
                   </ActionIcon>
                 </Tooltip>
                 <Tooltip label="Delete ticket" withArrow fz={11}>
-                  <ActionIcon
-                    variant="default"
-                    size="md"
-                    radius="md"
-                    onClick={() => setDeleteConfirmOpen(true)}
-                  >
-                    <Icon
-                      icon="solar:trash-bin-2-linear"
-                      width={15}
-                      style={{ color: B.red }}
-                    />
+                  <ActionIcon variant="default" size="md" radius="md" onClick={() => setDeleteConfirmOpen(true)}>
+                    <Icon icon="solar:trash-bin-2-linear" width={15} style={{ color: B.red }} />
                   </ActionIcon>
                 </Tooltip>
               </Group>
