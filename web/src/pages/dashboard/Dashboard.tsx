@@ -120,6 +120,16 @@ function getInitials(name: string) {
     .slice(0, 2);
 }
 
+const FALLBACK_TEAM_MEMBERS = [
+  { name: "Sara Ahmed", tickets: 27 },
+  { name: "Karim M.", tickets: 22 },
+  { name: "Layla N.", tickets: 18 },
+  { name: "Omar A.", tickets: 14 },
+  { name: "Nour R.", tickets: 10 },
+];
+
+const TICKET_TABLE_HEADERS = ["ID", "Title", "Status", "Priority", "Created by", "Assigned to", ""];
+
 // ─── ECharts theme helpers ─────────────────────────────────────────────────────
 
 function chartTheme(isDark: boolean) {
@@ -1221,13 +1231,7 @@ const Dashboard = () => {
                     ) : (
                       /* Fallback static team */
                       <Stack gap={8}>
-                        {[
-                          { name: "Sara Ahmed", tickets: 27 },
-                          { name: "Karim M.", tickets: 22 },
-                          { name: "Layla N.", tickets: 18 },
-                          { name: "Omar A.", tickets: 14 },
-                          { name: "Nour R.", tickets: 10 },
-                        ].map((m, i) => {
+                        {FALLBACK_TEAM_MEMBERS.map((m, i) => {
                           const pal =
                             AVATAR_PALETTES[i % AVATAR_PALETTES.length];
                           return (
@@ -1335,15 +1339,7 @@ const Dashboard = () => {
               <Table highlightOnHover>
                 <Table.Thead>
                   <Table.Tr>
-                    {[
-                      "ID",
-                      "Title",
-                      "Status",
-                      "Priority",
-                      "Created by",
-                      "Assigned to",
-                      "",
-                    ].map((h) => (
+                    {TICKET_TABLE_HEADERS.map((h) => (
                       <Table.Th
                         key={h}
                         style={{
