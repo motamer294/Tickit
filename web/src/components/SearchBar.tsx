@@ -13,6 +13,7 @@ import {
   Text,
   Divider,
 } from '@mantine/core'
+import { useDebouncedCallback } from '@mantine/hooks'
 import { Icon } from '@iconify-icon/react'
 import type { SearchFilters } from '@/api/tickets.api'
 import type { Employee } from '@/api/tickets.api'
@@ -171,12 +172,18 @@ export function SearchBar({
     filters.assigned_to_id, filters.created_from, filters.created_to,
   ].filter(Boolean).length
 
-  const handleSearch = () => {
-    onSearch({
-      ...filters,
-      ...(selectedTags.length > 0 && { tag_ids: selectedTags.join(',') }),
-    })
-  }
+  const buildPayload = (overrides?: Partial<SearchFilters>): SearchFilters => ({
+    ...filters,
+    ...overrides,
+    ...(selectedTags.length > 0 && { tag_ids: selectedTags.join(',') }),
+  })
+
+  const handleSearch = () => onSearch(buildPayload())
+
+  const debouncedSearch = useDebouncedCallback(
+    (patch: Partial<SearchFilters>) => onSearch(buildPayload(patch)),
+    350,
+  )
 
   const handleClear = () => {
     setFilters({})
@@ -184,8 +191,10 @@ export function SearchBar({
     onSearch({})
   }
 
-  const update = (patch: Partial<SearchFilters>) =>
+  const update = (patch: Partial<SearchFilters>) => {
     setFilters((prev) => ({ ...prev, ...patch }))
+    debouncedSearch(patch)
+  }
 
   const categoryOptions  = categories.map((c) => ({ label: c.name,          value: c.id.toString() }))
   const tagOptions       = tags.map((t)       => ({ label: `#${t.name}`,     value: t.id.toString() }))
