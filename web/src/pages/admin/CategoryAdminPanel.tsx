@@ -13,6 +13,7 @@ import {
   ColorPicker,
   LoadingOverlay,
   Center,
+  Skeleton,
   ActionIcon,
   Tooltip,
   Box,
@@ -359,11 +360,16 @@ export default function CategoryAdminPanel() {
 
           {/* Table */}
           {isLoading ? (
-            <Center py={80}>
-              <Box style={{ position: "relative", width: 40, height: 40 }}>
-                <LoadingOverlay visible />
-              </Box>
-            </Center>
+            <Stack gap={0}>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Box key={i} style={{ padding: '12px 16px', borderBottom: '0.5px solid var(--mantine-color-default-border)', display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <Skeleton height={22} width={22} radius="sm" />
+                  <Skeleton height={14} style={{ flex: 1 }} radius="sm" />
+                  <Skeleton height={14} width={100} radius="sm" />
+                  <Skeleton height={28} width={64} radius="sm" />
+                </Box>
+              ))}
+            </Stack>
           ) : displayCategories.length === 0 ? (
             <Center py={80}>
               <Stack align="center" gap="sm">

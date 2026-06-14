@@ -13,7 +13,7 @@ import {
   PasswordInput,
   LoadingOverlay,
   Center,
-  Loader,
+  Skeleton,
   ActionIcon,
   Tooltip,
   Box,
@@ -490,16 +490,6 @@ export default function UserAdminPanel() {
   const activeCount = users.filter((u: User) => u.is_active).length;
   const inactiveCount = users.length - activeCount;
 
-  // ── Loading / Error ──
-  if (isLoading) {
-    return (
-      <Container size="lg" py="lg">
-        <Center h={300}>
-          <Loader color={BRAND.purple} />
-        </Center>
-      </Container>
-    );
-  }
 
   const TH_STYLE: React.CSSProperties = {
     fontSize: 11,
@@ -708,7 +698,18 @@ export default function UserAdminPanel() {
                 </tr>
               </thead>
               <tbody>
-                {displayUsers.length > 0 ? (
+                {isLoading ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <tr key={i} style={{ borderBottom: '0.5px solid var(--mantine-color-default-border)' }}>
+                      <td style={{ padding: '10px 16px' }}><Skeleton height={28} radius="sm" /></td>
+                      <td style={{ padding: '10px 16px' }}><Skeleton height={14} radius="sm" /></td>
+                      <td style={{ padding: '10px 16px' }}><Skeleton height={20} width={70} radius="xl" /></td>
+                      <td style={{ padding: '10px 16px' }}><Skeleton height={20} width={60} radius="xl" /></td>
+                      <td style={{ padding: '10px 16px' }}><Skeleton height={14} radius="sm" /></td>
+                      <td style={{ padding: '10px 16px' }}><Skeleton height={28} width={60} radius="sm" /></td>
+                    </tr>
+                  ))
+                ) : displayUsers.length > 0 ? (
                   displayUsers.map((user: User, idx: number) => {
                     const pal = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
                     return (

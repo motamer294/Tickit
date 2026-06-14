@@ -11,6 +11,7 @@ import {
   Button,
   Center,
   Loader,
+  Skeleton,
   ActionIcon,
   Tooltip,
   Modal,
@@ -376,7 +377,29 @@ export default function AuditLogViewer() {
         {/* ── Table ── */}
         <Paper radius="md" style={{ border: '0.5px solid var(--mantine-color-default-border)', overflow: 'hidden' }}>
           {isLoading ? (
-            <Center py={80}><Loader color={BRAND.purple} /></Center>
+            <Box style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '0.5px solid var(--mantine-color-default-border)' }}>
+                    {['Timestamp', 'Action', 'Performed by', 'Ticket', 'User', ''].map((h) => (
+                      <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 500, color: 'var(--mantine-color-dimmed)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <tr key={i} style={{ borderBottom: '0.5px solid var(--mantine-color-default-border)' }}>
+                      <td style={{ padding: '10px 16px' }}><Skeleton height={14} radius="sm" /></td>
+                      <td style={{ padding: '10px 16px' }}><Skeleton height={20} width={80} radius="xl" /></td>
+                      <td style={{ padding: '10px 16px' }}><Skeleton height={28} radius="sm" /></td>
+                      <td style={{ padding: '10px 16px' }}><Skeleton height={14} radius="sm" /></td>
+                      <td style={{ padding: '10px 16px' }}><Skeleton height={14} radius="sm" /></td>
+                      <td style={{ padding: '10px 16px' }}><Skeleton height={28} width={32} radius="sm" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Box>
           ) : (
             <>
               <Box style={{ overflowX: 'auto' }}>
