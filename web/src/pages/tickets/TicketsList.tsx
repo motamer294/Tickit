@@ -7,7 +7,6 @@ import {
   Group,
   Text,
   Paper,
-  Loader,
   Center,
   Box,
   Button,
@@ -16,7 +15,9 @@ import {
   Collapse,
   Divider,
   Tooltip,
+  Skeleton,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { Icon } from "@iconify-icon/react";
 import { useAuth } from "@/hooks/useAuth";
 import { CustomAlert } from "@/components/CustomAlert";
@@ -251,12 +252,63 @@ function StatusPill({
   );
 }
 
+// ─── Mobile ticket card ────────────────────────────────────────────────────────
+
+function TicketMobileCard({ ticket, onClick }: { ticket: Ticket; onClick: () => void }) {
+  return (
+    <Box
+      p="sm"
+      onClick={onClick}
+      style={{
+        borderBottom: "0.5px solid var(--mantine-color-default-border)",
+        cursor: "pointer",
+        transition: "background .12s",
+      }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "var(--mantine-color-default-hover)"; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
+    >
+      <Group justify="space-between" mb={6} wrap="nowrap">
+        <Text size="xs" c="dimmed" style={{ flexShrink: 0 }}>#{ticket.id}</Text>
+        <StatusBadge status={ticket.status} />
+      </Group>
+      <Text size="sm" fw={500} lineClamp={1} mb={6}>{ticket.title}</Text>
+      <Group justify="space-between" wrap="nowrap">
+        <Group gap={6} wrap="nowrap">
+          {ticket.priority ? <PriorityBadge priority={ticket.priority} /> : null}
+          {ticket.category && (
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 500,
+                padding: "3px 8px",
+                borderRadius: 20,
+                background: ticket.category.color + "22",
+                color: ticket.category.color,
+                whiteSpace: "nowrap",
+                maxWidth: 100,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {ticket.category.name}
+            </span>
+          )}
+        </Group>
+        <Text size="xs" c="dimmed" style={{ flexShrink: 0 }}>
+          {new Date(ticket.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+        </Text>
+      </Group>
+    </Box>
+  );
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function TicketsList() {
   const navigate = useNavigate();
   const { accessToken } = useAuth();
 
+  const isMobile = useMediaQuery("(max-width: 640px)");
   const [searchResults, setSearchResults] = useState<Ticket[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [activeStatus, setActiveStatus] = useState<TicketStatus | "ALL">("ALL");
@@ -353,7 +405,7 @@ export default function TicketsList() {
     <Container size="xl" py="lg">
       <Stack gap="lg">
         {/* ── Header ── */}
-        <Group justify="space-between" align="flex-end">
+        <Group justify="space-between" align="flex-end" wrap="wrap" gap={12}>
           <Box>
             <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>
               Tickets
@@ -468,252 +520,177 @@ export default function TicketsList() {
           }}
         >
           {isLoading ? (
-            <Center py={80}>
-              <Loader color={BRAND.purple} />
-            </Center>
-          ) : (
-            <>
+            isMobile ? (
+              /* Mobile skeleton */
+              <Stack gap={0}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Box key={i} p="sm" style={{ borderBottom: "0.5px solid var(--mantine-color-default-border)" }}>
+                    <Group justify="space-between" mb={6}>
+                      <Skeleton height={12} width={36} radius="sm" />
+                      <Skeleton height={22} width={72} radius="xl" />
+                    </Group>
+                    <Skeleton height={14} mb={6} radius="sm" />
+                    <Group justify="space-between">
+                      <Skeleton height={22} width={56} radius="xl" />
+                      <Skeleton height={12} width={48} radius="sm" />
+                    </Group>
+                  </Box>
+                ))}
+              </Stack>
+            ) : (
+              /* Desktop skeleton */
               <Box style={{ overflowX: "auto" }}>
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    fontSize: 13,
-                  }}
-                >
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead>
-                    <tr
-                      style={{
-                        borderBottom:
-                          "0.5px solid var(--mantine-color-default-border)",
-                      }}
-                    >
-                      <th style={{ ...TH_STYLE, padding: "10px 16px" }}>ID</th>
-                      <th style={{ ...TH_STYLE, padding: "10px 16px" }}>
-                        Title
-                      </th>
-                      <th style={{ ...TH_STYLE, padding: "10px 16px" }}>
-                        Status
-                      </th>
-                      <th style={{ ...TH_STYLE, padding: "10px 16px" }}>
-                        Priority
-                      </th>
-                      <th style={{ ...TH_STYLE, padding: "10px 16px" }}>
-                        Category
-                      </th>
-                      <th style={{ ...TH_STYLE, padding: "10px 16px" }}>
-                        Created by
-                      </th>
-                      <th style={{ ...TH_STYLE, padding: "10px 16px" }}>
-                        Assigned to
-                      </th>
-                      <th style={{ ...TH_STYLE, padding: "10px 16px" }}>
-                        Created
-                      </th>
-                      <th style={{ ...TH_STYLE, padding: "10px 16px" }}></th>
+                    <tr style={{ borderBottom: "0.5px solid var(--mantine-color-default-border)" }}>
+                      {["ID", "Title", "Status", "Priority", "Category", "Created by", "Assigned to", "Created", ""].map((h) => (
+                        <th key={h} style={{ ...TH_STYLE, padding: "10px 16px" }}>{h}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {displayTickets.length > 0 ? (
-                      displayTickets.map((ticket: Ticket, idx: number) => (
-                        <tr
-                          key={ticket.id}
-                          onClick={() => navigate(`${ticket.id}`)}
-                          style={{
-                            borderBottom:
-                              idx < displayTickets.length - 1
-                                ? "0.5px solid var(--mantine-color-default-border)"
-                                : "none",
-                            cursor: "pointer",
-                            transition: "background .12s",
-                          }}
-                          onMouseEnter={(e) => {
-                            (
-                              e.currentTarget as HTMLTableRowElement
-                            ).style.background =
-                              "var(--mantine-color-default-hover)";
-                          }}
-                          onMouseLeave={(e) => {
-                            (
-                              e.currentTarget as HTMLTableRowElement
-                            ).style.background = "transparent";
-                          }}
-                        >
-                          {/* ID */}
-                          <td
-                            style={{
-                              padding: "11px 16px",
-                              color: "var(--mantine-color-dimmed)",
-                              fontSize: 12,
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            #{ticket.id}
-                          </td>
-
-                          {/* Title */}
-                          <td style={{ padding: "11px 16px", maxWidth: 260 }}>
-                            <Text size="sm" fw={500} lineClamp={1}>
-                              {ticket.title}
-                            </Text>
-                          </td>
-
-                          {/* Status */}
-                          <td style={{ padding: "11px 16px" }}>
-                            <StatusBadge status={ticket.status} />
-                          </td>
-
-                          {/* Priority */}
-                          <td style={{ padding: "11px 16px" }}>
-                            {ticket.priority ? (
-                              <PriorityBadge priority={ticket.priority} />
-                            ) : (
-                              <Text size="xs" c="dimmed">
-                                —
-                              </Text>
-                            )}
-                          </td>
-
-                          {/* Category */}
-                          <td style={{ padding: "11px 16px" }}>
-                            {ticket.category ? (
-                              <span
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 5,
-                                  fontSize: 11,
-                                  fontWeight: 500,
-                                  padding: "3px 9px",
-                                  borderRadius: 20,
-                                  background: ticket.category.color + "22",
-                                  color: ticket.category.color,
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    width: 5,
-                                    height: 5,
-                                    borderRadius: "50%",
-                                    background: ticket.category.color,
-                                    flexShrink: 0,
-                                  }}
-                                />
-                                {ticket.category.name}
-                              </span>
-                            ) : (
-                              <Text size="xs" c="dimmed">
-                                —
-                              </Text>
-                            )}
-                          </td>
-
-                          {/* Created by */}
-                          <td style={{ padding: "11px 16px" }}>
-                            <Text size="sm">
-                              {ticket.creator_username || "Unknown"}
-                            </Text>
-                          </td>
-
-                          {/* Assigned to */}
-                          <td style={{ padding: "11px 16px" }}>
-                            {ticket.assigned_to_username === "Unassigned" ? (
-                              <Text size="sm" c="dimmed">
-                                Unassigned
-                              </Text>
-                            ) : (
-                              <Text size="sm">
-                                {ticket.assigned_to_username}
-                              </Text>
-                            )}
-                          </td>
-
-                          {/* Created at */}
-                          <td
-                            style={{
-                              padding: "11px 16px",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            <Text size="xs" c="dimmed">
-                              {new Date(ticket.created_at).toLocaleDateString(
-                                undefined,
-                                {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                },
-                              )}
-                            </Text>
-                          </td>
-
-                          {/* Action */}
-                          <td
-                            style={{ padding: "11px 16px" }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Tooltip
-                              label="View ticket"
-                              withArrow
-                              position="left"
-                              fz={11}
-                            >
-                              <ActionIcon
-                                variant="subtle"
-                                size="sm"
-                                style={{ color: BRAND.purpleDark }}
-                                onClick={() => navigate(`${ticket.id}`)}
-                              >
-                                <Icon
-                                  icon="solar:arrow-right-up-linear"
-                                  width={15}
-                                />
-                              </ActionIcon>
-                            </Tooltip>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={9}>
-                          <Center py={80}>
-                            <Stack align="center" gap="sm">
-                              <Icon
-                                icon="solar:document-linear"
-                                width={36}
-                                style={{
-                                  color: "var(--mantine-color-dimmed)",
-                                  opacity: 0.4,
-                                }}
-                              />
-                              <Text size="sm" c="dimmed">
-                                No tickets found
-                              </Text>
-                              {(searchQuery ||
-                                activeStatus !== "ALL" ||
-                                searchResults !== null) && (
-                                <Button
-                                  variant="subtle"
-                                  size="xs"
-                                  style={{ color: BRAND.purpleDark }}
-                                  onClick={() => {
-                                    setSearchQuery("");
-                                    setActiveStatus("ALL");
-                                    setSearchResults(null);
-                                  }}
-                                >
-                                  Clear filters
-                                </Button>
-                              )}
-                            </Stack>
-                          </Center>
-                        </td>
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <tr key={i} style={{ borderBottom: "0.5px solid var(--mantine-color-default-border)" }}>
+                        <td style={{ padding: "10px 16px" }}><Skeleton height={12} width={32} radius="sm" /></td>
+                        <td style={{ padding: "10px 16px" }}><Skeleton height={14} radius="sm" /></td>
+                        <td style={{ padding: "10px 16px" }}><Skeleton height={22} width={72} radius="xl" /></td>
+                        <td style={{ padding: "10px 16px" }}><Skeleton height={22} width={56} radius="xl" /></td>
+                        <td style={{ padding: "10px 16px" }}><Skeleton height={22} width={68} radius="xl" /></td>
+                        <td style={{ padding: "10px 16px" }}><Skeleton height={14} width={80} radius="sm" /></td>
+                        <td style={{ padding: "10px 16px" }}><Skeleton height={14} width={80} radius="sm" /></td>
+                        <td style={{ padding: "10px 16px" }}><Skeleton height={12} width={64} radius="sm" /></td>
+                        <td style={{ padding: "10px 16px" }}><Skeleton height={28} width={28} radius="sm" /></td>
                       </tr>
-                    )}
+                    ))}
                   </tbody>
                 </table>
               </Box>
+            )
+          ) : (
+            <>
+              {/* Mobile card list */}
+              {isMobile ? (
+                displayTickets.length > 0 ? (
+                  <Stack gap={0}>
+                    {displayTickets.map((ticket: Ticket) => (
+                      <TicketMobileCard
+                        key={ticket.id}
+                        ticket={ticket}
+                        onClick={() => navigate(`${ticket.id}`)}
+                      />
+                    ))}
+                  </Stack>
+                ) : (
+                  <Center py={60}>
+                    <Stack align="center" gap="sm">
+                      <Icon icon="solar:document-linear" width={36} style={{ color: "var(--mantine-color-dimmed)", opacity: 0.4 }} />
+                      <Text size="sm" c="dimmed">No tickets found</Text>
+                      {(searchQuery || activeStatus !== "ALL" || searchResults !== null) && (
+                        <Button variant="subtle" size="xs" style={{ color: BRAND.purpleDark }} onClick={() => { setSearchQuery(""); setActiveStatus("ALL"); setSearchResults(null); }}>
+                          Clear filters
+                        </Button>
+                      )}
+                    </Stack>
+                  </Center>
+                )
+              ) : (
+                /* Desktop scrollable table */
+                <Box style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ borderBottom: "0.5px solid var(--mantine-color-default-border)" }}>
+                        <th style={{ ...TH_STYLE, padding: "10px 16px" }}>ID</th>
+                        <th style={{ ...TH_STYLE, padding: "10px 16px" }}>Title</th>
+                        <th style={{ ...TH_STYLE, padding: "10px 16px" }}>Status</th>
+                        <th style={{ ...TH_STYLE, padding: "10px 16px" }}>Priority</th>
+                        <th style={{ ...TH_STYLE, padding: "10px 16px" }}>Category</th>
+                        <th style={{ ...TH_STYLE, padding: "10px 16px" }}>Created by</th>
+                        <th style={{ ...TH_STYLE, padding: "10px 16px" }}>Assigned to</th>
+                        <th style={{ ...TH_STYLE, padding: "10px 16px" }}>Created</th>
+                        <th style={{ ...TH_STYLE, padding: "10px 16px" }}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {displayTickets.length > 0 ? (
+                        displayTickets.map((ticket: Ticket, idx: number) => (
+                          <tr
+                            key={ticket.id}
+                            onClick={() => navigate(`${ticket.id}`)}
+                            style={{
+                              borderBottom: idx < displayTickets.length - 1 ? "0.5px solid var(--mantine-color-default-border)" : "none",
+                              cursor: "pointer",
+                              transition: "background .12s",
+                            }}
+                            onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "var(--mantine-color-default-hover)"; }}
+                            onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "transparent"; }}
+                          >
+                            <td style={{ padding: "11px 16px", color: "var(--mantine-color-dimmed)", fontSize: 12, whiteSpace: "nowrap" }}>
+                              #{ticket.id}
+                            </td>
+                            <td style={{ padding: "11px 16px", maxWidth: 260 }}>
+                              <Text size="sm" fw={500} lineClamp={1}>{ticket.title}</Text>
+                            </td>
+                            <td style={{ padding: "11px 16px" }}>
+                              <StatusBadge status={ticket.status} />
+                            </td>
+                            <td style={{ padding: "11px 16px" }}>
+                              {ticket.priority ? <PriorityBadge priority={ticket.priority} /> : <Text size="xs" c="dimmed">—</Text>}
+                            </td>
+                            <td style={{ padding: "11px 16px" }}>
+                              {ticket.category ? (
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 500, padding: "3px 9px", borderRadius: 20, background: ticket.category.color + "22", color: ticket.category.color, whiteSpace: "nowrap" }}>
+                                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: ticket.category.color, flexShrink: 0 }} />
+                                  {ticket.category.name}
+                                </span>
+                              ) : (
+                                <Text size="xs" c="dimmed">—</Text>
+                              )}
+                            </td>
+                            <td style={{ padding: "11px 16px" }}>
+                              <Text size="sm">{ticket.creator_username || "Unknown"}</Text>
+                            </td>
+                            <td style={{ padding: "11px 16px" }}>
+                              {ticket.assigned_to_username === "Unassigned" ? (
+                                <Text size="sm" c="dimmed">Unassigned</Text>
+                              ) : (
+                                <Text size="sm">{ticket.assigned_to_username}</Text>
+                              )}
+                            </td>
+                            <td style={{ padding: "11px 16px", whiteSpace: "nowrap" }}>
+                              <Text size="xs" c="dimmed">
+                                {new Date(ticket.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                              </Text>
+                            </td>
+                            <td style={{ padding: "11px 16px" }} onClick={(e) => e.stopPropagation()}>
+                              <Tooltip label="View ticket" withArrow position="left" fz={11}>
+                                <ActionIcon variant="subtle" size="sm" style={{ color: BRAND.purpleDark }} onClick={() => navigate(`${ticket.id}`)}>
+                                  <Icon icon="solar:arrow-right-up-linear" width={15} />
+                                </ActionIcon>
+                              </Tooltip>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={9}>
+                            <Center py={80}>
+                              <Stack align="center" gap="sm">
+                                <Icon icon="solar:document-linear" width={36} style={{ color: "var(--mantine-color-dimmed)", opacity: 0.4 }} />
+                                <Text size="sm" c="dimmed">No tickets found</Text>
+                                {(searchQuery || activeStatus !== "ALL" || searchResults !== null) && (
+                                  <Button variant="subtle" size="xs" style={{ color: BRAND.purpleDark }} onClick={() => { setSearchQuery(""); setActiveStatus("ALL"); setSearchResults(null); }}>
+                                    Clear filters
+                                  </Button>
+                                )}
+                              </Stack>
+                            </Center>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </Box>
+              )}
 
               {/* Footer */}
               <Box

@@ -14,6 +14,7 @@ import {
   LoadingOverlay,
   Center,
   Skeleton,
+  SimpleGrid,
   ActionIcon,
   Tooltip,
   Box,
@@ -21,6 +22,7 @@ import {
   Avatar,
 } from "@mantine/core";
 import { Icon } from "@iconify-icon/react";
+import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@/utils/customNotifications";
 import {
   listUsers,
@@ -284,6 +286,52 @@ function StatCard({
   );
 }
 
+function UserMobileCard({
+  user,
+  pal,
+  onEdit,
+  onDeactivate,
+}: {
+  user: User;
+  pal: { bg: string; color: string };
+  onEdit: () => void;
+  onDeactivate: () => void;
+}) {
+  return (
+    <Box p="sm" style={{ borderBottom: "0.5px solid var(--mantine-color-default-border)" }}>
+      <Group justify="space-between" mb={6} wrap="nowrap">
+        <Group gap={8} wrap="nowrap">
+          <Avatar size={28} radius="xl" style={{ background: pal.bg, color: pal.color, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>
+            {getInitials(user.first_name, user.last_name)}
+          </Avatar>
+          <Box style={{ minWidth: 0 }}>
+            <Text size="sm" fw={500} style={{ lineHeight: 1.3 }}>{user.first_name} {user.last_name}</Text>
+            <Text size="xs" c="dimmed">@{user.username}</Text>
+          </Box>
+        </Group>
+        <StatusBadge active={user.is_active} />
+      </Group>
+      <Text size="xs" c="dimmed" mb={6}>{user.email}</Text>
+      <Group justify="space-between" wrap="nowrap">
+        <Group gap={6} wrap="wrap">
+          <RoleBadge role={user.role} />
+          <Text size="xs" c="dimmed">
+            {new Date(user.date_joined).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+          </Text>
+        </Group>
+        <Group gap={4} wrap="nowrap">
+          <ActionIcon variant="subtle" size="sm" style={{ color: BRAND.purpleDark }} onClick={onEdit}>
+            <Icon icon="solar:pen-2-linear" width={14} />
+          </ActionIcon>
+          <ActionIcon variant="subtle" size="sm" style={{ color: user.is_active ? BRAND.red : BRAND.gray }} disabled={!user.is_active} onClick={onDeactivate}>
+            <Icon icon="solar:user-block-linear" width={14} />
+          </ActionIcon>
+        </Group>
+      </Group>
+    </Box>
+  );
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 type FormData = {
@@ -310,6 +358,8 @@ export default function UserAdminPanel() {
   const [formData, setFormData] = useState<FormData>(DEFAULT_FORM);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeRole, setActiveRole] = useState<string>("ALL");
+
+  const isMobile = useMediaQuery("(max-width: 640px)");
 
   // ── Queries ──
   const {
@@ -505,7 +555,7 @@ export default function UserAdminPanel() {
     <Container size="lg" py="lg">
       <Stack gap="lg">
         {/* ── Header ── */}
-        <Group justify="space-between" align="flex-end">
+        <Group justify="space-between" align="flex-end" wrap="wrap" gap={12}>
           <Box>
             <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>
               User Management
@@ -527,7 +577,7 @@ export default function UserAdminPanel() {
         </Group>
 
         {/* ── Stat cards ── */}
-        <Group grow gap={10}>
+        <SimpleGrid cols={{ base: 2, sm: 3, md: 6 }} spacing={10}>
           <StatCard
             label="Total users"
             value={users.length}
@@ -564,7 +614,7 @@ export default function UserAdminPanel() {
             icon="solar:user-circle-linear"
             accentColor={BRAND.green}
           />
-        </Group>
+        </SimpleGrid>
 
         {/* ── Error ── */}
         {error && (
@@ -674,42 +724,78 @@ export default function UserAdminPanel() {
             overflow: "hidden",
           }}
         >
-          <Box style={{ overflowX: "auto" }}>
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                fontSize: 13,
-              }}
-            >
-              <thead>
-                <tr
-                  style={{
-                    borderBottom:
-                      "0.5px solid var(--mantine-color-default-border)",
-                  }}
-                >
-                  <th style={{ ...TH_STYLE, padding: "10px 16px" }}>User</th>
-                  <th style={{ ...TH_STYLE, padding: "10px 16px" }}>Email</th>
-                  <th style={{ ...TH_STYLE, padding: "10px 16px" }}>Role</th>
-                  <th style={{ ...TH_STYLE, padding: "10px 16px" }}>Status</th>
-                  <th style={{ ...TH_STYLE, padding: "10px 16px" }}>Joined</th>
-                  <th style={{ ...TH_STYLE, padding: "10px 16px" }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
-                  Array.from({ length: 6 }).map((_, i) => (
-                    <tr key={i} style={{ borderBottom: '0.5px solid var(--mantine-color-default-border)' }}>
-                      <td style={{ padding: '10px 16px' }}><Skeleton height={28} radius="sm" /></td>
-                      <td style={{ padding: '10px 16px' }}><Skeleton height={14} radius="sm" /></td>
-                      <td style={{ padding: '10px 16px' }}><Skeleton height={20} width={70} radius="xl" /></td>
-                      <td style={{ padding: '10px 16px' }}><Skeleton height={20} width={60} radius="xl" /></td>
-                      <td style={{ padding: '10px 16px' }}><Skeleton height={14} radius="sm" /></td>
-                      <td style={{ padding: '10px 16px' }}><Skeleton height={28} width={60} radius="sm" /></td>
+          {isLoading ? (
+            <Box style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <tbody>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <tr key={i} style={{ borderBottom: "0.5px solid var(--mantine-color-default-border)" }}>
+                      <td style={{ padding: "10px 16px" }}><Skeleton height={28} radius="sm" /></td>
+                      <td style={{ padding: "10px 16px" }}><Skeleton height={14} radius="sm" /></td>
+                      <td style={{ padding: "10px 16px" }}><Skeleton height={20} width={70} radius="xl" /></td>
+                      <td style={{ padding: "10px 16px" }}><Skeleton height={20} width={60} radius="xl" /></td>
+                      <td style={{ padding: "10px 16px" }}><Skeleton height={14} radius="sm" /></td>
+                      <td style={{ padding: "10px 16px" }}><Skeleton height={28} width={60} radius="sm" /></td>
                     </tr>
-                  ))
-                ) : displayUsers.length > 0 ? (
+                  ))}
+                </tbody>
+              </table>
+            </Box>
+          ) : isMobile ? (
+            displayUsers.length > 0 ? (
+              <Stack gap={0}>
+                {displayUsers.map((user: User, idx: number) => {
+                  const pal = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
+                  return (
+                    <UserMobileCard
+                      key={user.id}
+                      user={user}
+                      pal={pal}
+                      onEdit={() => openEdit(user)}
+                      onDeactivate={() => handleDeactivate(user)}
+                    />
+                  );
+                })}
+              </Stack>
+            ) : (
+              <Center py={80}>
+                <Stack align="center" gap="sm">
+                  <Icon icon="solar:users-group-two-rounded-linear" width={36} style={{ color: "var(--mantine-color-dimmed)", opacity: 0.4 }} />
+                  <Text size="sm" c="dimmed">No users found</Text>
+                  {(searchQuery || activeRole !== "ALL") && (
+                    <Button variant="subtle" size="xs" style={{ color: BRAND.purpleDark }} onClick={() => { setSearchQuery(""); setActiveRole("ALL"); }}>
+                      Clear filters
+                    </Button>
+                  )}
+                </Stack>
+              </Center>
+            )
+          ) : (
+            <Box style={{ overflowX: "auto" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  fontSize: 13,
+                }}
+              >
+                <thead>
+                  <tr
+                    style={{
+                      borderBottom:
+                        "0.5px solid var(--mantine-color-default-border)",
+                    }}
+                  >
+                    <th style={{ ...TH_STYLE, padding: "10px 16px" }}>User</th>
+                    <th style={{ ...TH_STYLE, padding: "10px 16px" }}>Email</th>
+                    <th style={{ ...TH_STYLE, padding: "10px 16px" }}>Role</th>
+                    <th style={{ ...TH_STYLE, padding: "10px 16px" }}>Status</th>
+                    <th style={{ ...TH_STYLE, padding: "10px 16px" }}>Joined</th>
+                    <th style={{ ...TH_STYLE, padding: "10px 16px" }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayUsers.length > 0 ? (
                   displayUsers.map((user: User, idx: number) => {
                     const pal = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
                     return (
@@ -889,6 +975,7 @@ export default function UserAdminPanel() {
               </tbody>
             </table>
           </Box>
+          )}
 
           {/* Table footer */}
           <Box

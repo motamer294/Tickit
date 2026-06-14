@@ -13,12 +13,14 @@ import {
   LoadingOverlay,
   Center,
   Skeleton,
+  SimpleGrid,
   ActionIcon,
   Tooltip,
   Box,
   Divider,
 } from "@mantine/core";
 import { Icon } from "@iconify-icon/react";
+import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@/utils/customNotifications";
 import {
   fetchTagsApi,
@@ -133,6 +135,48 @@ function StatCard({
   );
 }
 
+function TagMobileCard({
+  tag,
+  onEdit,
+  onDelete,
+}: {
+  tag: Tag;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <Box
+      p="sm"
+      style={{ borderBottom: "0.5px solid var(--mantine-color-default-border)" }}
+    >
+      <Group justify="space-between" mb={8} wrap="nowrap">
+        <Group gap={8} wrap="nowrap">
+          <Box style={{ width: 10, height: 10, borderRadius: "50%", background: tag.color, flexShrink: 0, boxShadow: `0 0 0 2px ${tag.color}33` }} />
+          <Text size="sm" fw={500}>{tag.name}</Text>
+        </Group>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 500, padding: "3px 9px", borderRadius: 20, background: tag.color + "22", color: tag.color, whiteSpace: "nowrap" }}>
+          <span style={{ width: 5, height: 5, borderRadius: "50%", background: tag.color, flexShrink: 0 }} />
+          {tag.name}
+        </span>
+      </Group>
+      <Group justify="space-between" wrap="nowrap">
+        <Group gap={8} wrap="nowrap">
+          <Box style={{ width: 18, height: 18, borderRadius: 5, background: tag.color, border: "0.5px solid rgba(0,0,0,0.1)", flexShrink: 0 }} />
+          <Text size="xs" style={{ fontFamily: "monospace", color: "var(--mantine-color-dimmed)" }}>{tag.color}</Text>
+        </Group>
+        <Group gap={4} wrap="nowrap">
+          <ActionIcon variant="subtle" size="sm" style={{ color: BRAND.purpleDark }} onClick={onEdit}>
+            <Icon icon="solar:pen-2-linear" width={14} />
+          </ActionIcon>
+          <ActionIcon variant="subtle" size="sm" style={{ color: BRAND.red }} onClick={onDelete}>
+            <Icon icon="solar:trash-bin-2-linear" width={14} />
+          </ActionIcon>
+        </Group>
+      </Group>
+    </Box>
+  );
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function TagAdminPanel() {
@@ -144,6 +188,8 @@ export default function TagAdminPanel() {
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
+
+  const isMobile = useMediaQuery("(max-width: 640px)");
 
   // ── Queries ──
   const { data: tags = [], isLoading } = useQuery({
@@ -256,7 +302,7 @@ export default function TagAdminPanel() {
     <Container size="lg" py="lg">
       <Stack gap="lg">
         {/* ── Header ── */}
-        <Group justify="space-between" align="flex-end">
+        <Group justify="space-between" align="flex-end" wrap="wrap" gap={12}>
           <Box>
             <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>
               Tags
@@ -278,7 +324,7 @@ export default function TagAdminPanel() {
         </Group>
 
         {/* ── Stat cards ── */}
-        <Group gap={10} wrap="nowrap">
+        <SimpleGrid cols={{ base: 2, sm: 2 }} spacing={10}>
           <StatCard
             label="Total tags"
             value={tags.length}
@@ -291,7 +337,7 @@ export default function TagAdminPanel() {
             icon="solar:filter-linear"
             accentColor={BRAND.blue}
           />
-        </Group>
+        </SimpleGrid>
 
         {/* ── Table card ── */}
         <Paper
@@ -385,6 +431,17 @@ export default function TagAdminPanel() {
                 )}
               </Stack>
             </Center>
+          ) : isMobile ? (
+            <Stack gap={0}>
+              {displayTags.map((tag: Tag) => (
+                <TagMobileCard
+                  key={tag.id}
+                  tag={tag}
+                  onEdit={() => handleEdit(tag)}
+                  onDelete={() => { setDeleteConfirmId(tag.id); setDeleteConfirmName(tag.name); }}
+                />
+              ))}
+            </Stack>
           ) : (
             <Box style={{ overflowX: "auto" }}>
               <table

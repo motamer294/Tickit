@@ -15,7 +15,8 @@ import {
   ActionIcon,
   Tabs,
   Center,
-  Loader,
+  Skeleton,
+  SimpleGrid,
   Tooltip,
   Modal,
   Box,
@@ -23,6 +24,7 @@ import {
   TextInput,
 } from "@mantine/core";
 import { Icon } from "@iconify-icon/react";
+import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@/utils/customNotifications";
 import {
   fetchDepartmentsApi,
@@ -175,6 +177,88 @@ const TH_STYLE: React.CSSProperties = {
   whiteSpace: "nowrap",
 };
 
+function DeptMobileCard({
+  dept,
+  pal,
+  onEdit,
+  onDelete,
+}: {
+  dept: Department;
+  pal: { bg: string; color: string };
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <Box p="sm" style={{ borderBottom: "0.5px solid var(--mantine-color-default-border)" }}>
+      <Group justify="space-between" mb={6} wrap="nowrap">
+        <Group gap={8} wrap="nowrap">
+          <Avatar size={26} radius="md" style={{ background: pal.bg, color: pal.color, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>
+            {getInitials(dept.name)}
+          </Avatar>
+          <Text size="sm" fw={500}>{dept.name}</Text>
+        </Group>
+        <CountBadge value={dept.team_count ?? 0} label="teams" />
+      </Group>
+      {dept.description && <Text size="xs" c="dimmed" mb={8}>{dept.description}</Text>}
+      <Group justify="flex-end" gap={4}>
+        <ActionIcon variant="subtle" size="sm" style={{ color: BRAND.purpleDark }} onClick={onEdit}>
+          <Icon icon="solar:pen-2-linear" width={14} />
+        </ActionIcon>
+        <ActionIcon variant="subtle" size="sm" style={{ color: BRAND.red }} onClick={onDelete}>
+          <Icon icon="solar:trash-bin-2-linear" width={14} />
+        </ActionIcon>
+      </Group>
+    </Box>
+  );
+}
+
+function TeamMobileCard({
+  team,
+  dept,
+  pal,
+  onManage,
+  onEdit,
+  onDelete,
+}: {
+  team: Team;
+  dept: Department | undefined;
+  pal: { bg: string; color: string };
+  onManage: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <Box p="sm" style={{ borderBottom: "0.5px solid var(--mantine-color-default-border)" }}>
+      <Group justify="space-between" mb={6} wrap="nowrap">
+        <Group gap={8} wrap="nowrap">
+          <Avatar size={26} radius="md" style={{ background: pal.bg, color: pal.color, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>
+            {getInitials(team.name)}
+          </Avatar>
+          <Text size="sm" fw={500}>{team.name}</Text>
+        </Group>
+        <CountBadge value={team.employee_count ?? 0} label="members" />
+      </Group>
+      {dept && (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 500, padding: "3px 9px", borderRadius: 20, background: BRAND.blueLight, color: BRAND.blueText, whiteSpace: "nowrap" }}>
+          <span style={{ width: 5, height: 5, borderRadius: "50%", background: BRAND.blue, flexShrink: 0 }} />
+          {dept.name}
+        </span>
+      )}
+      <Group justify="flex-end" gap={4} mt={8}>
+        <ActionIcon variant="subtle" size="sm" style={{ color: BRAND.purple }} onClick={onManage}>
+          <Icon icon="solar:users-group-rounded-linear" width={14} />
+        </ActionIcon>
+        <ActionIcon variant="subtle" size="sm" style={{ color: BRAND.purpleDark }} onClick={onEdit}>
+          <Icon icon="solar:pen-2-linear" width={14} />
+        </ActionIcon>
+        <ActionIcon variant="subtle" size="sm" style={{ color: BRAND.red }} onClick={onDelete}>
+          <Icon icon="solar:trash-bin-2-linear" width={14} />
+        </ActionIcon>
+      </Group>
+    </Box>
+  );
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function TeamManagementPanel() {
@@ -197,6 +281,8 @@ export default function TeamManagementPanel() {
   } | null>(null);
   const [deptSearch, setDeptSearch] = useState("");
   const [teamSearch, setTeamSearch] = useState("");
+
+  const isMobile = useMediaQuery("(max-width: 640px)");
 
   // ── Queries ──
   const {
@@ -465,7 +551,7 @@ export default function TeamManagementPanel() {
     <Container size="xl" py="lg">
       <Stack gap="lg">
         {/* ── Header ── */}
-        <Group justify="space-between" align="flex-end">
+        <Group justify="space-between" align="flex-end" wrap="wrap" gap={12}>
           <Box>
             <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>
               Team Management
@@ -477,7 +563,7 @@ export default function TeamManagementPanel() {
         </Group>
 
         {/* ── Stat cards ── */}
-        <Group gap={10} wrap="nowrap">
+        <SimpleGrid cols={{ base: 2, md: 4 }} spacing={10}>
           <StatCard
             label="Departments"
             value={departments.length}
@@ -502,7 +588,7 @@ export default function TeamManagementPanel() {
             icon="solar:user-id-linear"
             accentColor={BRAND.amber}
           />
-        </Group>
+        </SimpleGrid>
 
         {/* ── Tabs ── */}
         <Paper
@@ -626,9 +712,17 @@ export default function TeamManagementPanel() {
                 </Group>
 
                 {departmentsLoading ? (
-                  <Center py={80}>
-                    <Loader color={BRAND.purple} />
-                  </Center>
+                  <Stack gap={0}>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Box key={i} style={{ padding: "10px 12px", borderBottom: i < 4 ? "0.5px solid var(--mantine-color-default-border)" : "none", display: "flex", alignItems: "center", gap: 10 }}>
+                        <Skeleton height={30} width={30} radius="md" />
+                        <Skeleton height={14} style={{ flex: 1 }} radius="sm" />
+                        <Skeleton height={14} width={100} radius="sm" />
+                        <Skeleton height={22} width={60} radius="xl" />
+                        <Skeleton height={26} width={56} radius="sm" />
+                      </Box>
+                    ))}
+                  </Stack>
                 ) : departmentsError ? (
                   <Paper
                     p="md"
@@ -677,6 +771,18 @@ export default function TeamManagementPanel() {
                       )}
                     </Stack>
                   </Center>
+                ) : isMobile ? (
+                  <Stack gap={0}>
+                    {filteredDepts.map((dept: Department, idx: number) => (
+                      <DeptMobileCard
+                        key={dept.id}
+                        dept={dept}
+                        pal={AVATAR_PALETTES[idx % AVATAR_PALETTES.length]}
+                        onEdit={() => { setEditingDepartment(dept); setDepartmentFormOpen(true); }}
+                        onDelete={() => handleDeleteClick("department", dept.id, dept.name)}
+                      />
+                    ))}
+                  </Stack>
                 ) : (
                   <Box style={{ overflowX: "auto" }}>
                     <table
@@ -901,9 +1007,17 @@ export default function TeamManagementPanel() {
                 </Group>
 
                 {teamsLoading ? (
-                  <Center py={80}>
-                    <Loader color={BRAND.purple} />
-                  </Center>
+                  <Stack gap={0}>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Box key={i} style={{ padding: "10px 12px", borderBottom: i < 4 ? "0.5px solid var(--mantine-color-default-border)" : "none", display: "flex", alignItems: "center", gap: 10 }}>
+                        <Skeleton height={30} width={30} radius="md" />
+                        <Skeleton height={14} style={{ flex: 1 }} radius="sm" />
+                        <Skeleton height={22} width={80} radius="xl" />
+                        <Skeleton height={22} width={70} radius="xl" />
+                        <Skeleton height={26} width={70} radius="sm" />
+                      </Box>
+                    ))}
+                  </Stack>
                 ) : teamsError ? (
                   <Paper
                     p="md"
@@ -952,6 +1066,23 @@ export default function TeamManagementPanel() {
                       )}
                     </Stack>
                   </Center>
+                ) : isMobile ? (
+                  <Stack gap={0}>
+                    {filteredTeams.map((team: Team, idx: number) => {
+                      const dept = departments.find((d: Department) => d.id === team.department_id);
+                      return (
+                        <TeamMobileCard
+                          key={team.id}
+                          team={team}
+                          dept={dept}
+                          pal={AVATAR_PALETTES[idx % AVATAR_PALETTES.length]}
+                          onManage={() => handleOpenTeamManager(team)}
+                          onEdit={() => { setEditingTeam(team); setTeamFormOpen(true); }}
+                          onDelete={() => handleDeleteClick("team", team.id, team.name)}
+                        />
+                      );
+                    })}
+                  </Stack>
                 ) : (
                   <Box style={{ overflowX: "auto" }}>
                     <table

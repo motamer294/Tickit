@@ -13,7 +13,7 @@ import {
   Textarea,
   LoadingOverlay,
   Center,
-  Loader,
+  Skeleton,
   ActionIcon,
   Tooltip,
   Switch,
@@ -23,6 +23,7 @@ import {
   SimpleGrid,
 } from "@mantine/core";
 import { Icon } from "@iconify-icon/react";
+import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@/utils/customNotifications";
 import { fetchCategoriesApi } from "@/api/tickets.api";
 import {
@@ -217,6 +218,121 @@ const DEFAULT_FORM: FormData = {
   is_active: true,
 };
 
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
+function SLAListSkeleton() {
+  return (
+    <Container size="lg" py="lg">
+      <Stack gap="lg">
+        <Group justify="space-between" wrap="wrap" gap={12}>
+          <Box>
+            <Skeleton height={22} width={160} mb={6} radius="sm" />
+            <Skeleton height={13} width={280} radius="sm" />
+          </Box>
+          <Skeleton height={34} width={100} radius="sm" />
+        </Group>
+        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing={10}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} height={90} radius="md" />
+          ))}
+        </SimpleGrid>
+        <Paper
+          radius="md"
+          style={{ border: "0.5px solid var(--mantine-color-default-border)", overflow: "hidden" }}
+        >
+          <Box px="md" py="sm" style={{ borderBottom: "0.5px solid var(--mantine-color-default-border)" }}>
+            <Group justify="space-between">
+              <Skeleton height={34} width={240} radius="sm" />
+              <Skeleton height={13} width={80} radius="sm" />
+            </Group>
+          </Box>
+          <Stack gap={0}>
+            {Array.from({ length: 7 }).map((_, i) => (
+              <Box
+                key={i}
+                style={{ padding: "11px 16px", borderBottom: i < 6 ? "0.5px solid var(--mantine-color-default-border)" : "none", display: "flex", gap: 16, alignItems: "center" }}
+              >
+                <Box style={{ flex: 2 }}>
+                  <Skeleton height={14} mb={4} radius="sm" />
+                  <Skeleton height={11} width="60%" radius="sm" />
+                </Box>
+                <Skeleton height={20} width={80} radius="xl" />
+                <Skeleton height={20} width={60} radius="xl" />
+                <Skeleton height={13} width={32} radius="sm" />
+                <Skeleton height={13} width={32} radius="sm" />
+                <Skeleton height={20} width={55} radius="xl" />
+                <Skeleton height={28} width={56} radius="sm" />
+              </Box>
+            ))}
+          </Stack>
+        </Paper>
+      </Stack>
+    </Container>
+  );
+}
+
+function SLAMobileCard({
+  sla,
+  cat,
+  prioMeta,
+  onEdit,
+  onDelete,
+}: {
+  sla: SLA;
+  cat: Category | undefined;
+  prioMeta: { bg: string; text: string; dot: string };
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <Box p="sm" style={{ borderBottom: "0.5px solid var(--mantine-color-default-border)" }}>
+      <Group justify="space-between" mb={6} wrap="nowrap">
+        <Text size="sm" fw={500} lineClamp={1} style={{ flex: 1, minWidth: 0 }}>
+          {sla.name}
+        </Text>
+        <DotBadge
+          label={sla.is_active ? "Active" : "Inactive"}
+          bg={sla.is_active ? B.greenLight : B.grayLight}
+          text={sla.is_active ? B.greenText : B.grayText}
+          dot={sla.is_active ? B.green : B.gray}
+        />
+      </Group>
+      {sla.description && (
+        <Text size="xs" c="dimmed" mb={6} lineClamp={1}>{sla.description}</Text>
+      )}
+      <Group gap={6} mb={8} wrap="wrap">
+        {cat && (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 500, padding: "3px 9px", borderRadius: 20, background: (cat.color || B.gray) + "22", color: cat.color || B.gray, whiteSpace: "nowrap" }}>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: cat.color || B.gray }} />
+            {cat.name}
+          </span>
+        )}
+        <DotBadge label={sla.priority.charAt(0) + sla.priority.slice(1).toLowerCase()} {...prioMeta} />
+      </Group>
+      <Group justify="space-between" wrap="nowrap">
+        <Group gap={12} wrap="nowrap">
+          <Group gap={4} wrap="nowrap">
+            <Icon icon="solar:clock-circle-linear" width={12} style={{ color: "var(--mantine-color-dimmed)" }} />
+            <Text size="xs" c="dimmed">{sla.response_time_hours}h response</Text>
+          </Group>
+          <Group gap={4} wrap="nowrap">
+            <Icon icon="solar:hourglass-linear" width={12} style={{ color: "var(--mantine-color-dimmed)" }} />
+            <Text size="xs" c="dimmed">{sla.resolution_time_hours}h resolution</Text>
+          </Group>
+        </Group>
+        <Group gap={4} wrap="nowrap">
+          <ActionIcon variant="subtle" size="sm" style={{ color: B.purpleDark }} onClick={onEdit}>
+            <Icon icon="solar:pen-2-linear" width={14} />
+          </ActionIcon>
+          <ActionIcon variant="subtle" size="sm" style={{ color: B.red }} onClick={onDelete}>
+            <Icon icon="solar:trash-bin-2-linear" width={14} />
+          </ActionIcon>
+        </Group>
+      </Group>
+    </Box>
+  );
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function SLAManagement() {
@@ -227,6 +343,8 @@ export default function SLAManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
+
+  const isMobile = useMediaQuery("(max-width: 640px)");
 
   // ── Queries ──
   const {
@@ -388,22 +506,13 @@ export default function SLAManagement() {
   const activeSLAs = slas.filter((s: SLA) => s.is_active).length;
   const inactiveSLAs = slas.length - activeSLAs;
 
-  // ── Loading ──
-  if (isLoading) {
-    return (
-      <Container size="lg" py="lg">
-        <Center h={300}>
-          <Loader color={B.purple} />
-        </Center>
-      </Container>
-    );
-  }
+  if (isLoading) return <SLAListSkeleton />;
 
   return (
     <Container size="lg" py="lg">
       <Stack gap="lg">
         {/* ── Header ── */}
-        <Group justify="space-between" align="flex-end">
+        <Group justify="space-between" align="flex-end" wrap="wrap" gap={12}>
           <Box>
             <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>
               SLA Management
@@ -535,10 +644,39 @@ export default function SLAManagement() {
           </Box>
 
           {/* Table */}
-          {isLoading ? (
-            <Center py={80}>
-              <Loader color={B.purple} />
-            </Center>
+          {isMobile ? (
+            displaySLAs.length === 0 ? (
+              <Center py={80}>
+                <Stack align="center" gap="sm">
+                  <Icon icon="solar:stopwatch-linear" width={36} style={{ color: "var(--mantine-color-dimmed)", opacity: 0.4 }} />
+                  <Text size="sm" c="dimmed">
+                    {searchQuery ? "No SLAs match your search" : "No SLAs configured yet"}
+                  </Text>
+                  {!searchQuery && (
+                    <Button size="xs" style={{ color: B.purpleDark }} variant="subtle" onClick={openCreate}>
+                      Create your first SLA
+                    </Button>
+                  )}
+                </Stack>
+              </Center>
+            ) : (
+              <Stack gap={0}>
+                {displaySLAs.map((sla: SLA) => {
+                  const cat = categoryMap[sla.category_id];
+                  const prioMeta = PRIORITY_META[sla.priority] ?? PRIORITY_META.MEDIUM;
+                  return (
+                    <SLAMobileCard
+                      key={sla.id}
+                      sla={sla}
+                      cat={cat}
+                      prioMeta={prioMeta}
+                      onEdit={() => openEdit(sla)}
+                      onDelete={() => { setDeleteConfirmId(sla.id); setDeleteConfirmName(sla.name); }}
+                    />
+                  );
+                })}
+              </Stack>
+            )
           ) : (
             <>
               <Box style={{ overflowX: "auto" }}>

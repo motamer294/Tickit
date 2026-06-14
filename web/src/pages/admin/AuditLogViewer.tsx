@@ -10,7 +10,6 @@ import {
   Select,
   Button,
   Center,
-  Loader,
   Skeleton,
   ActionIcon,
   Tooltip,
@@ -19,7 +18,9 @@ import {
   Avatar,
   Divider,
   Textarea,
+  SimpleGrid,
 } from '@mantine/core'
+import { useMediaQuery } from '@mantine/hooks'
 import { Icon } from '@iconify-icon/react'
 import { listAuditLogs, type AuditLog } from '@/api/admin.api'
 
@@ -217,9 +218,55 @@ const TH_STYLE: React.CSSProperties = {
 
 const PAGE_SIZE = 50
 
+// ─── Mobile audit card ─────────────────────────────────────────────────────────
+
+function AuditMobileCard({ log, onClick }: { log: AuditLog; onClick: () => void }) {
+  const meta = ACTION_META[log.action_type] ?? ACTION_META.OTHER
+  const pal = AVATAR_PALETTES[
+    Math.abs((log.performed_by_username || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % AVATAR_PALETTES.length
+  ]
+  return (
+    <Box
+      p="sm"
+      onClick={onClick}
+      style={{
+        borderBottom: '0.5px solid var(--mantine-color-default-border)',
+        cursor: 'pointer',
+        transition: 'background .12s',
+      }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'var(--mantine-color-default-hover)' }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
+    >
+      <Group justify="space-between" mb={8} wrap="nowrap">
+        <Group gap={5} wrap="nowrap" style={{ minWidth: 0 }}>
+          <Icon icon={meta.icon} width={13} style={{ color: meta.dot, flexShrink: 0 }} />
+          <ActionBadge actionType={log.action_type} />
+        </Group>
+        <Text size="xs" c="dimmed" style={{ flexShrink: 0 }}>
+          {new Date(log.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+        </Text>
+      </Group>
+      <Group gap={8} wrap="nowrap" justify="space-between">
+        <Group gap={8} wrap="nowrap" style={{ minWidth: 0 }}>
+          <Avatar size={22} radius="xl" style={{ background: pal.bg, color: pal.color, fontSize: 8, fontWeight: 600, flexShrink: 0 }}>
+            {getInitials(log.performed_by_username)}
+          </Avatar>
+          <Text size="sm" truncate>{log.performed_by_username}</Text>
+        </Group>
+        {log.ticket_id && (
+          <span style={{ fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 20, background: BRAND.blueLight, color: BRAND.blueText, flexShrink: 0 }}>
+            #{log.ticket_id}
+          </span>
+        )}
+      </Group>
+    </Box>
+  )
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function AuditLogViewer() {
+  const isMobile = useMediaQuery('(max-width: 640px)')
   const [filters, setFilters] = useState({ ticketId: '', actionType: '' })
   const [page, setPage]       = useState(0)
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
@@ -263,7 +310,26 @@ export default function AuditLogViewer() {
   if (isLoading && page === 0) {
     return (
       <Container size="lg" py="lg">
-        <Center h={300}><Loader color={BRAND.purple} /></Center>
+        <Stack gap="lg">
+          <Skeleton height={22} width={100} radius="sm" />
+          <SimpleGrid cols={{ base: 2, md: 4 }} spacing={10}>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} height={90} radius="md" />
+            ))}
+          </SimpleGrid>
+          <Skeleton height={68} radius="md" />
+          <Box style={{ border: '0.5px solid var(--mantine-color-default-border)', borderRadius: 12, overflow: 'hidden' }}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Box key={i} p="sm" style={{ borderBottom: '0.5px solid var(--mantine-color-default-border)', display: 'flex', gap: 12, alignItems: 'center' }}>
+                <Skeleton height={12} width={80} radius="sm" />
+                <Skeleton height={22} width={100} radius="xl" />
+                <Skeleton height={26} width={110} radius="sm" />
+                <Skeleton height={12} width={50} radius="sm" />
+                <Skeleton height={12} width={36} radius="sm" />
+              </Box>
+            ))}
+          </Box>
+        </Stack>
       </Container>
     )
   }
@@ -314,12 +380,12 @@ export default function AuditLogViewer() {
         </Group>
 
         {/* ── Stat cards ── */}
-        <Group gap={10} wrap="nowrap">
+        <SimpleGrid cols={{ base: 2, md: 4 }} spacing={10}>
           <StatCard label="Entries shown"  value={logs.length}          icon="solar:list-check-linear"           accentColor={BRAND.purple} />
           <StatCard label="Ticket events"  value={actionCounts.ticket}  icon="solar:ticket-linear"               accentColor={BRAND.blue}   />
           <StatCard label="User events"    value={actionCounts.user}    icon="solar:user-id-linear"              accentColor={BRAND.green}  />
           <StatCard label="Other events"   value={actionCounts.other}   icon="solar:info-circle-linear"          accentColor={BRAND.gray}   />
-        </Group>
+        </SimpleGrid>
 
         {/* ── Filters ── */}
         <Paper radius="md" p="md" style={{ border: '0.5px solid var(--mantine-color-default-border)' }}>
@@ -377,175 +443,159 @@ export default function AuditLogViewer() {
         {/* ── Table ── */}
         <Paper radius="md" style={{ border: '0.5px solid var(--mantine-color-default-border)', overflow: 'hidden' }}>
           {isLoading ? (
-            <Box style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                  <tr style={{ borderBottom: '0.5px solid var(--mantine-color-default-border)' }}>
-                    {['Timestamp', 'Action', 'Performed by', 'Ticket', 'User', ''].map((h) => (
-                      <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 500, color: 'var(--mantine-color-dimmed)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <tr key={i} style={{ borderBottom: '0.5px solid var(--mantine-color-default-border)' }}>
-                      <td style={{ padding: '10px 16px' }}><Skeleton height={14} radius="sm" /></td>
-                      <td style={{ padding: '10px 16px' }}><Skeleton height={20} width={80} radius="xl" /></td>
-                      <td style={{ padding: '10px 16px' }}><Skeleton height={28} radius="sm" /></td>
-                      <td style={{ padding: '10px 16px' }}><Skeleton height={14} radius="sm" /></td>
-                      <td style={{ padding: '10px 16px' }}><Skeleton height={14} radius="sm" /></td>
-                      <td style={{ padding: '10px 16px' }}><Skeleton height={28} width={32} radius="sm" /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Box>
-          ) : (
-            <>
+            /* Pagination skeleton (page > 0 still loading) */
+            isMobile ? (
+              <Stack gap={0}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Box key={i} p="sm" style={{ borderBottom: '0.5px solid var(--mantine-color-default-border)' }}>
+                    <Group justify="space-between" mb={8}>
+                      <Skeleton height={22} width={110} radius="xl" />
+                      <Skeleton height={12} width={52} radius="sm" />
+                    </Group>
+                    <Group gap={8}>
+                      <Skeleton height={22} width={22} radius="xl" />
+                      <Skeleton height={14} width={100} radius="sm" />
+                      <Skeleton height={22} width={44} radius="xl" style={{ marginLeft: 'auto' }} />
+                    </Group>
+                  </Box>
+                ))}
+              </Stack>
+            ) : (
               <Box style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ borderBottom: '0.5px solid var(--mantine-color-default-border)' }}>
-                      <th style={{ ...TH_STYLE, padding: '10px 16px' }}>Timestamp</th>
-                      <th style={{ ...TH_STYLE, padding: '10px 16px' }}>Action</th>
-                      <th style={{ ...TH_STYLE, padding: '10px 16px' }}>Performed by</th>
-                      <th style={{ ...TH_STYLE, padding: '10px 16px' }}>Ticket</th>
-                      <th style={{ ...TH_STYLE, padding: '10px 16px' }}>User</th>
-                      <th style={{ ...TH_STYLE, padding: '10px 16px' }}></th>
+                      {['Timestamp', 'Action', 'Performed by', 'Ticket', 'User', ''].map((h) => (
+                        <th key={h} style={{ padding: '10px 16px', textAlign: 'left', ...TH_STYLE }}>{h}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {logs.length > 0 ? (
-                      logs.map((log: AuditLog, idx: number) => {
-                        const pal = AVATAR_PALETTES[
-                          Math.abs(
-                            (log.performed_by_username || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0),
-                          ) % AVATAR_PALETTES.length
-                        ]
-                        const meta = ACTION_META[log.action_type] ?? ACTION_META.OTHER
-                        return (
-                          <tr
-                            key={log.id}
-                            style={{
-                              borderBottom:
-                                idx < logs.length - 1
-                                  ? '0.5px solid var(--mantine-color-default-border)'
-                                  : 'none',
-                              transition: 'background .12s',
-                            }}
-                            onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--mantine-color-default-hover)' }}
-                            onMouseLeave={(e)  => { (e.currentTarget as HTMLTableRowElement).style.background = 'transparent' }}
-                          >
-                            {/* Timestamp */}
-                            <td style={{ padding: '10px 16px', whiteSpace: 'nowrap' }}>
-                              <Text size="xs" c="dimmed">
-                                {new Date(log.created_at).toLocaleDateString(undefined, {
-                                  month: 'short', day: 'numeric', year: 'numeric',
-                                })}
-                              </Text>
-                              <Text size="xs" c="dimmed" style={{ opacity: 0.7 }}>
-                                {new Date(log.created_at).toLocaleTimeString(undefined, {
-                                  hour: '2-digit', minute: '2-digit', second: '2-digit',
-                                })}
-                              </Text>
-                            </td>
-
-                            {/* Action badge */}
-                            <td style={{ padding: '10px 16px' }}>
-                              <Group gap={6} wrap="nowrap">
-                                <Icon icon={meta.icon} width={14} style={{ color: meta.dot, flexShrink: 0 }} />
-                                <ActionBadge actionType={log.action_type} />
-                              </Group>
-                            </td>
-
-                            {/* Performed by */}
-                            <td style={{ padding: '10px 16px' }}>
-                              <Group gap={8} wrap="nowrap">
-                                <Avatar
-                                  size={26}
-                                  radius="xl"
-                                  style={{ background: pal.bg, color: pal.color, fontSize: 9, fontWeight: 600, flexShrink: 0 }}
-                                >
-                                  {getInitials(log.performed_by_username)}
-                                </Avatar>
-                                <Text size="sm">{log.performed_by_username}</Text>
-                              </Group>
-                            </td>
-
-                            {/* Ticket ID */}
-                            <td style={{ padding: '10px 16px' }}>
-                              {log.ticket_id ? (
-                                <span
-                                  style={{
-                                    fontSize: 11,
-                                    fontWeight: 500,
-                                    padding: '3px 8px',
-                                    borderRadius: 20,
-                                    background: BRAND.blueLight,
-                                    color: BRAND.blueText,
-                                  }}
-                                >
-                                  #{log.ticket_id}
-                                </span>
-                              ) : (
-                                <Text size="xs" c="dimmed">—</Text>
-                              )}
-                            </td>
-
-                            {/* User ID */}
-                            <td style={{ padding: '10px 16px' }}>
-                              {log.user_id ? (
-                                <Text size="xs" c="dimmed">#{log.user_id}</Text>
-                              ) : (
-                                <Text size="xs" c="dimmed">—</Text>
-                              )}
-                            </td>
-
-                            {/* Details action */}
-                            <td style={{ padding: '10px 16px' }}>
-                              <Tooltip label="View details" withArrow fz={11} position="left">
-                                <ActionIcon
-                                  variant="subtle"
-                                  size="sm"
-                                  style={{ color: BRAND.purpleDark }}
-                                  onClick={() => handleViewDetails(log)}
-                                >
-                                  <Icon icon="solar:eye-linear" width={15} />
-                                </ActionIcon>
-                              </Tooltip>
-                            </td>
-                          </tr>
-                        )
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={6}>
-                          <Center py={80}>
-                            <Stack align="center" gap="sm">
-                              <Icon
-                                icon="solar:list-check-linear"
-                                width={36}
-                                style={{ color: 'var(--mantine-color-dimmed)', opacity: 0.4 }}
-                              />
-                              <Text size="sm" c="dimmed">No audit logs found</Text>
-                              {isFiltered && (
-                                <Button
-                                  variant="subtle"
-                                  size="xs"
-                                  style={{ color: BRAND.purpleDark }}
-                                  onClick={handleReset}
-                                >
-                                  Clear filters
-                                </Button>
-                              )}
-                            </Stack>
-                          </Center>
-                        </td>
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <tr key={i} style={{ borderBottom: '0.5px solid var(--mantine-color-default-border)' }}>
+                        <td style={{ padding: '10px 16px' }}><Skeleton height={14} radius="sm" /></td>
+                        <td style={{ padding: '10px 16px' }}><Skeleton height={22} width={100} radius="xl" /></td>
+                        <td style={{ padding: '10px 16px' }}><Skeleton height={28} radius="sm" /></td>
+                        <td style={{ padding: '10px 16px' }}><Skeleton height={14} radius="sm" /></td>
+                        <td style={{ padding: '10px 16px' }}><Skeleton height={14} radius="sm" /></td>
+                        <td style={{ padding: '10px 16px' }}><Skeleton height={28} width={32} radius="sm" /></td>
                       </tr>
-                    )}
+                    ))}
                   </tbody>
                 </table>
               </Box>
+            )
+          ) : (
+            <>
+              {/* Mobile card list */}
+              {isMobile ? (
+                logs.length > 0 ? (
+                  <Stack gap={0}>
+                    {logs.map((log: AuditLog) => (
+                      <AuditMobileCard key={log.id} log={log} onClick={() => handleViewDetails(log)} />
+                    ))}
+                  </Stack>
+                ) : (
+                  <Center py={60}>
+                    <Stack align="center" gap="sm">
+                      <Icon icon="solar:list-check-linear" width={36} style={{ color: 'var(--mantine-color-dimmed)', opacity: 0.4 }} />
+                      <Text size="sm" c="dimmed">No audit logs found</Text>
+                      {isFiltered && <Button variant="subtle" size="xs" style={{ color: BRAND.purpleDark }} onClick={handleReset}>Clear filters</Button>}
+                    </Stack>
+                  </Center>
+                )
+              ) : (
+                /* Desktop scrollable table */
+                <Box style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ borderBottom: '0.5px solid var(--mantine-color-default-border)' }}>
+                        <th style={{ ...TH_STYLE, padding: '10px 16px' }}>Timestamp</th>
+                        <th style={{ ...TH_STYLE, padding: '10px 16px' }}>Action</th>
+                        <th style={{ ...TH_STYLE, padding: '10px 16px' }}>Performed by</th>
+                        <th style={{ ...TH_STYLE, padding: '10px 16px' }}>Ticket</th>
+                        <th style={{ ...TH_STYLE, padding: '10px 16px' }}>User</th>
+                        <th style={{ ...TH_STYLE, padding: '10px 16px' }}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {logs.length > 0 ? (
+                        logs.map((log: AuditLog, idx: number) => {
+                          const pal = AVATAR_PALETTES[
+                            Math.abs((log.performed_by_username || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % AVATAR_PALETTES.length
+                          ]
+                          const meta = ACTION_META[log.action_type] ?? ACTION_META.OTHER
+                          return (
+                            <tr
+                              key={log.id}
+                              style={{
+                                borderBottom: idx < logs.length - 1 ? '0.5px solid var(--mantine-color-default-border)' : 'none',
+                                transition: 'background .12s',
+                              }}
+                              onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'var(--mantine-color-default-hover)' }}
+                              onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'transparent' }}
+                            >
+                              <td style={{ padding: '10px 16px', whiteSpace: 'nowrap' }}>
+                                <Text size="xs" c="dimmed">
+                                  {new Date(log.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </Text>
+                                <Text size="xs" c="dimmed" style={{ opacity: 0.7 }}>
+                                  {new Date(log.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                </Text>
+                              </td>
+                              <td style={{ padding: '10px 16px' }}>
+                                <Group gap={6} wrap="nowrap">
+                                  <Icon icon={meta.icon} width={14} style={{ color: meta.dot, flexShrink: 0 }} />
+                                  <ActionBadge actionType={log.action_type} />
+                                </Group>
+                              </td>
+                              <td style={{ padding: '10px 16px' }}>
+                                <Group gap={8} wrap="nowrap">
+                                  <Avatar size={26} radius="xl" style={{ background: pal.bg, color: pal.color, fontSize: 9, fontWeight: 600, flexShrink: 0 }}>
+                                    {getInitials(log.performed_by_username)}
+                                  </Avatar>
+                                  <Text size="sm">{log.performed_by_username}</Text>
+                                </Group>
+                              </td>
+                              <td style={{ padding: '10px 16px' }}>
+                                {log.ticket_id ? (
+                                  <span style={{ fontSize: 11, fontWeight: 500, padding: '3px 8px', borderRadius: 20, background: BRAND.blueLight, color: BRAND.blueText }}>
+                                    #{log.ticket_id}
+                                  </span>
+                                ) : (
+                                  <Text size="xs" c="dimmed">—</Text>
+                                )}
+                              </td>
+                              <td style={{ padding: '10px 16px' }}>
+                                {log.user_id ? <Text size="xs" c="dimmed">#{log.user_id}</Text> : <Text size="xs" c="dimmed">—</Text>}
+                              </td>
+                              <td style={{ padding: '10px 16px' }}>
+                                <Tooltip label="View details" withArrow fz={11} position="left">
+                                  <ActionIcon variant="subtle" size="sm" style={{ color: BRAND.purpleDark }} onClick={() => handleViewDetails(log)}>
+                                    <Icon icon="solar:eye-linear" width={15} />
+                                  </ActionIcon>
+                                </Tooltip>
+                              </td>
+                            </tr>
+                          )
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={6}>
+                            <Center py={80}>
+                              <Stack align="center" gap="sm">
+                                <Icon icon="solar:list-check-linear" width={36} style={{ color: 'var(--mantine-color-dimmed)', opacity: 0.4 }} />
+                                <Text size="sm" c="dimmed">No audit logs found</Text>
+                                {isFiltered && <Button variant="subtle" size="xs" style={{ color: BRAND.purpleDark }} onClick={handleReset}>Clear filters</Button>}
+                              </Stack>
+                            </Center>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </Box>
+              )}
 
               {/* Table footer + pagination */}
               <Box
