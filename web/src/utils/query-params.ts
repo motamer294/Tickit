@@ -2,6 +2,7 @@
  * Safe Query Parameter Validation and Parsing Utility
  * Prevents XSS and parameter injection attacks
  */
+import { logger } from '@/utils/logger'
 
 /**
  * Allowed query parameters and their valid value whitelists
@@ -39,10 +40,10 @@ export function getQueryParam<K extends keyof typeof ALLOWED_PARAMS>(
       return value as (typeof ALLOWED_PARAMS)[K][number];
     }
 
-    console.warn(`Invalid query parameter: ${paramName}=${value}`);
+    logger.warn(`Invalid query parameter: ${paramName}=${value}`);
     return null;
   } catch (error) {
-    console.error('Error parsing query parameters:', error);
+    logger.error('Error parsing query parameters:', error);
     return null;
   }
 }
