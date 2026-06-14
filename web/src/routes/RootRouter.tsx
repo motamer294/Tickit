@@ -1,40 +1,46 @@
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom' // Added Outlet
+import React, { lazy, Suspense } from 'react'
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
+import { Center, Loader } from '@mantine/core'
 import DashboardLayout from '@/layouts/DashboardLayout'
 import ProtectedRoute from './ProtectedRoute'
-
-/* Pages */
-import Dashboard from '@/pages/dashboard/Dashboard'
-
-/* Tickets */
-import TicketsList from '@/pages/tickets/TicketsList'
-import CreateTicket from '@/pages/tickets/CreateTicket'
-import TicketDetail from '@/pages/tickets/TicketDetail'
-
-/* Profile */
-import { UserProfile } from '@/pages/profile/UserProfile'
-
-/* Settings */
-import Settings from '@/pages/settings/Settings'
-
-/* Admin */
-import UserAdminPanel from '@/pages/admin/UserAdminPanel'
-import SLAManagement from '@/pages/admin/SLAManagement'
-import AuditLogViewer from '@/pages/admin/AuditLogViewer'
-import CategoryAdminPanel from '@/pages/admin/CategoryAdminPanel'
-import TagAdminPanel from '@/pages/admin/TagAdminPanel'
-import TeamManagementPanel from '@/pages/admin/TeamManagementPanel'
-
-/* layouts */
-import AuthLayout from '@/layouts/AuthLayout'
-
-/* auth pages */
-import Login from '@/pages/auth/Login'
-import Signup from '@/pages/auth/Signup'
-
-/* debug */
-import Debug from '@/pages/Debug'
-
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useAuth } from '@/hooks/useAuth'
+
+/* Lazy page imports */
+const Dashboard          = lazy(() => import('@/pages/dashboard/Dashboard'))
+const TicketsList        = lazy(() => import('@/pages/tickets/TicketsList'))
+const CreateTicket       = lazy(() => import('@/pages/tickets/CreateTicket'))
+const TicketDetail       = lazy(() => import('@/pages/tickets/TicketDetail'))
+const UserProfile        = lazy(() => import('@/pages/profile/UserProfile').then(m => ({ default: m.UserProfile })))
+const Settings           = lazy(() => import('@/pages/settings/Settings'))
+const UserAdminPanel     = lazy(() => import('@/pages/admin/UserAdminPanel'))
+const SLAManagement      = lazy(() => import('@/pages/admin/SLAManagement'))
+const AuditLogViewer     = lazy(() => import('@/pages/admin/AuditLogViewer'))
+const CategoryAdminPanel = lazy(() => import('@/pages/admin/CategoryAdminPanel'))
+const TagAdminPanel      = lazy(() => import('@/pages/admin/TagAdminPanel'))
+const TeamManagementPanel = lazy(() => import('@/pages/admin/TeamManagementPanel'))
+const Login              = lazy(() => import('@/pages/auth/Login'))
+const Signup             = lazy(() => import('@/pages/auth/Signup'))
+const Debug              = lazy(() => import('@/pages/Debug'))
+const AuthLayout         = lazy(() => import('@/layouts/AuthLayout'))
+
+function PageLoader() {
+  return (
+    <Center h="60vh">
+      <Loader color="#7F77DD" size="sm" />
+    </Center>
+  )
+}
+
+function Page({ children }: { children: React.ReactNode }) {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<PageLoader />}>
+        {children}
+      </Suspense>
+    </ErrorBoundary>
+  )
+}
 
 export default function RootRouter() {
   const { isAuthenticated } = useAuth()
@@ -54,9 +60,14 @@ export default function RootRouter() {
       />
 
       {/* ================= AUTH (PUBLIC) ================= */}
-      <Route element={<AuthLayout />}>
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+      <Route element={
+        <Suspense fallback={<PageLoader />}>
+          {/* AuthLayout is small, eager load is fine */}
+          <AuthLayout />
+        </Suspense>
+      }>
+        <Route path="/login"  element={<Page><Login /></Page>} />
+        <Route path="/signup" element={<Page><Signup /></Page>} />
       </Route>
 
       {/* ================= APP (PROTECTED) ================= */}
@@ -68,29 +79,22 @@ export default function RootRouter() {
           </ProtectedRoute>
         }
       >
-        {/* Redirect */}
         <Route index element={<Navigate to="dashboard" replace />} />
 
-        {/* Core - Accessible by all authenticated users */}
-        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="dashboard" element={<Page><Dashboard /></Page>} />
+        <Route path="profile"   element={<Page><UserProfile /></Page>} />
+        <Route path="settings"  element={<Page><Settings /></Page>} />
 
-        {/* Profile - Accessible by all authenticated users */}
-        <Route path="profile" element={<UserProfile />} />
-
-        {/* Settings - Accessible by all authenticated users */}
-        <Route path="settings" element={<Settings />} />
-
-        {/* ================= ADMIN ROUTES ================= */}
-        {/* Wrapped in ProtectedRoute with 'MANAGER' requirement */}
         <Route
           path="debug"
           element={
             <ProtectedRoute requiredRoles={['MANAGER']}>
-              <Debug />
+              <Page><Debug /></Page>
             </ProtectedRoute>
           }
         />
 
+        {/* ── Admin ── */}
         <Route
           path="admin"
           element={
@@ -100,28 +104,26 @@ export default function RootRouter() {
           }
         >
           <Route index element={<Navigate to="users" replace />} />
-          <Route path="users" element={<UserAdminPanel />} />
-          <Route path="teams" element={<TeamManagementPanel />} />
-          <Route path="categories" element={<CategoryAdminPanel />} />
-          <Route path="tags" element={<TagAdminPanel />} />
-          <Route path="slas" element={<SLAManagement />} />
-          <Route path="audit-logs" element={<AuditLogViewer />} />
+          <Route path="users"       element={<Page><UserAdminPanel /></Page>} />
+          <Route path="teams"       element={<Page><TeamManagementPanel /></Page>} />
+          <Route path="categories"  element={<Page><CategoryAdminPanel /></Page>} />
+          <Route path="tags"        element={<Page><TagAdminPanel /></Page>} />
+          <Route path="slas"        element={<Page><SLAManagement /></Page>} />
+          <Route path="audit-logs"  element={<Page><AuditLogViewer /></Page>} />
         </Route>
 
-        {/* ================= TICKETS ================= */}
+        {/* ── Tickets ── */}
         <Route path="tickets">
-          <Route index element={<TicketsList />} />
-
+          <Route index element={<Page><TicketsList /></Page>} />
           <Route
             path="create"
             element={
               <ProtectedRoute requiredRoles={['CUSTOMER', 'EMPLOYEE', 'MANAGER']}>
-                <CreateTicket />
+                <Page><CreateTicket /></Page>
               </ProtectedRoute>
             }
           />
-
-          <Route path=":ticketId" element={<TicketDetail />} />
+          <Route path=":ticketId" element={<Page><TicketDetail /></Page>} />
         </Route>
       </Route>
 
@@ -130,3 +132,4 @@ export default function RootRouter() {
     </Routes>
   )
 }
+
