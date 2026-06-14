@@ -226,7 +226,7 @@ export function useTicketComments(ticketId: number | undefined | null) {
     queryKey: ticketId ? commentKeys.list(ticketId) : [],
     queryFn: () => fetchTicketComments(ticketId!),
     enabled: isAuthenticated && !!ticketId,
-    staleTime: 1000 * 30, // 30 seconds
+    staleTime: 1000 * 60 * 5, // 5 minutes — WS invalidates on comment_added
     gcTime: 1000 * 60 * 5,
     retry: 2,
   })
