@@ -58,6 +58,8 @@ function FilterPill({
   return (
     <button
       onClick={onClick}
+      aria-label={label}
+      aria-pressed={active}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
