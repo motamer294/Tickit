@@ -371,7 +371,7 @@ export default function TeamManagementPanel() {
     mutationFn: ({ teamId, userId }: { teamId: number; userId: number }) =>
       addTeamMemberApi(teamId, userId),
     onSuccess: (updatedTeam) => {
-      if (updatedTeam) setSelectedTeam(updatedTeam as any);
+      if (updatedTeam) setSelectedTeam(updatedTeam);
       queryClient.invalidateQueries({ queryKey: ["admin-teams"] });
       if (selectedTeam)
         queryClient.invalidateQueries({
@@ -390,7 +390,7 @@ export default function TeamManagementPanel() {
     mutationFn: ({ teamId, userId }: { teamId: number; userId: number }) =>
       removeTeamMemberApi(teamId, userId),
     onSuccess: (updatedTeam) => {
-      if (updatedTeam) setSelectedTeam(updatedTeam as any);
+      if (updatedTeam) setSelectedTeam(updatedTeam);
       queryClient.invalidateQueries({ queryKey: ["admin-teams"] });
       if (selectedTeam)
         queryClient.invalidateQueries({
