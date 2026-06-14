@@ -68,6 +68,8 @@ function NavItem({
   return (
     <button
       onClick={onClick}
+      aria-label={label}
+      aria-current={active ? 'page' : undefined}
       style={{
         display: 'flex',
         alignItems: 'center',
