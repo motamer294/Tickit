@@ -1150,10 +1150,17 @@ def upload_profile_avatar(request):
         )
 
 
-@api.get("/profile/avatar")
-def get_profile_avatar(request):
-    """Return the current user's profile picture file."""
-    if not request.user.avatar:
+@api.get("/users/{user_id}/avatar")
+def get_user_avatar(request, user_id: int):
+    """
+    Return a user's profile picture file.
+    Avatars are treated like usernames/roles: visible to any authenticated
+    user, not just the owner (matches how creator/assignee identities are
+    already shown across tickets, chat and audit logs regardless of viewer
+    role). This also serves the current user's own avatar (user_id == self).
+    """
+    target_user = User.objects.filter(id=user_id).first()
+    if not target_user or not target_user.avatar:
         return api.create_response(
             request,
             {"message": "No avatar set"},
@@ -1162,8 +1169,8 @@ def get_profile_avatar(request):
 
     from django.http import FileResponse
     try:
-        response = FileResponse(request.user.avatar.open('rb'))
-        response['Content-Disposition'] = f'inline; filename="{request.user.avatar.name.split("/")[-1]}"'
+        response = FileResponse(target_user.avatar.open('rb'))
+        response['Content-Disposition'] = f'inline; filename="{target_user.avatar.name.split("/")[-1]}"'
         return response
     except Exception as e:
         return api.create_response(

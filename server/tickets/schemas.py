@@ -117,12 +117,17 @@ class CommentOutSchema(Schema):
     id: int
     text: str
     author_username: Optional[str] = None
+    author_id: Optional[int] = None
     created_at: datetime
 
     @staticmethod
     def resolve_author_username(obj):
         # Use the username of the commenter, or "Unknown User" if something went wrong (e.g., deleted user)
         return obj.author.username if getattr(obj, "author", None) else "Unknown User"
+
+    @staticmethod
+    def resolve_author_id(obj):
+        return obj.author.id if getattr(obj, "author", None) else None
 
     # FIX: The broken resolve_text(obj) method was deleted.
     # Django Ninja will automatically map schema.text to model.text perfectly.
@@ -174,6 +179,7 @@ class SLACreateSchema(Schema):
 class AuditLogSchema(Schema):
     id: int
     action_type: str
+    performed_by_id: Optional[int] = None
     performed_by_username: Optional[str] = None
     ticket_id: Optional[int] = None
     user_id: Optional[int] = None
@@ -184,6 +190,10 @@ class AuditLogSchema(Schema):
     metadata: Dict[str, Any] = {}
     created_at: datetime
     ip_address: Optional[str] = None
+
+    @staticmethod
+    def resolve_performed_by_id(obj):
+        return obj.performed_by.id if getattr(obj, "performed_by", None) else None
 
 
 # ==========================
