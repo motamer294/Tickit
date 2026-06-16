@@ -18,6 +18,7 @@ class UserProfileSchema(Schema):
     role: str
     date_joined: datetime
     created_at: datetime
+    has_avatar: bool = False
 
     @staticmethod
     def resolve_first_name(obj):
@@ -38,6 +39,10 @@ class UserProfileSchema(Schema):
     @staticmethod
     def resolve_created_at(obj):
         return obj.created_at
+
+    @staticmethod
+    def resolve_has_avatar(obj):
+        return bool(obj.avatar)
 
 
 class UserUpdateSchema(Schema):

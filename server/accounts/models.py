@@ -26,6 +26,15 @@ class User(AbstractUser):
     
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # Profile picture - stored as a plain FileField (not ImageField) to avoid
+    # a hard Pillow dependency; content-type/size are validated at upload time.
+    avatar = models.FileField(
+        upload_to='avatars/%Y/%m/%d/',
+        null=True,
+        blank=True,
+        max_length=255,
+    )
+
     def __str__(self):
         return f"{self.username} ({self.role})"
     

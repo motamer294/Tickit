@@ -13,7 +13,13 @@ from django.db import transaction
 from tickets.schemas import DashboardStatsSchema
 from accounts.models import User
 from accounts.schemas import UserProfileSchema, UserUpdateSchema, PasswordChangeSchema, UserStatsSchema
-from accounts.services import get_user_stats, update_user_profile, change_password
+from accounts.services import (
+    get_user_stats,
+    update_user_profile,
+    change_password,
+    update_user_avatar,
+    delete_user_avatar,
+)
 from tickets.models import Ticket, Comment, Category, Tag, Attachment
 from tickets.services import update_ticket_status, create_ticket as create_ticket_record
 from tickets.schemas import (
@@ -1114,6 +1120,66 @@ def change_user_password(request, data: PasswordChangeSchema):
             {"message": str(e)},
             status=400
         )
+
+
+@api.post("/profile/avatar", response=UserProfileSchema)
+def upload_profile_avatar(request):
+    """
+    Upload (or replace) the current user's profile picture.
+    Accepts a multipart/form-data request with a "file" field.
+    Allowed types: JPG, PNG, WebP. Max size: 2MB.
+    """
+    uploaded_file = request.FILES.get('file')
+    if not uploaded_file:
+        return api.create_response(
+            request,
+            {"message": "No file provided"},
+            status=400
+        )
+
+    try:
+        user = update_user_avatar(request.user, uploaded_file)
+        from tickets.audit_service import audit_service
+        audit_service.log_user_profile_updated(user, {'avatar': 'updated'}, request.user, request)
+        return user
+    except ValueError as e:
+        return api.create_response(
+            request,
+            {"message": str(e)},
+            status=400
+        )
+
+
+@api.get("/profile/avatar")
+def get_profile_avatar(request):
+    """Return the current user's profile picture file."""
+    if not request.user.avatar:
+        return api.create_response(
+            request,
+            {"message": "No avatar set"},
+            status=404
+        )
+
+    from django.http import FileResponse
+    try:
+        response = FileResponse(request.user.avatar.open('rb'))
+        response['Content-Disposition'] = f'inline; filename="{request.user.avatar.name.split("/")[-1]}"'
+        return response
+    except Exception as e:
+        return api.create_response(
+            request,
+            {"message": f"Failed to load avatar: {str(e)}"},
+            status=500
+        )
+
+
+@api.delete("/profile/avatar", response=UserProfileSchema)
+def remove_profile_avatar(request):
+    """Remove the current user's profile picture."""
+    user = delete_user_avatar(request.user)
+    from tickets.audit_service import audit_service
+    audit_service.log_user_profile_updated(user, {'avatar': 'removed'}, request.user, request)
+    return user
 
 
 # ====== AJAX LONG POLLING FALLBACK ENDPOINTS ======

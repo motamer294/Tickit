@@ -83,6 +83,43 @@ def update_user_profile(user: User, first_name: str = None, last_name: str = Non
     return user
 
 
+ALLOWED_AVATAR_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
+MAX_AVATAR_SIZE = 2 * 1024 * 1024  # 2MB
+
+
+def update_user_avatar(user: User, uploaded_file) -> User:
+    """
+    Validate and save a new profile picture for the user.
+    Replaces (and deletes) any previously stored avatar.
+    """
+
+    if uploaded_file.content_type not in ALLOWED_AVATAR_CONTENT_TYPES:
+        raise ValueError("Avatar must be a JPG, PNG or WebP image")
+
+    if uploaded_file.size > MAX_AVATAR_SIZE:
+        raise ValueError(
+            f"Avatar exceeds 2MB limit (received {uploaded_file.size / (1024 * 1024):.1f}MB)"
+        )
+
+    # Remove the old file (if any) before saving the new one
+    if user.avatar:
+        user.avatar.delete(save=False)
+
+    user.avatar = uploaded_file
+    user.save()
+    return user
+
+
+def delete_user_avatar(user: User) -> User:
+    """Remove the user's profile picture, if one is set."""
+
+    if user.avatar:
+        user.avatar.delete(save=False)
+        user.avatar = None
+        user.save()
+    return user
+
+
 def change_password(user: User, current_password: str, new_password: str) -> bool:
     """
     Change user password after verifying the current one.
