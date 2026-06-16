@@ -6,7 +6,10 @@ User = get_user_model()
 
 
 class ProfileAvatarTests(TestCase):
-    """Avatar upload/fetch/delete endpoints under /api/profile/avatar"""
+    """
+    Avatar upload/delete under /api/profile/avatar (self-only),
+    and fetch under /api/users/{id}/avatar (any authenticated user).
+    """
 
     def setUp(self):
         self.user = User.objects.create_user(
@@ -14,12 +17,22 @@ class ProfileAvatarTests(TestCase):
             password="testpass123",
             role=User.Role.CUSTOMER,
         )
+        self.other_user = User.objects.create_user(
+            username="other_viewer",
+            password="testpass123",
+            role=User.Role.EMPLOYEE,
+        )
         # The API uses JWT auth (not session auth), so authenticate requests
         # by attaching a valid access token rather than client.login().
         from ninja_jwt.tokens import RefreshToken
 
         token = RefreshToken.for_user(self.user).access_token
         self.auth_header = {"HTTP_AUTHORIZATION": f"Bearer {token}"}
+
+        other_token = RefreshToken.for_user(self.other_user).access_token
+        self.other_auth_header = {
+            "HTTP_AUTHORIZATION": f"Bearer {other_token}"
+        }
 
     def _tiny_png(self, name="avatar.png"):
         # 1x1 transparent PNG
@@ -47,14 +60,34 @@ class ProfileAvatarTests(TestCase):
         self.assertTrue(profile_resp.json()["has_avatar"])
 
     def test_get_avatar_returns_404_when_none_set(self):
-        resp = self.client.get("/api/profile/avatar", **self.auth_header)
+        resp = self.client.get(
+            f"/api/users/{self.user.id}/avatar", **self.auth_header
+        )
+        self.assertEqual(resp.status_code, 404)
+
+    def test_get_avatar_returns_404_for_unknown_user(self):
+        resp = self.client.get("/api/users/999999/avatar", **self.auth_header)
         self.assertEqual(resp.status_code, 404)
 
     def test_get_avatar_returns_file_after_upload(self):
         self.client.post(
             "/api/profile/avatar", {"file": self._tiny_png()}, **self.auth_header
         )
-        resp = self.client.get("/api/profile/avatar", **self.auth_header)
+        resp = self.client.get(
+            f"/api/users/{self.user.id}/avatar", **self.auth_header
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertGreater(len(b"".join(resp.streaming_content)), 0)
+
+    def test_other_authenticated_user_can_view_avatar(self):
+        """Avatars are visible to any authenticated user, not just the owner —
+        same exposure level as usernames already shown on tickets/chat/audit logs."""
+        self.client.post(
+            "/api/profile/avatar", {"file": self._tiny_png()}, **self.auth_header
+        )
+        resp = self.client.get(
+            f"/api/users/{self.user.id}/avatar", **self.other_auth_header
+        )
         self.assertEqual(resp.status_code, 200)
         self.assertGreater(len(b"".join(resp.streaming_content)), 0)
 
