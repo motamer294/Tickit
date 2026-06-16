@@ -47,7 +47,6 @@ const ADMIN_ITEMS = [
 
 const BOTTOM_ITEMS = [
   { label: 'Profile',  icon: 'solar:user-bold-duotone',     path: '/app/profile'   },
-  { label: 'Settings', icon: 'solar:settings-bold-duotone', path: '/app/settings'  },
 ]
 
 // ─── NavItem ───────────────────────────────────────────────────────────────────

@@ -12,7 +12,6 @@ const TicketsList        = lazy(() => import('@/pages/tickets/TicketsList'))
 const CreateTicket       = lazy(() => import('@/pages/tickets/CreateTicket'))
 const TicketDetail       = lazy(() => import('@/pages/tickets/TicketDetail'))
 const UserProfile        = lazy(() => import('@/pages/profile/UserProfile').then(m => ({ default: m.UserProfile })))
-const Settings           = lazy(() => import('@/pages/settings/Settings'))
 const UserAdminPanel     = lazy(() => import('@/pages/admin/UserAdminPanel'))
 const SLAManagement      = lazy(() => import('@/pages/admin/SLAManagement'))
 const AuditLogViewer     = lazy(() => import('@/pages/admin/AuditLogViewer'))
@@ -83,7 +82,6 @@ export default function RootRouter() {
 
         <Route path="dashboard" element={<Page><Dashboard /></Page>} />
         <Route path="profile"   element={<Page><UserProfile /></Page>} />
-        <Route path="settings"  element={<Page><Settings /></Page>} />
 
         <Route
           path="debug"
