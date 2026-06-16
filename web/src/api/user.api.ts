@@ -9,6 +9,7 @@ export interface UserProfile {
   role: "MANAGER" | "EMPLOYEE" | "CUSTOMER";
   date_joined: string;
   created_at: string;
+  has_avatar: boolean;
 }
 
 export interface UserStats {
@@ -95,5 +96,63 @@ export async function changeUserPassword(
       throw error;
     }
     throw new Error("Failed to change password");
+  }
+}
+
+/**
+ * Upload (or replace) the current user's profile picture.
+ * Accepts a JPG, PNG or WebP image up to 2MB.
+ */
+export async function uploadUserAvatar(file: File): Promise<UserProfile> {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await getAxiosInstance().post<UserProfile>(
+      "/profile/avatar",
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+    return response.data;
+  } catch (error) {
+    if (error instanceof APIError) {
+      throw error;
+    }
+    throw new Error("Failed to upload avatar");
+  }
+}
+
+/**
+ * Fetch a user's profile picture as a Blob. Works for any user (avatars are
+ * visible to any authenticated user, same as usernames), including the
+ * current user — just pass their own id.
+ */
+export async function fetchUserAvatarBlob(userId: number): Promise<Blob> {
+  try {
+    const response = await getAxiosInstance().get(`/users/${userId}/avatar`, {
+      responseType: "blob",
+    });
+    return response.data;
+  } catch (error) {
+    if (error instanceof APIError) {
+      throw error;
+    }
+    throw new Error("Failed to fetch avatar");
+  }
+}
+
+/**
+ * Remove the current user's profile picture.
+ */
+export async function deleteUserAvatar(): Promise<UserProfile> {
+  try {
+    const response = await getAxiosInstance().delete<UserProfile>(
+      "/profile/avatar"
+    );
+    return response.data;
+  } catch (error) {
+    if (error instanceof APIError) {
+      throw error;
+    }
+    throw new Error("Failed to remove avatar");
   }
 }

@@ -79,6 +79,7 @@ export interface Ticket {
   // People involved
   created_by?: User | string
   created_by_id?: number
+  creator_id?: number
   creator_username: string
 
   assigned_to?: User | string

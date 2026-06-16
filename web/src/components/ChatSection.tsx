@@ -13,7 +13,6 @@ import {
   Loader,
   Stack,
   Textarea,
-  Avatar,
   ActionIcon,
   Center,
   Box,
@@ -24,6 +23,7 @@ import { Icon } from "@iconify-icon/react";
 import { notifications } from "@/utils/customNotifications";
 import { useWebSocketContext } from "@/hooks/useWebSocketContext";
 import { fetchChatMessages, type ChatMessage } from "@/api/tickets.api";
+import UserAvatar from "@/components/UserAvatar";
 
 // ─── Brand palette ─────────────────────────────────────────────────────────────
 
@@ -38,29 +38,6 @@ const BRAND = {
   greenLight: "#EAF3DE",
   greenText: "#27500A",
 };
-
-const AVATAR_PALETTES = [
-  { bg: "#EEEDFE", color: "#3C3489" },
-  { bg: "#E1F5EE", color: "#085041" },
-  { bg: "#FAEEDA", color: "#633806" },
-  { bg: "#FAECE7", color: "#712B13" },
-  { bg: "#E6F1FB", color: "#0C447C" },
-  { bg: "#FBEAF0", color: "#72243E" },
-];
-
-function getAvatarPalette(username: string) {
-  const idx = username.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  return AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
-}
-
-function getInitials(name: string) {
-  return name
-    .split(/[\s._-]/)
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
 
 function formatTime(timestamp: string) {
   return new Date(timestamp).toLocaleTimeString(undefined, {
@@ -391,7 +368,6 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
                 <Stack gap={6}>
                   {dateMessages.map((msg, msgIdx) => {
                     const isOwn = msg.sender_id === currentUserId;
-                    const pal = getAvatarPalette(msg.sender_username);
 
                     // Show avatar only on first message in a run from same sender
                     const prevMsg = dateMessages[msgIdx - 1];
@@ -416,18 +392,13 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
                             }}
                           >
                             {isFirstInRun ? (
-                              <Avatar
+                              <UserAvatar
+                                userId={msg.sender_id}
+                                name={msg.sender_username}
                                 size={28}
                                 radius="xl"
-                                style={{
-                                  background: pal.bg,
-                                  color: pal.color,
-                                  fontSize: 9,
-                                  fontWeight: 700,
-                                }}
-                              >
-                                {getInitials(msg.sender_username)}
-                              </Avatar>
+                                style={{ fontSize: 9, fontWeight: 700 }}
+                              />
                             ) : null}
                           </Box>
                         )}
@@ -507,18 +478,13 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
                             }}
                           >
                             {isFirstInRun ? (
-                              <Avatar
+                              <UserAvatar
+                                userId={msg.sender_id}
+                                name={msg.sender_username}
                                 size={28}
                                 radius="xl"
-                                style={{
-                                  background: BRAND.purpleLight,
-                                  color: BRAND.purpleText,
-                                  fontSize: 9,
-                                  fontWeight: 700,
-                                }}
-                              >
-                                {getInitials(msg.sender_username)}
-                              </Avatar>
+                                style={{ fontSize: 9, fontWeight: 700 }}
+                              />
                             ) : null}
                           </Box>
                         )}

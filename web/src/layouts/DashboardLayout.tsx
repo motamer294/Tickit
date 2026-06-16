@@ -6,7 +6,6 @@ import {
   Stack,
   Box,
   ScrollArea,
-  Avatar,
   Divider,
 } from '@mantine/core'
 import logoSvg from '@/assets/logo.svg'
@@ -16,6 +15,7 @@ import { Icon } from '@iconify-icon/react'
 import { useAuth } from '@/hooks/useAuth'
 import ThemeToggle from '@/components/ThemeToggle'
 import { NotificationCenter } from '@/components/NotificationCenter'
+import UserAvatar from '@/components/UserAvatar'
 
 // ─── Brand ─────────────────────────────────────────────────────────────────────
 
@@ -146,13 +146,6 @@ const DashboardLayout = () => {
     if (opened) toggle()
   }
 
-  const initials = (user?.username ?? 'G')
-    .split(/[\s._-]/)
-    .map((n: string) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-
   const roleLabel =
     user?.role === 'MANAGER'
       ? 'Manager'
@@ -255,19 +248,13 @@ const DashboardLayout = () => {
         >
           {/* User identity row */}
           <Group gap={10} px={4} mb={8}>
-            <Avatar
+            <UserAvatar
+              userId={user?.id}
+              name={user?.username}
               size={32}
               radius="xl"
-              style={{
-                background: BRAND.purpleLight,
-                color: BRAND.purpleText,
-                fontSize: 11,
-                fontWeight: 700,
-                flexShrink: 0,
-              }}
-            >
-              {initials}
-            </Avatar>
+              style={{ fontSize: 11, fontWeight: 700, flexShrink: 0 }}
+            />
             <Box style={{ minWidth: 0, flex: 1 }}>
               <Text size="sm" fw={600} style={{ lineHeight: 1.2 }} truncate>
                 {user?.username ?? 'Guest'}

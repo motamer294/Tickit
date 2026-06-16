@@ -12,7 +12,6 @@ import {
   ActionIcon,
   Text,
   Box,
-  Avatar,
   Tooltip,
   LoadingOverlay,
   Center,
@@ -20,6 +19,7 @@ import {
 import { Icon } from "@iconify-icon/react";
 import { notifications } from "@/utils/customNotifications";
 import type { Team, User } from "@/api/departments.api";
+import UserAvatar from "@/components/UserAvatar";
 
 // ─── Brand palette ─────────────────────────────────────────────────────────────
 
@@ -35,24 +35,6 @@ const BRAND = {
   greenLight: "#EAF3DE",
   greenText: "#27500A",
 };
-
-const AVATAR_PALETTES = [
-  { bg: "#EEEDFE", color: "#3C3489" },
-  { bg: "#E1F5EE", color: "#085041" },
-  { bg: "#FAEEDA", color: "#633806" },
-  { bg: "#FAECE7", color: "#712B13" },
-  { bg: "#E6F1FB", color: "#0C447C" },
-  { bg: "#FBEAF0", color: "#72243E" },
-];
-
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
 
 function displayName(user: User) {
   return user.first_name
@@ -224,23 +206,13 @@ export function TeamMemberManager({
               border: `0.5px solid ${BRAND.purple}33`,
             }}
           >
-            <Avatar
+            <UserAvatar
+              userId={selectedEmployee.id}
+              name={displayName(selectedEmployee)}
               size={22}
               radius="xl"
-              style={{
-                background:
-                  AVATAR_PALETTES[selectedEmployee.id % AVATAR_PALETTES.length]
-                    .bg,
-                color:
-                  AVATAR_PALETTES[selectedEmployee.id % AVATAR_PALETTES.length]
-                    .color,
-                fontSize: 8,
-                fontWeight: 700,
-                flexShrink: 0,
-              }}
-            >
-              {getInitials(displayName(selectedEmployee))}
-            </Avatar>
+              style={{ fontSize: 8, fontWeight: 700, flexShrink: 0 }}
+            />
             <Text size="xs" fw={500} style={{ color: BRAND.purpleText }}>
               {displayName(selectedEmployee)}
             </Text>
@@ -359,8 +331,6 @@ export function TeamMemberManager({
               </thead>
               <tbody>
                 {members.map((member, idx) => {
-                  const pal =
-                    AVATAR_PALETTES[member.id % AVATAR_PALETTES.length];
                   const name = displayName(member);
                   return (
                     <tr
@@ -388,19 +358,13 @@ export function TeamMemberManager({
                       {/* Name + avatar */}
                       <td style={{ padding: "9px 16px" }}>
                         <Group gap={10} wrap="nowrap">
-                          <Avatar
+                          <UserAvatar
+                            userId={member.id}
+                            name={name}
                             size={28}
                             radius="xl"
-                            style={{
-                              background: pal.bg,
-                              color: pal.color,
-                              fontSize: 9,
-                              fontWeight: 700,
-                              flexShrink: 0,
-                            }}
-                          >
-                            {getInitials(name)}
-                          </Avatar>
+                            style={{ fontSize: 9, fontWeight: 700, flexShrink: 0 }}
+                          />
                           <Text size="sm" fw={500}>
                             {name || "—"}
                           </Text>

@@ -15,7 +15,6 @@ import {
   Tooltip,
   Modal,
   Box,
-  Avatar,
   Divider,
   Textarea,
   SimpleGrid,
@@ -23,6 +22,7 @@ import {
 import { useMediaQuery } from '@mantine/hooks'
 import { Icon } from '@iconify-icon/react'
 import { listAuditLogs, type AuditLog } from '@/api/admin.api'
+import UserAvatar from '@/components/UserAvatar'
 
 // ─── Brand palette (matches all other pages) ───────────────────────────────────
 
@@ -84,24 +84,6 @@ const ACTION_META: Record<string, { label: string; bg: string; text: string; dot
   USER_PASSWORD_CHANGED: { label: 'Password Changed',      bg: BRAND.orangeLight, text: BRAND.orangeText, dot: BRAND.orange, icon: 'solar:lock-password-bold-duotone'       },
   USER_DEACTIVATED:      { label: 'User Deactivated',      bg: BRAND.redLight,    text: BRAND.redText,    dot: BRAND.red,    icon: 'solar:user-block-bold-duotone'          },
   OTHER:                 { label: 'Other',                 bg: BRAND.grayLight,   text: BRAND.grayText,   dot: BRAND.gray,   icon: 'solar:info-circle-bold-duotone'         },
-}
-
-const AVATAR_PALETTES = [
-  { bg: '#EEEDFE', color: '#3C3489' },
-  { bg: '#E1F5EE', color: '#085041' },
-  { bg: '#FAEEDA', color: '#633806' },
-  { bg: '#FAECE7', color: '#712B13' },
-  { bg: '#E6F1FB', color: '#0C447C' },
-  { bg: '#FBEAF0', color: '#72243E' },
-]
-
-function getInitials(name: string) {
-  return (name || '?')
-    .split(/[\s._-]/)
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
 }
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
@@ -222,9 +204,6 @@ const PAGE_SIZE = 50
 
 function AuditMobileCard({ log, onClick }: { log: AuditLog; onClick: () => void }) {
   const meta = ACTION_META[log.action_type] ?? ACTION_META.OTHER
-  const pal = AVATAR_PALETTES[
-    Math.abs((log.performed_by_username || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % AVATAR_PALETTES.length
-  ]
   return (
     <Box
       p="sm"
@@ -248,9 +227,7 @@ function AuditMobileCard({ log, onClick }: { log: AuditLog; onClick: () => void 
       </Group>
       <Group gap={8} wrap="nowrap" justify="space-between">
         <Group gap={8} wrap="nowrap" style={{ minWidth: 0 }}>
-          <Avatar size={22} radius="xl" style={{ background: pal.bg, color: pal.color, fontSize: 8, fontWeight: 600, flexShrink: 0 }}>
-            {getInitials(log.performed_by_username)}
-          </Avatar>
+          <UserAvatar userId={log.performed_by_id} name={log.performed_by_username} size={22} radius="xl" style={{ fontSize: 8, fontWeight: 600, flexShrink: 0 }} />
           <Text size="sm" truncate>{log.performed_by_username}</Text>
         </Group>
         {log.ticket_id && (
@@ -521,9 +498,6 @@ export default function AuditLogViewer() {
                     <tbody>
                       {logs.length > 0 ? (
                         logs.map((log: AuditLog, idx: number) => {
-                          const pal = AVATAR_PALETTES[
-                            Math.abs((log.performed_by_username || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % AVATAR_PALETTES.length
-                          ]
                           const meta = ACTION_META[log.action_type] ?? ACTION_META.OTHER
                           return (
                             <tr
@@ -551,9 +525,7 @@ export default function AuditLogViewer() {
                               </td>
                               <td style={{ padding: '10px 16px' }}>
                                 <Group gap={8} wrap="nowrap">
-                                  <Avatar size={26} radius="xl" style={{ background: pal.bg, color: pal.color, fontSize: 9, fontWeight: 600, flexShrink: 0 }}>
-                                    {getInitials(log.performed_by_username)}
-                                  </Avatar>
+                                  <UserAvatar userId={log.performed_by_id} name={log.performed_by_username} size={26} radius="xl" style={{ fontSize: 9, fontWeight: 600, flexShrink: 0 }} />
                                   <Text size="sm">{log.performed_by_username}</Text>
                                 </Group>
                               </td>
@@ -689,13 +661,13 @@ export default function AuditLogViewer() {
             <SimpleDetailGrid>
               <DetailRow label="Performed by">
                 <Group gap={8} wrap="nowrap">
-                  <Avatar
+                  <UserAvatar
+                    userId={selectedLog.performed_by_id}
+                    name={selectedLog.performed_by_username}
                     size={22}
                     radius="xl"
-                    style={{ background: BRAND.purpleLight, color: BRAND.purpleText, fontSize: 8, fontWeight: 600 }}
-                  >
-                    {getInitials(selectedLog.performed_by_username)}
-                  </Avatar>
+                    style={{ fontSize: 8, fontWeight: 600 }}
+                  />
                   <Text size="sm">{selectedLog.performed_by_username}</Text>
                 </Group>
               </DetailRow>

@@ -19,7 +19,6 @@ import {
   Tooltip,
   Box,
   Divider,
-  Avatar,
 } from "@mantine/core";
 import { Icon } from "@iconify-icon/react";
 import { useMediaQuery } from "@mantine/hooks";
@@ -33,6 +32,7 @@ import {
   type UserCreatePayload,
   type UserUpdatePayload,
 } from "@/api/admin.api";
+import UserAvatar from "@/components/UserAvatar";
 
 // ─── Brand palette (matches Dashboard & TicketsList) ──────────────────────────
 
@@ -96,19 +96,6 @@ const ROLE_META: Record<
     avatarText: "#27500A",
   },
 };
-
-const AVATAR_PALETTES = [
-  { bg: "#EEEDFE", color: "#3C3489" },
-  { bg: "#E1F5EE", color: "#085041" },
-  { bg: "#FAEEDA", color: "#633806" },
-  { bg: "#FAECE7", color: "#712B13" },
-  { bg: "#E6F1FB", color: "#0C447C" },
-  { bg: "#FBEAF0", color: "#72243E" },
-];
-
-function getInitials(firstName: string, lastName: string) {
-  return `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
-}
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
@@ -288,12 +275,10 @@ function StatCard({
 
 function UserMobileCard({
   user,
-  pal,
   onEdit,
   onDeactivate,
 }: {
   user: User;
-  pal: { bg: string; color: string };
   onEdit: () => void;
   onDeactivate: () => void;
 }) {
@@ -301,9 +286,7 @@ function UserMobileCard({
     <Box p="sm" style={{ borderBottom: "0.5px solid var(--mantine-color-default-border)" }}>
       <Group justify="space-between" mb={6} wrap="nowrap">
         <Group gap={8} wrap="nowrap">
-          <Avatar size={28} radius="xl" style={{ background: pal.bg, color: pal.color, fontSize: 10, fontWeight: 600, flexShrink: 0 }}>
-            {getInitials(user.first_name, user.last_name)}
-          </Avatar>
+          <UserAvatar userId={user.id} firstName={user.first_name} lastName={user.last_name} name={user.username} size={28} radius="xl" style={{ fontSize: 10, fontWeight: 600, flexShrink: 0 }} />
           <Box style={{ minWidth: 0 }}>
             <Text size="sm" fw={500} style={{ lineHeight: 1.3 }}>{user.first_name} {user.last_name}</Text>
             <Text size="xs" c="dimmed">@{user.username}</Text>
@@ -744,13 +727,11 @@ export default function UserAdminPanel() {
           ) : isMobile ? (
             displayUsers.length > 0 ? (
               <Stack gap={0}>
-                {displayUsers.map((user: User, idx: number) => {
-                  const pal = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
+                {displayUsers.map((user: User) => {
                   return (
                     <UserMobileCard
                       key={user.id}
                       user={user}
-                      pal={pal}
                       onEdit={() => openEdit(user)}
                       onDeactivate={() => handleDeactivate(user)}
                     />
@@ -797,7 +778,6 @@ export default function UserAdminPanel() {
                 <tbody>
                   {displayUsers.length > 0 ? (
                   displayUsers.map((user: User, idx: number) => {
-                    const pal = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
                     return (
                       <tr
                         key={user.id}
@@ -823,19 +803,15 @@ export default function UserAdminPanel() {
                         {/* User (avatar + name + username) */}
                         <td style={{ padding: "10px 16px" }}>
                           <Group gap={10} wrap="nowrap">
-                            <Avatar
+                            <UserAvatar
+                              userId={user.id}
+                              firstName={user.first_name}
+                              lastName={user.last_name}
+                              name={user.username}
                               size={32}
                               radius="xl"
-                              style={{
-                                background: pal.bg,
-                                color: pal.color,
-                                fontSize: 11,
-                                fontWeight: 600,
-                                flexShrink: 0,
-                              }}
-                            >
-                              {getInitials(user.first_name, user.last_name)}
-                            </Avatar>
+                              style={{ fontSize: 11, fontWeight: 600, flexShrink: 0 }}
+                            />
                             <Box style={{ minWidth: 0 }}>
                               <Text
                                 size="sm"

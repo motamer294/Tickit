@@ -9,8 +9,8 @@ import {
   ActionIcon,
   Modal,
   PasswordInput,
+  FileInput,
   Box,
-  Avatar,
   Divider,
   Tooltip,
 } from "@mantine/core";
@@ -23,10 +23,13 @@ import {
   fetchUserProfile,
   fetchUserStats,
   changeUserPassword,
+  uploadUserAvatar,
+  deleteUserAvatar,
 } from "../../api/user.api";
 import { useAuthStore } from "../../store/auth.store";
 import EditProfileModal from "./EditProfileModal";
 import { notifications } from "@/utils/customNotifications";
+import UserAvatar from "@/components/UserAvatar";
 
 // ─── Brand palette ─────────────────────────────────────────────────────────────
 
@@ -51,15 +54,6 @@ const B = {
   blueLight: "#E6F1FB",
   blueText: "#0C447C",
 };
-
-const AVATAR_PALETTES = [
-  { bg: "#EEEDFE", color: "#3C3489" },
-  { bg: "#E1F5EE", color: "#085041" },
-  { bg: "#FAEEDA", color: "#633806" },
-  { bg: "#FAECE7", color: "#712B13" },
-  { bg: "#E6F1FB", color: "#0C447C" },
-  { bg: "#FBEAF0", color: "#72243E" },
-];
 
 const ROLE_META: Record<
   string,
@@ -126,21 +120,6 @@ function getStatCards(stats: any) {
       accentColor: B.gray,
     },
   ];
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getInitials(
-  first: string | null | undefined = "",
-  last: string | null | undefined = "",
-) {
-  const firstName = first ?? "";
-  const lastName = last ?? "";
-  return `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase() || "?";
-}
-function getAvatarPal(name: string) {
-  const idx = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  return AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
 }
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
@@ -311,6 +290,42 @@ export function UserProfile() {
     retry: 2,
   });
 
+  const uploadAvatarMutation = useMutation({
+    mutationFn: (file: File) => uploadUserAvatar(file),
+    onSuccess: () => {
+      notifications.show({
+        title: "Profile picture updated",
+        message: "Your new avatar has been saved",
+        color: "green",
+      });
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+    },
+    onError: (error: any) =>
+      notifications.show({
+        title: "Error",
+        message: error?.message || "Failed to upload avatar",
+        color: "red",
+      }),
+  });
+
+  const deleteAvatarMutation = useMutation({
+    mutationFn: () => deleteUserAvatar(),
+    onSuccess: () => {
+      notifications.show({
+        title: "Profile picture removed",
+        message: "Your avatar has been removed",
+        color: "green",
+      });
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+    },
+    onError: (error: any) =>
+      notifications.show({
+        title: "Error",
+        message: error?.message || "Failed to remove avatar",
+        color: "red",
+      }),
+  });
+
   const changePasswordMutation = useMutation({
     mutationFn: (data: ChangePasswordPayload) => changeUserPassword(data),
     onSuccess: () => {
@@ -363,7 +378,6 @@ export function UserProfile() {
   const roleMeta = profile
     ? (ROLE_META[profile.role] ?? ROLE_META.CUSTOMER)
     : null;
-  const pal = profile ? getAvatarPal(profile.username) : AVATAR_PALETTES[0];
 
   return (
     <Container size="md" py="lg">
@@ -476,18 +490,15 @@ export function UserProfile() {
                 }}
               >
                 <Group gap={16}>
-                  <Avatar
+                  <UserAvatar
+                    userId={profile.id}
+                    firstName={profile.first_name}
+                    lastName={profile.last_name}
+                    name={profile.username}
                     size={60}
                     radius="xl"
-                    style={{
-                      ...pal,
-                      fontSize: 18,
-                      fontWeight: 700,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {getInitials(profile.first_name, profile.last_name)}
-                  </Avatar>
+                    style={{ fontSize: 18, fontWeight: 700, flexShrink: 0 }}
+                  />
                   <Box style={{ flex: 1, minWidth: 0 }}>
                     <Group gap={10} align="center" mb={4}>
                       <Text fw={600} style={{ fontSize: 17 }}>
@@ -546,41 +557,116 @@ export function UserProfile() {
 
                 <Divider mb="md" />
 
-                {/* Security */}
-                <Group
-                  justify="space-between"
-                  align="center"
-                  px="sm"
-                  py="sm"
-                  style={{
-                    borderRadius: 8,
-                    background: "var(--mantine-color-default-hover)",
-                    border: "0.5px solid var(--mantine-color-default-border)",
-                  }}
-                >
-                  <Group gap={8}>
-                    <Icon
-                      icon="solar:lock-bold-duotone"
-                      width={15}
-                      style={{ color: "var(--mantine-color-dimmed)" }}
-                    />
-                    <Box>
-                      <Text size="sm" fw={500}>
-                        Password
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        Update your account password
-                      </Text>
-                    </Box>
-                  </Group>
-                  <Button
-                    size="xs"
-                    variant="default"
-                    onClick={() => setPasswordModalOpen(true)}
+                <Stack gap="sm">
+                  {/* Profile picture */}
+                  <Group
+                    justify="space-between"
+                    align="center"
+                    px="sm"
+                    py="sm"
+                    style={{
+                      borderRadius: 8,
+                      background: "var(--mantine-color-default-hover)",
+                      border:
+                        "0.5px solid var(--mantine-color-default-border)",
+                    }}
                   >
-                    Change
-                  </Button>
-                </Group>
+                    <Group gap={8}>
+                      <Icon
+                        icon="solar:camera-bold-duotone"
+                        width={15}
+                        style={{ color: "var(--mantine-color-dimmed)" }}
+                      />
+                      <Box>
+                        <Text size="sm" fw={500}>
+                          Profile picture
+                        </Text>
+                        <Text size="xs" c="dimmed">
+                          JPG, PNG or WebP · Max 2 MB
+                        </Text>
+                      </Box>
+                    </Group>
+                    <Group gap={6}>
+                      <FileInput
+                        placeholder="Choose an image…"
+                        accept="image/*"
+                        value={null}
+                        w={200}
+                        disabled={uploadAvatarMutation.isPending}
+                        onChange={(file) => {
+                          if (!file) return;
+                          if (file.size > 2 * 1024 * 1024) {
+                            notifications.show({
+                              title: "Error",
+                              message: "Image must be 2MB or smaller",
+                              color: "red",
+                            });
+                            return;
+                          }
+                          uploadAvatarMutation.mutate(file);
+                        }}
+                        leftSection={
+                          <Icon
+                            icon="solar:upload-bold-duotone"
+                            width={14}
+                            style={{ color: "var(--mantine-color-dimmed)" }}
+                          />
+                        }
+                        styles={{ input: { fontSize: 12 } }}
+                      />
+                      {profile.has_avatar && (
+                        <Tooltip label="Remove photo" withArrow fz={11}>
+                          <ActionIcon
+                            variant="subtle"
+                            color="red"
+                            size="sm"
+                            disabled={deleteAvatarMutation.isPending}
+                            onClick={() => deleteAvatarMutation.mutate()}
+                          >
+                            <Icon icon="solar:trash-bin-trash-linear" width={15} />
+                          </ActionIcon>
+                        </Tooltip>
+                      )}
+                    </Group>
+                  </Group>
+
+                  {/* Security */}
+                  <Group
+                    justify="space-between"
+                    align="center"
+                    px="sm"
+                    py="sm"
+                    style={{
+                      borderRadius: 8,
+                      background: "var(--mantine-color-default-hover)",
+                      border:
+                        "0.5px solid var(--mantine-color-default-border)",
+                    }}
+                  >
+                    <Group gap={8}>
+                      <Icon
+                        icon="solar:lock-bold-duotone"
+                        width={15}
+                        style={{ color: "var(--mantine-color-dimmed)" }}
+                      />
+                      <Box>
+                        <Text size="sm" fw={500}>
+                          Password
+                        </Text>
+                        <Text size="xs" c="dimmed">
+                          Update your account password
+                        </Text>
+                      </Box>
+                    </Group>
+                    <Button
+                      size="xs"
+                      variant="default"
+                      onClick={() => setPasswordModalOpen(true)}
+                    >
+                      Change
+                    </Button>
+                  </Group>
+                </Stack>
               </Box>
             </>
           ) : null}

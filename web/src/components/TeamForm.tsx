@@ -16,11 +16,11 @@ import {
   Text,
   Divider,
   Paper,
-  Avatar,
   Box,
 } from '@mantine/core'
 import { Icon } from '@iconify-icon/react'
 import type { Team, Department, User } from '@/api/departments.api'
+import UserAvatar from '@/components/UserAvatar'
 
 // ─── Brand palette ─────────────────────────────────────────────────────────────
 
@@ -35,18 +35,6 @@ const BRAND = {
   blue:        '#378ADD',
   blueLight:   '#E6F1FB',
   blueText:    '#0C447C',
-}
-
-const AVATAR_PALETTES = [
-  { bg: '#EEEDFE', color: '#3C3489' },
-  { bg: '#E1F5EE', color: '#085041' },
-  { bg: '#FAEEDA', color: '#633806' },
-  { bg: '#FAECE7', color: '#712B13' },
-  { bg: '#E6F1FB', color: '#0C447C' },
-]
-
-function getInitials(name: string) {
-  return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
 // ─── Props ─────────────────────────────────────────────────────────────────────
@@ -230,19 +218,13 @@ export function TeamForm({
                 border: `0.5px solid ${BRAND.purple}33`,
               }}
             >
-              <Avatar
+              <UserAvatar
+                userId={selectedLead.id}
+                name={leadDisplayName(selectedLead)}
                 size={22}
                 radius="xl"
-                style={{
-                  background: AVATAR_PALETTES[selectedLead.id % AVATAR_PALETTES.length].bg,
-                  color: AVATAR_PALETTES[selectedLead.id % AVATAR_PALETTES.length].color,
-                  fontSize: 8,
-                  fontWeight: 700,
-                  flexShrink: 0,
-                }}
-              >
-                {getInitials(leadDisplayName(selectedLead))}
-              </Avatar>
+                style={{ fontSize: 8, fontWeight: 700, flexShrink: 0 }}
+              />
               <Text size="xs" fw={500} style={{ color: BRAND.purpleText }}>
                 {leadDisplayName(selectedLead)}
               </Text>

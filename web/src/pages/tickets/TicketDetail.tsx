@@ -17,7 +17,6 @@ import {
   Box,
   Divider,
   Tooltip,
-  Avatar,
   Skeleton,
   Loader,
 } from "@mantine/core";
@@ -28,6 +27,7 @@ import { notifications } from "@/utils/customNotifications";
 import { useAuth } from "@/hooks/useAuth";
 import { CustomAlert } from "@/components/CustomAlert";
 import { ChatSection } from "@/components/ChatSection";
+import UserAvatar from "@/components/UserAvatar";
 import {
   fetchTicketById,
   updateTicketStatusApi,
@@ -49,8 +49,6 @@ import {
   STATUS_META,
   PRIORITY_META,
   SENTIMENT_META,
-  getInitials,
-  getAvatarPal,
 } from "@/utils/ticketUtils";
 import { Pill, SLabel, Card, CardHeader } from "@/components/ticket/TicketCard";
 import { AttachmentsSection } from "@/components/ticket/AttachmentsSection";
@@ -404,14 +402,14 @@ export default function TicketDetail() {
           >
             {/* Creator */}
             {[
-              { label: "Created by", name: ticket.creator_username },
+              { label: "Created by", name: ticket.creator_username, id: ticket.creator_id },
               {
                 label: "Assigned to",
                 name: ticket.assigned_to_username,
+                id: ticket.assigned_to_id,
                 isAssignee: true,
               },
             ].map((m) => {
-              const pal = getAvatarPal(m.name);
               const isUnassigned = m.name === "Unassigned";
               return (
                 <Box key={m.label}>
@@ -426,13 +424,13 @@ export default function TicketDetail() {
                   </Text>
                   <Group gap={7} wrap="nowrap">
                     {!isUnassigned && (
-                      <Avatar
+                      <UserAvatar
+                        userId={m.id}
+                        name={m.name}
                         size={20}
                         radius="xl"
-                        style={{ ...pal, fontSize: 8, fontWeight: 700 }}
-                      >
-                        {getInitials(m.name)}
-                      </Avatar>
+                        style={{ fontSize: 8, fontWeight: 700 }}
+                      />
                     )}
                     <Text
                       size="sm"
@@ -747,7 +745,6 @@ export default function TicketDetail() {
               ) : (
                 <Stack gap={0}>
                   {comments.map((comment: any, idx: number) => {
-                    const pal = getAvatarPal(comment.author_username);
                     return (
                       <Box
                         key={comment.id}
@@ -761,19 +758,18 @@ export default function TicketDetail() {
                         }}
                       >
                         <Group gap={10} align="flex-start" wrap="nowrap">
-                          <Avatar
+                          <UserAvatar
+                            userId={comment.author_id}
+                            name={comment.author_username}
                             size={28}
                             radius="xl"
                             style={{
-                              ...pal,
                               fontSize: 9,
                               fontWeight: 700,
                               flexShrink: 0,
                               marginTop: 2,
                             }}
-                          >
-                            {getInitials(comment.author_username)}
-                          </Avatar>
+                          />
                           <Box style={{ flex: 1, minWidth: 0 }}>
                             <Group gap={8} mb={6}>
                               <Text size="xs" fw={600}>
@@ -1002,17 +998,13 @@ export default function TicketDetail() {
                       border: "0.5px solid var(--mantine-color-default-border)",
                     }}
                   >
-                    <Avatar
+                    <UserAvatar
+                      userId={ticket.assigned_to_id}
+                      name={ticket.assigned_to_username}
                       size={32}
                       radius="xl"
-                      style={{
-                        ...getAvatarPal(ticket.assigned_to_username),
-                        fontSize: 10,
-                        fontWeight: 700,
-                      }}
-                    >
-                      {getInitials(ticket.assigned_to_username)}
-                    </Avatar>
+                      style={{ fontSize: 10, fontWeight: 700 }}
+                    />
                     <Box style={{ flex: 1, minWidth: 0 }}>
                       <Text size="sm" fw={500}>
                         {ticket.assigned_to_username}

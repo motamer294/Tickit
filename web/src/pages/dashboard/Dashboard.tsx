@@ -36,6 +36,7 @@ import {
 } from "@/api/tickets.api";
 import { DashboardErrorAlert } from "@/components/DashboardErrorAlert";
 import { CustomAlert } from "@/components/CustomAlert";
+import UserAvatar from "@/components/UserAvatar";
 import type { Ticket, TicketStatus } from "@/types/ticket";
 
 // ─── Brand palette ─────────────────────────────────────────────────────────────
@@ -646,14 +647,11 @@ const Dashboard = () => {
                       <WorkloadChart workload={teamWorkload} isDark={isDark} />
                       <Divider />
                       <Stack gap={6}>
-                        {teamWorkload.slice(0, 5).map((member, i) => {
-                          const pal = AVATAR_PALETTES[i % AVATAR_PALETTES.length];
+                        {teamWorkload.slice(0, 5).map((member) => {
                           return (
                             <Group key={member.employee_id} gap={8} justify="space-between" wrap="nowrap">
                               <Group gap={8} wrap="nowrap" style={{ minWidth: 0 }}>
-                                <Avatar size={24} radius="xl" style={{ background: pal.bg, color: pal.color, fontSize: 9, fontWeight: 500, flexShrink: 0 }}>
-                                  {getInitials(member.employee_name)}
-                                </Avatar>
+                                <UserAvatar userId={member.employee_id} name={member.employee_name} size={24} radius="xl" style={{ fontSize: 9, fontWeight: 500, flexShrink: 0 }} />
                                 <Text size="xs" truncate style={{ minWidth: 0 }}>
                                   {member.employee_name.split(" ")[0]}
                                 </Text>
