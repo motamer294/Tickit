@@ -15,25 +15,30 @@ bash stop_services.sh
 ## 📂 Directory Layout
 
 ### Core Application
+
 - `app_optimized.py` → FastAPI server (port 8001)
 - `rag_service_optimized.py` → RAG with caching
 - `performance_config.py` → Service configuration
 - `requirements.txt` → Python dependencies
 
 ### Service Management
+
 - `start_services.sh` → Start Ollama + FastAPI
 - `stop_services.sh` → Stop all services
 
 ### Documentation
+
 - `QUICK_START.md` → 2-minute quick reference
 - `SERVICE_MANAGEMENT.md` → Complete guide
 - `README_SERVICES.md` → Documentation index
 - `SETUP_COMPLETE.txt` → Setup summary
 
 ### Python Environment
+
 - `venv/` → Virtual environment (ready to use)
 
 ### ML Components
+
 - `services/` → ML services (ml_service, nlp_service, text_cleaner)
 - `scripts/` → Utility scripts
 - `dataset/` → Training data
