@@ -1,90 +1,97 @@
-```markdown
-# 🧠 Nexus AI: Machine Learning Microservice
+# 🚀 TIcketMe ML Service (neural-chat)
 
-This repository contains the Machine Learning microservice for the AI-Powered Help Desk project. It operates as a standalone RESTful API built with **FastAPI**, responsible for handling all natural language processing(NLP), ticket classification, and automated resolution generation.
+## 🚀 Quick Start
 
-A core architectural pillar of this microservice is **data privacy and security**. It relies entirely on local models—specifically **Llama 3.2 via Ollama**—ensuring that zero sensitive IT data is sent to external or cloud-based APIs.
-
----
-
-## 🏗️ Technical Stack
-
-* **Framework:** FastAPI
-* **LLM Engine:** Llama 3.2 (Local execution via Ollama)
-* **Vector Database:** FAISS (Facebook AI Similarity Search)
-* **Embeddings:** `all-MiniLM-L6-v2` (SentenceTransformers)
-* **Classical ML:** Scikit-learn (Logistic Regression, Linear SVM)
-* **NLP Processing:** NLTK / spaCy (via custom `nlp_service.py` & `text_cleaner.py`)
-
----
-
-## 📂 Architecture & Directory Structure
-
-```text
-ML/
-├── dataset/                   # Synthetic ITSM training data
-├── models/                    # Serialized ML pipelines and FAISS vector indices
-├── services/                  # Core logic modules
-│   ├── ml_service.py          # Wrappers for scikit-learn predictions
-│   ├── nlp_service.py         # Sentiment and intent analysis functions
-│   └── text_cleaner.py        # Text sanitization and preprocessing
-├── app.py                     # Main FastAPI application and route definitions
-├── build_faiss.py             # Script to generate vector embeddings from historical data
-├── rag_service.py             # Orchestrates retrieval (FAISS) and generation (Llama 3.2)
-└── train_models.py            # Script to train and export classification models (.pkl)
-```
-
----
-
-## 🚀 Features
-
-1.  **Automated Ticket Classification:** Predicts the appropriate `Category` and `Priority` for incoming tickets using trained scikit-learn models (Logistic Regression & Linear SVM).
-2.  **Sentiment Analysis:** Analyzes the tone of the user's request to help prioritize urgent or frustrated queries.
-3.  **Local RAG System (Retrieval-Augmented Generation):** Searches a FAISS database of over 1000+ historical IT resolutions to provide accurate, context-aware solutions using Llama 3.2.
-
----
-
-## 🛠️ Setup & Installation
-
-**1. Install Dependencies**
-Ensure you have Python 3.10+ installed, then install the required packages:
 ```bash
-pip install -r requirements.txt
-```
+# Start both services
+bash start_services.sh
 
-**2. Setup Ollama (Local LLM)**
-You must have Ollama installed and the Llama 3.2 model pulled locally.
-```bash
-# Pull the model
-ollama run llama3.2
-```
-*Ensure the Ollama service is running in the background before starting the FastAPI server.*
-
-**3. Data Preparation (First-time setup)**
-Before running the API, you need to train the classification models and build the FAISS index based on the historical dataset.
-```bash
-# Train category and priority classification models
-python train_models.py
-
-# Build the FAISS vector database
-python build_faiss.py
-```
-
-**4. Start the FastAPI Server**
-Run the server using Uvicorn:
-```bash
-uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+# Stop both services
+bash stop_services.sh
 ```
 
 ---
 
-## 📡 API Documentation
+## 📂 Directory Layout
 
-Once the server is running, FastAPI provides automatic, interactive API documentation. You can explore the endpoints and test requests directly in your browser:
+### Core Application
+- `app_optimized.py` → FastAPI server (port 8001)
+- `rag_service_optimized.py` → RAG with caching
+- `performance_config.py` → Service configuration
+- `requirements.txt` → Python dependencies
 
-* **Swagger UI:** [http://localhost:8000/docs](http://localhost:8000/docs)
-* **ReDoc:** [http://localhost:8000/redoc](http://localhost:8000/redoc)
+### Service Management
+- `start_services.sh` → Start Ollama + FastAPI
+- `stop_services.sh` → Stop all services
 
-### Key Endpoints
-* `POST /analyze_ticket_with_ai`: Accepts a raw user ticket and returns structured JSON containing the predicted category, priority, sentiment, and a suggested AI resolution generated via the RAG pipeline.
+### Documentation
+- `QUICK_START.md` → 2-minute quick reference
+- `SERVICE_MANAGEMENT.md` → Complete guide
+- `README_SERVICES.md` → Documentation index
+- `SETUP_COMPLETE.txt` → Setup summary
+
+### Python Environment
+- `venv/` → Virtual environment (ready to use)
+
+### ML Components
+- `services/` → ML services (ml_service, nlp_service, text_cleaner)
+- `scripts/` → Utility scripts
+- `dataset/` → Training data
+
+---
+
+## 📊 System Status
+
+✅ **FastAPI**: Ready on port 8001
+✅ **Ollama**: Ready on port 11434
+✅ **Cache**: LRU enabled (3600s TTL)
+✅ **Performance**: CPU-only (24.5s avg)
+
+---
+
+## 🧪 Test It
+
+```bash
+# Health check
+curl http://localhost:8001/health
+
+# Process ticket
+curl -X POST http://localhost:8001/ticket \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test","description":"Testing"}'
+
+# View cache stats
+curl http://localhost:8001/cache_stats
 ```
+
+---
+
+## 🎯 What to Do Next
+
+1. **Read** `QUICK_START.md` (2 minutes)
+2. **Run** `bash start_services.sh`
+3. **Test** with the sample curl commands above
+4. **Monitor** performance with cache_stats
+
+---
+
+## 🗑️ What Was Removed
+
+- ❌ Old disabled app versions
+- ❌ Old/redundant setup scripts
+- ❌ Planning documents (blueprint.md)
+- ❌ GPU setup guides (archived in docs_archive/)
+
+**Keeping only:** Essential app files, clean docs, and service scripts
+
+---
+
+## 📞 Need Help?
+
+- `QUICK_START.md` → Fast reference
+- `SERVICE_MANAGEMENT.md` → Detailed guide
+- `README_SERVICES.md` → Documentation index
+
+---
+
+**Status: Clean & Ready** ✅

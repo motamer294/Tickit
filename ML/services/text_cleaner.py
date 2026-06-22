@@ -3,18 +3,19 @@ import string
 import nltk
 from nltk.corpus import stopwords
 
-# Ensure stopwords are downloaded silently
 try:
     nltk.data.find('corpora/stopwords')
 except LookupError:
     nltk.download('stopwords', quiet=True)
 
+_STOP_WORDS = set(stopwords.words('english'))
+_PUNCT_TABLE = str.maketrans('', '', string.punctuation)
+
 def clean_text_list(texts):
     """
-    Cleans a list of text strings by removing punctuation, numbers, 
+    Cleans a list of text strings by removing punctuation, numbers,
     stopwords, and lowercasing the text.
     """
-    stop_words = set(stopwords.words('english'))
     cleaned = []
     
     for text in texts:
@@ -22,17 +23,11 @@ def clean_text_list(texts):
         if not isinstance(text, str):
             text = ""
             
-        # Remove punctuation
-        text = text.translate(str.maketrans('', '', string.punctuation))
-        # Remove digits
+        text = text.translate(_PUNCT_TABLE)
         text = re.sub(r'\d+', '', text)
-        # Convert to lowercase
         text = text.lower()
-        # Remove stopwords
-        text = ' '.join([w for w in text.split() if w not in stop_words])
-        # Remove non-alphabetical characters
+        text = ' '.join(w for w in text.split() if w not in _STOP_WORDS)
         text = re.sub(r'[^a-z\s]', '', text)
-        # Remove multiple spaces
         text = ' '.join(text.split())
         
         cleaned.append(text)

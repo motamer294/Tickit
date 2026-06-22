@@ -1,28 +1,19 @@
-import nltk
-from nltk.sentiment import SentimentIntensityAnalyzer
+import os
+import joblib
 
-# Download VADER lexicon quietly for sentiment analysis
-try:
-    nltk.data.find('sentiment/vader_lexicon')
-except LookupError:
-    nltk.download('vader_lexicon', quiet=True)
+from services.feature_engineering import extract_sentiment_features
 
-# Initialize the Sentiment Analyzer
-sia = SentimentIntensityAnalyzer()
+_BASE            = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'models')
+_sentiment_model = joblib.load(os.path.join(_BASE, 'sentiment_svm.pkl'))
 
-def analysis_sentiment(text):
+
+def analysis_sentiment(text: str) -> str:
     """
-    Analyzes the sentiment of the original text using NLTK's VADER.
     Returns 'positive', 'neutral', or 'negative'.
+    Uses only ITSM-specific hand-crafted features (frustration markers,
+    positive tone, caps, exclamation) — not sentence embeddings — because
+    the explicit signals are more reliable than semantic meaning for
+    classifying IT-ticket user tone.
     """
-    # Calculate polarity scores
-    scores = sia.polarity_scores(text)
-    compound = scores['compound']
-    
-    # Classify based on the compound score
-    if compound >= 0.05:
-        return 'positive'
-    elif compound <= -0.05:
-        return 'negative'
-    else:
-        return 'neutral'
+    X = extract_sentiment_features([text])
+    return _sentiment_model.predict(X)[0]
