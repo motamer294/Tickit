@@ -1,184 +1,222 @@
-# 🎫 TIKIT - HelpDesk System
+# TICKIT — Help Desk & Ticketing System
 
-A modern, full-stack help desk ticketing system with real-time updates, team collaboration, and intelligent AI-powered ticket analysis.
+A full-stack help desk platform with real-time collaboration, role-based access control, and an AI-powered ML service for automatic ticket classification and routing.
 
-**Version:** 1.0.0 | **License:** MIT
+**Version:** 1.0.0 &nbsp;|&nbsp; **License:** MIT
 
-## Key Features
+---
 
-- **Real-time Collaboration** - WebSocket-powered live updates
-- **Team Management** - Department & team organization with role-based access
-- **AI-Powered Intelligence** - ML-based ticket categorization & routing
-- **Comprehensive Ticketing** - Priority, status, SLA, and audit tracking
-- **Admin Dashboard** - Full system analytics and reporting
-- **Mobile Responsive** - Works on all devices
-- **API-First Architecture** - RESTful API with Ninja framework
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 19, TypeScript 5.9, Vite 7, TanStack Query, Zustand, React Router v7 |
+| Backend | Django 6, Django Ninja, Django Channels (WebSocket), Celery, Daphne |
+| ML Service | FastAPI, scikit-learn, FAISS, sentence-transformers, Ollama (LLaMA 3.2) |
+| Infrastructure | Docker, PostgreSQL 15, Redis, Nginx |
+
+---
+
+## Project Structure
+
+```
+TICKIT/
+├── web/          # React frontend (Vite)
+├── server/       # Django backend + Docker config
+├── ML/           # FastAPI ML service (classification, RAG, Ollama)
+└── package.json  # Root npm scripts for the entire project
+```
+
+---
 
 ## Prerequisites
 
-- **Node.js** 18+ (for frontend & root npm scripts)
-- **Python** 3.12+ (for backend & ML services)
-- **Docker & Docker Compose** (for database, Redis, Nginx)
-- **Git** (for version control)
-- **PostgreSQL** 15+ (via Docker)
-- **Redis** (via Docker, for caching & Celery)
+- **Node.js** 18+
+- **Python** 3.12+
+- **Docker** and **Docker Compose**
+- **Ollama** (for the LLM component of the ML service)
 
-## Quick Start
+---
+
+## Getting Started
+
+### 1. Clone and install
 
 ```bash
-
-git clone https://github.com/motamer294/graduation_project.git
-cd graduation_project
-npm i
+git clone https://github.com/motamer294/Tickit.git
+cd TICKIT
 npm run setup
+```
+
+`npm run setup` handles everything for the main app:
+
+- Installs root and frontend npm dependencies
+- Creates a Python virtual environment for the Django backend
+- Installs backend Python dependencies
+- Copies `.env.example` files to `.env` for both `web/` and `server/`
+
+### 2. Configure environment
+
+Edit the generated `.env` files before starting:
+
+```
+web/.env
+server/.env
+```
+
+### 3. Start development servers
+
+```bash
 npm run dev
 ```
 
-This will:
+This starts the Docker containers (PostgreSQL, Redis, Nginx, Django) and the Vite frontend dev server concurrently.
 
-- Install all npm dependencies
-- Set up frontend with npm
-- Create Python virtual environment & install dependencies
-- Configure environment variables
-- Start Docker containers
-- Launch development servers
+---
 
-## Docker Commands
+## All npm Scripts
 
-### Container Management
+### Development
 
 ```bash
-npm run docker:up        # Start all containers
-npm run docker:down      # Stop & remove containers
-npm run docker:stop      # Stop containers (keep state)
-npm run docker:status    # View running containers
-
-npm run docker:rebuild   # Rebuild & restart containers
-npm run docker:logs      # View real-time container logs
-npm run docker:nuke      # Complete cleanup (remove volumes & images)
+npm run dev              # Start frontend + backend together
+npm run dev:client       # Start Vite frontend only
+npm run dev:server       # Start Docker containers only
 ```
 
-## Database & Migrations
-
-### Migrations
+### Setup
 
 ```bash
-npm run db:makemigrations   # Create new migrations
+npm run setup            # Full install: npm deps + Python venv + .env files
+npm run setup:client     # Install frontend npm packages
+npm run setup:server     # Create backend venv + install Python deps
+npm run setup:env        # Copy .env.example files
+```
+
+### Docker
+
+```bash
+npm run docker:up        # Start all containers (detached)
+npm run docker:down      # Stop and remove containers
+npm run docker:stop      # Stop containers, keep state
+npm run docker:status    # List running containers
+npm run docker:logs      # Stream container logs
+npm run docker:rebuild   # Rebuild images and restart
+npm run docker:nuke      # Full teardown: remove containers, volumes, and images
+```
+
+### Database & Migrations
+
+> These commands run inside the backend container.
+
+```bash
+npm run db:makemigrations   # Generate new Django migrations
 npm run db:migrate          # Apply pending migrations
 npm run db:seed             # Load seed data
+npm run db:superuser        # Create a Django superuser
+npm run db:shell            # Open Django shell
 ```
 
-### Manual Database Access
+### ML Service
 
 ```bash
-# Connect to PostgreSQL
-docker exec -it helpdesk_postgres_db psql -U admin -d helpdesk_db
-
-# View tables
-\dt
-
-# Exit
-\q
+npm run ml:setup         # Create ML venv, install deps, train models
+npm run ml:run           # Start Ollama + FastAPI ML service
+npm run ml:stop          # Stop ML services
 ```
 
-## Testing
-
-### Run All Tests
+### Testing
 
 ```bash
-npm run test        # Frontend + Backend tests
+npm run test             # Run frontend and backend tests
+npm run test:client      # React component tests (Vitest)
+npm run test:server      # Django tests via pytest (inside container)
 ```
 
-### Component-Specific Tests
+### Production
 
 ```bash
-npm run test:client  # React component tests
-npm run test:server  # Django/pytest tests
+npm run build            # Build frontend for production (outputs to web/dist/)
 ```
 
-### Creating Test Data
-
-```bash
-# Database shell
-docker exec -it helpdesk_postgres_db psql -U admin -d helpdesk_db
-
-# Or in Django shell
-cd server
-. venv/bin/activate
-python manage.py shell
-```
-
-### Debugging
-
-```bash
-# Backend logs
-npm run docker:logs
-
-# Frontend browser dev tools (F12)
-
-# Django debug toolbar included
-# Check your browser's Network tab
-```
+---
 
 ## ML Service
 
-The ML module provides AI-powered ticket analysis:
+The ML service runs independently from the main Django backend. It exposes a FastAPI server on port `8001` and uses Ollama on port `11434` for LLM inference.
+
+### First-time setup
 
 ```bash
-# Setup ML environment
-cd ML
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-
-# Build FAISS index
-python scripts/build_faiss.py
-
-# Start ML service
-python app.py
+npm run ml:setup
 ```
 
-ML Service runs on: http://localhost:5000/api/
+This creates `ML/venv`, installs all Python dependencies, and trains the classification models from the dataset, generating the required `.pkl` files under `ML/models/`.
 
-**Features:**
+### Pull the LLM model (one-time)
 
-- Ticket categorization
+```bash
+ollama pull llama3.2
+```
+
+### Start and stop
+
+```bash
+npm run ml:run     # Starts Ollama and FastAPI
+npm run ml:stop    # Stops both processes
+```
+
+**Endpoints:**
+
+| URL | Description |
+|---|---|
+| `http://localhost:8001/health` | Health check |
+| `http://localhost:8001/ticket` | Classify and route a ticket |
+| `http://localhost:8001/cache_stats` | Cache statistics |
+
+**ML capabilities:**
+
+- Ticket category classification (SVM + LR ensemble)
 - Priority auto-assignment
-- Similar ticket detection
-- Customer sentiment analysis
+- Sentiment analysis
+- Similar ticket detection via FAISS
 
-## Additional Resources
+---
 
-- [Django Documentation](https://docs.djangoproject.com/)
-- [React Documentation](https://react.dev/)
-- [Nginx Reverse Proxy](server/nginx/README.md)
-- [Local Deployment Guide](server/LOCAL_DEPLOYMENT.md)
-- [Docker Development Guide](server/DOCKER_DEVELOPMENT_GUIDE.md)
-- [Multi-Channel Integration Plan](MULTI_CHANNEL_INTEGRATION_PLAN.md)
+## Database Access
+
+```bash
+# Connect directly to PostgreSQL
+docker exec -it helpdesk_postgres_db psql -U admin -d helpdesk_db
+
+# Or use the Django shell
+npm run db:shell
+```
+
+---
+
+## API Documentation
+
+The full REST API is documented as a Postman collection:
+
+```
+server/docs/HelpDesk_API.postman_collection.json
+```
+
+Import it into Postman to explore and test all endpoints. Django Ninja also generates automatic interactive docs at `http://localhost:8000/api/docs` when the backend is running.
+
+---
 
 ## Contributing
 
 1. Fork the repository
-2. Create feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open Pull Request
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Commit your changes: `git commit -m 'feat: add your feature'`
+4. Push to the branch: `git push origin feature/your-feature`
+5. Open a pull request
+
+---
 
 ## License
 
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
-
-For questions or issues, please refer to the [troubleshooting section](#-troubleshooting) or open an issue on GitHub.
-
-## API Documentation
-
-API endpoints documented in: `server/docs/HelpDesk_API.postman_collection.json`
-
-Import into Postman to test endpoints.
-
-## Notes
-
-- All database migrations must be applied before starting backend
-- WebSocket requires backend to be running
-- Frontend build outputs to `dist/` directory
-- Static files collected during Docker build
+MIT License — see [LICENSE](LICENSE) for details.
