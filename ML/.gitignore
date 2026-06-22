@@ -1,21 +1,96 @@
-# Python & Notebooks
+# Python
 __pycache__/
-.ipynb_checkpoints/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
 venv/
-docs/
-models/
+ENV/
+env/
+.venv
 
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
 
-__pycache__/
-*.pyc
-# ==============================
-# Machine Learning Models & Vectors
-# ==============================
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Logs
+*.log
+logs/
+
+# ML/Data Files (Large - generated, ignored)
 *.pkl
-*.bin
+*.pickle
+*.joblib
+*.h5
+*.pt
+*.pth
+*.onnx
+*.pb
+*.keras
+*.safetensors
 *.faiss
 *.npy
-models/*
-!models/.gitkeep
+*.npz
 
+# LLM model weights (download separately via Ollama)
+*.gguf
+*.ggml
+
+# Archive docs
+docs_archive/
+
+# Large Data Files
+*.csv.bak
+*.json.bak
+*.jsonl.bak
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Environment
+.env.local
+.env.*.local
+
+# Editor backups
+*.bak
+*.swp
+*.swo
+*~
+
+# Dependencies lock files (optional - uncomment if using poetry/pipenv)
+# poetry.lock
+# Pipfile.lock
