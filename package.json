@@ -30,6 +30,10 @@
     "test": "npm run test:client && npm run test:server",
     "test:client": "npm run test --prefix web",
     "test:server": "docker compose -f server/docker-compose.yml exec backend pytest",
+    "// ===  ML SERVICES === //": "",
+    "ml:setup": "cd ML && python3 -m venv venv && . venv/bin/activate && pip install -r requirements.txt && python scripts/train_models.py",
+    "ml:run": "bash ML/start_services.sh",
+    "ml:stop": "bash ML/stop_services.sh",
     "// ===  PRODUCTION === //": "",
     "build": "npm run build:client",
     "build:client": "npm run build --prefix web"
