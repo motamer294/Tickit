@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { ThinkingDots, TypedText, dedupeAiSolution } from "@/components/AiTyping";
 import {
   Container,
   Stack,
@@ -148,6 +149,10 @@ export default function TicketDetail() {
     queryKey: ["ticket", ticketIdNum],
     queryFn: () => fetchTicketById(ticketIdNum),
     enabled: !!ticketIdNum,
+    refetchInterval: (query) => {
+      const s = query.state.data?.ai_status;
+      return s === "PENDING" || s === "PROCESSING" ? 2000 : false;
+    },
   });
 
   const { data: comments = [] } = useQuery({
@@ -671,14 +676,15 @@ export default function TicketDetail() {
 
                 {/* AI Suggested Solution */}
                 {(ticket.ai_status === "PENDING" || ticket.ai_status === "PROCESSING") && (
-                  <Box p="md" style={{ borderRadius: 10, background: B.purpleLight, border: `0.5px solid ${B.purpleMid}44` }}>
-                    <Group gap={7} mb={10}>
+                  <Box p="md" style={{ borderRadius: 10, background: B.purpleLight, border: `0.5px solid ${B.purpleMid}44`, textAlign: "center" }}>
+                    <Group gap={7} mb={12} justify="center">
                       <Icon icon="solar:lightbulb-bold-duotone" width={14} style={{ color: B.purple }} />
                       <Text size="xs" fw={600} style={{ color: B.purpleDeep }}>AI suggested solution</Text>
                     </Group>
-                    <Skeleton height={12} mb={6} radius="sm" />
-                    <Skeleton height={12} mb={6} width="90%" radius="sm" />
-                    <Skeleton height={12} width="75%" radius="sm" />
+                    <ThinkingDots />
+                    <Text size="xs" fw={500} style={{ color: B.purpleDeep }} mt={10}>
+                      Thinking…
+                    </Text>
                   </Box>
                 )}
 
@@ -688,9 +694,7 @@ export default function TicketDetail() {
                       <Icon icon="solar:lightbulb-bold-duotone" width={14} style={{ color: B.purple }} />
                       <Text size="xs" fw={600} style={{ color: B.purpleDeep }}>AI suggested solution</Text>
                     </Group>
-                    <Text size="sm" style={{ lineHeight: 1.65, color: B.purpleDark }}>
-                      {ticket.ai_suggested_solution}
-                    </Text>
+                    <TypedText text={dedupeAiSolution(ticket.ai_suggested_solution)} color={B.purpleDark} />
                   </Box>
                 )}
               </Box>

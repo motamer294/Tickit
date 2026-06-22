@@ -17,7 +17,6 @@ import {
   MultiSelect,
   Box,
   Avatar,
-  Skeleton,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { Icon } from "@iconify-icon/react";
@@ -26,14 +25,16 @@ import {
   createTicketApi,
   fetchCategoriesApi,
   fetchTagsApi,
+  fetchTicketById,
 } from "@/api/tickets.api";
 import {
   fetchEmployeesWithTeamApi,
   groupEmployeesByTeamOnly,
 } from "@/api/departments.api";
 import { useAuth } from "@/hooks/useAuth";
+import { ThinkingDots, TypedText, dedupeAiSolution } from "@/components/AiTyping";
 import type { Ticket } from "@/types/ticket";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // ─── Brand palette ─────────────────────────────────────────────────────────────
 
@@ -226,6 +227,26 @@ export default function CreateTicket() {
     queryFn: fetchTagsApi,
   });
 
+  const isAiPending =
+    createdTicket?.ai_status === "PENDING" ||
+    createdTicket?.ai_status === "PROCESSING";
+
+  const { data: polledTicket } = useQuery({
+    queryKey: ["ticket-poll", createdTicket?.id],
+    queryFn: () => fetchTicketById(createdTicket!.id),
+    enabled: !!createdTicket?.id && isAiPending,
+    refetchInterval: 2000,
+  });
+
+  useEffect(() => {
+    if (
+      polledTicket &&
+      (polledTicket.ai_status === "DONE" || polledTicket.ai_status === "FAILED")
+    ) {
+      setCreatedTicket(polledTicket as Ticket);
+    }
+  }, [polledTicket]);
+
   const form = useForm({
     initialValues: {
       title: "",
@@ -384,22 +405,24 @@ export default function CreateTicket() {
             {(createdTicket.ai_status === "PENDING" ||
               createdTicket.ai_status === "PROCESSING") && (
               <Box
-                p="md"
+                p="lg"
                 mb="md"
                 style={{
                   borderRadius: 10,
                   background: BRAND.purpleLight,
                   border: `0.5px solid ${BRAND.purple}22`,
+                  textAlign: "center",
                 }}
               >
-                <Text size="xs" fw={500} style={{ color: BRAND.purpleText }} mb={12}>
-                  AI is processing your ticket in the background. You can open
-                  the ticket at any time — results will appear automatically
-                  when ready.
+                <ThinkingDots />
+                <Text
+                  size="xs"
+                  fw={500}
+                  style={{ color: BRAND.purpleText }}
+                  mt={10}
+                >
+                  Thinking…
                 </Text>
-                <Skeleton height={12} mb={6} radius="sm" />
-                <Skeleton height={12} mb={6} width="85%" radius="sm" />
-                <Skeleton height={12} width="65%" radius="sm" />
               </Box>
             )}
 
@@ -494,9 +517,7 @@ export default function CreateTicket() {
                       <Icon icon="solar:lightbulb-bold-duotone" width={15} style={{ color: BRAND.purple }} />
                       <Text size="xs" fw={600} style={{ color: BRAND.purpleText }}>AI suggested solution</Text>
                     </Group>
-                    <Text size="sm" style={{ lineHeight: 1.6, color: "var(--mantine-color-text)" }}>
-                      {createdTicket.ai_suggested_solution}
-                    </Text>
+                    <TypedText text={dedupeAiSolution(createdTicket.ai_suggested_solution)} />
                   </Box>
                 </>
               )}
@@ -609,23 +630,11 @@ export default function CreateTicket() {
         >
           {createMutation.isPending ? (
             <Center py={80}>
-              <Stack gap="md" align="center">
-                <Box
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 14,
-                    background: BRAND.purpleLight,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Loader color={BRAND.purple} size="sm" />
-                </Box>
+              <Stack gap={10} align="center">
+                <ThinkingDots />
                 <Box ta="center">
-                  <Text fw={500} size="sm">
-                    Creating ticket…
+                  <Text fw={500} size="sm" mt={4}>
+                    Thinking…
                   </Text>
                   <Text size="xs" c="dimmed">
                     AI is analyzing your request

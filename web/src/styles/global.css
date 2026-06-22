@@ -1,5 +1,40 @@
 /* Global animations and styles */
 
+@keyframes ai-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.ai-cursor {
+  animation: ai-cursor-blink 0.75s step-end infinite;
+}
+
+@keyframes thinking-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
+  30% { transform: translateY(-5px); opacity: 1; }
+}
+
+.thinking-dot {
+  animation: thinking-bounce 1.2s ease-in-out infinite;
+}
+
+@keyframes ai-marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ai-marquee-wrap {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+}
+
+.ai-marquee-track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: ai-marquee 16s linear infinite;
+}
+
 @keyframes pulse {
   0%, 100% {
     opacity: 1;

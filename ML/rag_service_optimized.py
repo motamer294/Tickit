@@ -169,13 +169,15 @@ class RAGService:
             solution = top_faq.get('Resolution', '').strip()[:400]
             logger.info(f"High-confidence match (sim={top_sim:.2f}): returning resolution directly.")
         else:
-            # Merge top-2 resolutions for a richer suggestion
+            # Merge top-2 resolutions, skipping duplicates
             parts = []
+            seen = set()
             for faq, _ in results[:2]:
                 res = faq.get('Resolution', '').strip()
-                if res:
+                if res and res not in seen:
+                    seen.add(res)
                     parts.append(res[:250])
-            solution = " | ".join(parts) if parts else "No resolution found."
+            solution = " ".join(parts) if parts else "No resolution found."
 
         self._update_cache(query, category, solution)
         return solution
