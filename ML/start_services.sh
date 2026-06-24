@@ -4,11 +4,11 @@
 
 set -e
 
-PROJECT_DIR="/home/essam/TIcketMe/ML"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="$PROJECT_DIR/venv"
 
 echo "╔════════════════════════════════════════╗"
-echo "║   🚀 Starting TIcketMe ML Services     ║"
+echo "║    🚀 Starting TICKIT ML Services      ║"
 echo "╚════════════════════════════════════════╝"
 echo ""
 

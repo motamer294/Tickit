@@ -3,7 +3,7 @@
 # Usage: bash stop_services.sh
 
 echo "╔════════════════════════════════════════╗"
-echo "║   🛑 Stopping TIcketMe ML Services     ║"
+echo "║   🛑 Stopping TICKIT ML Services     ║"
 echo "╚════════════════════════════════════════╝"
 echo ""
 
