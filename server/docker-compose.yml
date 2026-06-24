@@ -120,7 +120,7 @@ services:
     command: daphne -b 0.0.0.0 -p ${WEBSOCKET_PORT:-8000} core.asgi:application
     volumes:
       - .:/app
-    # ⚠️ IMPORTANT: No external port mapping
+    #  IMPORTANT: No external port mapping
     # Backend is only accessible through Nginx reverse proxy (port 80/443)
     expose:
       - "8000"

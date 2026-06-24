@@ -112,7 +112,7 @@ class Ticket(models.Model):
     )
 
     # ==========================================
-    # 🤖 AI Fields (Indexed for Dashboard Analytics)
+    #  AI Fields (Indexed for Dashboard Analytics)
     # ==========================================
 
     class AiStatus(models.TextChoices):
@@ -131,7 +131,7 @@ class Ticket(models.Model):
     ai_suggested_solution = models.TextField(blank=True, null=True)
 
     # ==========================================
-    # ⏱️ Timestamps for SLA & Dashboard
+    #  Timestamps for SLA & Dashboard
     # ==========================================
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)

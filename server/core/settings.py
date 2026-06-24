@@ -84,7 +84,7 @@ MIDDLEWARE = [
 # CORS Configuration
 # Use CORS_TRUSTED_ORIGINS instead of allowing all origins in production
 CORS_ALLOW_CREDENTIALS = True
-# CORS_ALLOW_ALL_ORIGINS = True  # ⚠️ Only for development! Set to False in production
+# CORS_ALLOW_ALL_ORIGINS = True  #  Only for development! Set to False in production
 
 # Use the CORS_TRUSTED_ORIGINS defined in proxy section above
 

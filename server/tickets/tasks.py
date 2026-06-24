@@ -10,7 +10,7 @@ def ai_triage_ticket(self, ticket_id: int):
     Background task: call ML service and patch the ticket with AI results.
     Triggered immediately after ticket creation so the HTTP response is never blocked.
 
-    Retry schedule on failure: 30s → 60s → 120s.
+    Retry schedule on failure: 30s  60s  120s.
     """
     from .models import Ticket, Category
     from .services import analyze_ticket_with_ai
@@ -46,16 +46,16 @@ def ai_triage_ticket(self, ticket_id: int):
         ticket.ai_status = Ticket.AiStatus.DONE
         ticket.save(update_fields=update_fields)
 
-        # Push WebSocket event → frontend auto-refetches this ticket
+        # Push WebSocket event  frontend auto-refetches this ticket
         realtime_service.broadcast_ai_complete(ticket)
-        logger.info(f"✅ AI triage done for ticket #{ticket_id}")
+        logger.info(f" AI triage done for ticket #{ticket_id}")
 
     except Exception as exc:
-        logger.error(f"❌ AI triage failed for ticket #{ticket_id}: {exc}")
+        logger.error(f" AI triage failed for ticket #{ticket_id}: {exc}")
 
         # Mark as FAILED so the UI can surface this
         Ticket.objects.filter(id=ticket_id).update(ai_status=Ticket.AiStatus.FAILED)
 
-        # Exponential back-off: attempt 1→30s, 2→60s, 3→120s
+        # Exponential back-off: attempt 130s, 260s, 3120s
         countdown = 30 * (2 ** self.request.retries)
         raise self.retry(exc=exc, countdown=countdown)

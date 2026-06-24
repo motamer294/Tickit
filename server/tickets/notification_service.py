@@ -37,7 +37,7 @@ class NotificationService:
                 'type': notification_type.lower(),  # channels requires lowercase function names
             }
         )
-        print(f"📢 Broadcast to managers: {title}")
+        print(f" Broadcast to managers: {title}")
 
     def send_to_user(self, user_id, notification_type, title, message, ticket_id=None, data=None):
         """
@@ -61,7 +61,7 @@ class NotificationService:
                 'type': notification_type.lower(),  # channels requires lowercase function names
             }
         )
-        print(f"📨 Notification to user {user_id}: {title}")
+        print(f" Notification to user {user_id}: {title}")
 
     def send_to_all_users(self, notification_type, title, message, ticket_id=None, data=None):
         """

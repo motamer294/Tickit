@@ -197,7 +197,7 @@ export const useAuthStore = create<AuthState>()(
       // Called when rehydration finishes
       onRehydrateStorage: () => (state) => {
         if (state) {
-          // ✅ Keep isLoading=true if there's a token to validate
+          //  Keep isLoading=true if there's a token to validate
           // This prevents the router from rendering too early
           // initializeAuth() will set isLoading=false after validation completes
           if (!state.accessToken) {

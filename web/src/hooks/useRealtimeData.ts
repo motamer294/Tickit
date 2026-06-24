@@ -30,7 +30,7 @@ export const useRealtimeData = () => {
       const host = window.location.hostname
       const port = window.location.port ? `:${window.location.port}` : ''
 
-      // ✅ FIXED: Token NOT in URL anymore
+      //  FIXED: Token NOT in URL anymore
       const wsURL = `${protocol}//${host}${port}/ws/realtime/`
 
       logger.debug('Connecting to Real-Time WebSocket:', wsURL)
@@ -41,7 +41,7 @@ export const useRealtimeData = () => {
         logger.debug('Real-time WebSocket connected')
         isConnectingRef.current = false
 
-        // ✅ SECURE: Send token in message, not URL
+        //  SECURE: Send token in message, not URL
         wsRef.current!.send(
           JSON.stringify({
             type: 'authenticate',

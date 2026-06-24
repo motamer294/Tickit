@@ -4,7 +4,7 @@
 
 This Nginx configuration transforms the HelpDesk application into a production-ready deployable system with:
 
-- **HTTPS/TLS encryption** with automatic HTTP → HTTPS redirect
+- **HTTPS/TLS encryption** with automatic HTTP  HTTPS redirect
 - **Reverse proxy routing** for API and WebSocket connections
 - **Real-time support** with proper WebSocket upgrade handling
 - **Long-polling fallback** with extended timeouts
@@ -15,8 +15,8 @@ This Nginx configuration transforms the HelpDesk application into a production-r
 
 ```
 nginx/
-├── nginx.conf          ← Main Nginx configuration
-└── README.md           ← This file
+ nginx.conf           Main Nginx configuration
+ README.md            This file
 ```
 
 ## Key Features
@@ -74,9 +74,9 @@ location /ws/ {
 
 **Why these settings matter:**
 
-- `Upgrade: websocket` + `Connection: upgrade` → HTTP → WebSocket protocol switch
-- `proxy_buffering off` → Messages delivered immediately, not buffered
-- `proxy_read_timeout 300s` → Allow 5-minute connections for long-polling
+- `Upgrade: websocket` + `Connection: upgrade`  HTTP  WebSocket protocol switch
+- `proxy_buffering off`  Messages delivered immediately, not buffered
+- `proxy_read_timeout 300s`  Allow 5-minute connections for long-polling
 
 ### 5. **SSL/TLS Configuration**
 
@@ -88,7 +88,7 @@ ssl_protocols TLSv1.2 TLSv1.3;
 ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:...
 ```
 
-**Development:** Self-signed certificates (browser warning expected ✓)
+**Development:** Self-signed certificates (browser warning expected )
 **Production:** Let's Encrypt certificates via Certbot
 
 ### 6. **Security Headers**
@@ -156,7 +156,7 @@ Client -> HTTPS (443) -> Nginx
          -> Django backend
          -> Response back through Nginx
          -> HTTPS encrypted to client
-         ✅ Total: ~1-10 seconds
+          Total: ~1-10 seconds
 ```
 
 ### WebSocket Connection
@@ -167,8 +167,8 @@ Client -> HTTPS (443) -> Nginx
          -> Django Channels (port 8000)
          -> Persistent connection (both directions)
          -> Real-time messages flow
-         ✅ Connection: Minutes+ persistent
-         ✅ Latency: <100ms typical
+          Connection: Minutes+ persistent
+          Latency: <100ms typical
 ```
 
 ### Long-Polling Fallback
@@ -181,8 +181,8 @@ Client -> HTTPS (443) -> Nginx
          -> Messages arrive or timeout
          -> Response sent immediately
          -> Client reconnects in 1s
-         ✅ Fallback: Works without WebSocket
-         ✅ Mobile-friendly: No connection drops
+          Fallback: Works without WebSocket
+          Mobile-friendly: No connection drops
 ```
 
 ## Usage

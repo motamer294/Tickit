@@ -25,7 +25,7 @@ import { useWebSocketContext } from "@/hooks/useWebSocketContext";
 import { fetchChatMessages, type ChatMessage } from "@/api/tickets.api";
 import UserAvatar from "@/components/UserAvatar";
 
-// ─── Brand palette ─────────────────────────────────────────────────────────────
+//  Brand palette 
 
 const BRAND = {
   purple: "#7F77DD",
@@ -61,14 +61,14 @@ function formatDate(dateStr: string) {
   });
 }
 
-// ─── Props ─────────────────────────────────────────────────────────────────────
+//  Props 
 
 interface ChatSectionProps {
   ticketId: number;
   currentUserId: number;
 }
 
-// ─── Component ─────────────────────────────────────────────────────────────────
+//  Component 
 
 export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -89,7 +89,7 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
     }, delay);
   };
 
-  // ── Load initial messages ──
+  //  Load initial messages 
   useEffect(() => {
     const load = async () => {
       try {
@@ -110,7 +110,7 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
     load();
   }, [ticketId]);
 
-  // ── Join chat room ──
+  //  Join chat room 
   useEffect(() => {
     if (!ws || !isConnected || ws.readyState !== WebSocket.OPEN) {
       setJoined(false);
@@ -124,7 +124,7 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
     }
   }, [ws, isConnected, ticketId]);
 
-  // ── Receive messages ──
+  //  Receive messages 
   const handleChatMessage = useCallback(
     (event: Event) => {
       try {
@@ -158,7 +158,7 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
     scrollToBottom();
   }, [messages]);
 
-  // ── Send ──
+  //  Send 
   const handleSend = async () => {
     if (!inputValue.trim() || !ws || !isConnected || !joined) {
       notifications.show({
@@ -200,7 +200,7 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
     }
   };
 
-  // ── Group by date ──
+  //  Group by date 
   const groupedMessages = useMemo(() => {
     const groups: Record<string, ChatMessage[]> = {};
     messages.forEach((msg) => {
@@ -211,7 +211,7 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
     return groups;
   }, [messages]);
 
-  // ── Loading ──
+  //  Loading 
   if (loading) {
     return (
       <Paper
@@ -237,7 +237,7 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
         overflow: "hidden",
       }}
     >
-      {/* ── Header ── */}
+      {/*  Header  */}
       <Box
         px="md"
         py="sm"
@@ -294,7 +294,7 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
         </Group>
       </Box>
 
-      {/* ── Messages ── */}
+      {/*  Messages  */}
       <ScrollArea
         style={{ flex: 1, minHeight: 320 }}
         viewportRef={scrollRef}
@@ -498,7 +498,7 @@ export function ChatSection({ ticketId, currentUserId }: ChatSectionProps) {
         )}
       </ScrollArea>
 
-      {/* ── Input area ── */}
+      {/*  Input area  */}
       <Box
         style={{
           borderTop: "0.5px solid var(--mantine-color-default-border)",

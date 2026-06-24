@@ -1,5 +1,5 @@
 """
-🎯 COMPREHENSIVE SYSTEM TESTS - Full End-to-End
+ COMPREHENSIVE SYSTEM TESTS - Full End-to-End
 Tests all critical functionality: auth, tickets, comments, permissions, etc.
 """
 import pytest

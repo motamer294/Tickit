@@ -92,7 +92,7 @@ export default function RootRouter() {
           }
         />
 
-        {/* ── Admin ── */}
+        {/*  Admin  */}
         <Route
           path="admin"
           element={
@@ -110,7 +110,7 @@ export default function RootRouter() {
           <Route path="audit-logs"  element={<Page><AuditLogViewer /></Page>} />
         </Route>
 
-        {/* ── Tickets ── */}
+        {/*  Tickets  */}
         <Route path="tickets">
           <Route index element={<Page><TicketsList /></Page>} />
           <Route

@@ -32,7 +32,7 @@ import type { SearchFilters } from "@/api/tickets.api";
 import { SearchBar } from "@/components/SearchBar";
 import type { Ticket, TicketStatus } from "@/types/ticket";
 
-// ─── Brand palette (matches Dashboard) ────────────────────────────────────────
+//  Brand palette (matches Dashboard) 
 
 const BRAND = {
   purple: "#7F77DD",
@@ -55,7 +55,7 @@ const BRAND = {
   blueText: "#0C447C",
 };
 
-// ─── Status / Priority metadata ────────────────────────────────────────────────
+//  Status / Priority metadata 
 
 const STATUS_META: Record<
   TicketStatus,
@@ -108,7 +108,7 @@ const ALL_STATUSES: TicketStatus[] = [
   "CLOSED",
 ];
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
+//  Sub-components 
 
 function StatusBadge({ status }: { status: TicketStatus }) {
   const m = STATUS_META[status];
@@ -252,7 +252,7 @@ function StatusPill({
   );
 }
 
-// ─── Mobile ticket card ────────────────────────────────────────────────────────
+//  Mobile ticket card 
 
 function TicketMobileCard({ ticket, onClick }: { ticket: Ticket; onClick: () => void }) {
   return (
@@ -302,7 +302,7 @@ function TicketMobileCard({ ticket, onClick }: { ticket: Ticket; onClick: () => 
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+//  Main Component 
 
 export default function TicketsList() {
   const navigate = useNavigate();
@@ -315,7 +315,7 @@ export default function TicketsList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // ── Queries ──
+  //  Queries 
   const {
     data: allTickets = [],
     isLoading: ticketsLoading,
@@ -339,7 +339,7 @@ export default function TicketsList() {
     queryFn: fetchEmployeesApi,
   });
 
-  // ── Search handler ──
+  //  Search handler 
   const handleSearch = async (filters: SearchFilters) => {
     setIsSearching(true);
     try {
@@ -350,7 +350,7 @@ export default function TicketsList() {
     }
   };
 
-  // ── Derived data ──
+  //  Derived data 
   const baseTickets = searchResults !== null ? searchResults : allTickets;
 
   const statusCounts = useMemo(() => {
@@ -380,7 +380,7 @@ export default function TicketsList() {
 
   const isLoading = ticketsLoading || isSearching;
 
-  // ── Error ──
+  //  Error 
   if (error) {
     return (
       <Container py="lg">
@@ -404,7 +404,7 @@ export default function TicketsList() {
   return (
     <Container size="xl" py="lg">
       <Stack gap="lg">
-        {/* ── Header ── */}
+        {/*  Header  */}
         <Group justify="space-between" align="flex-end" wrap="wrap" gap={12}>
           <Box>
             <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>
@@ -426,7 +426,7 @@ export default function TicketsList() {
           </Button>
         </Group>
 
-        {/* ── Status quick-filter pills ── */}
+        {/*  Status quick-filter pills  */}
         <Group gap={6} wrap="wrap">
           <StatusPill
             status="ALL"
@@ -445,7 +445,7 @@ export default function TicketsList() {
           ))}
         </Group>
 
-        {/* ── Search + Filters panel ── */}
+        {/*  Search + Filters panel  */}
         <Paper
           radius="md"
           p="md"
@@ -511,7 +511,7 @@ export default function TicketsList() {
           </Collapse>
         </Paper>
 
-        {/* ── Table ── */}
+        {/*  Table  */}
         <Paper
           radius="md"
           style={{

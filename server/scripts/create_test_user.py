@@ -19,20 +19,20 @@ for user in existing_users:
 
 # Create test user if needed
 if not User.objects.filter(username='essam').exists():
-    print("\n🔧 Creating test user 'essam'...")
+    print("\n Creating test user 'essam'...")
     user = User.objects.create_user(
         username='essam',
         email='essam@test.com',
         password='password123',
         role='MANAGER'
     )
-    print(f"✅ Created: {user.username} with role {user.role}")
+    print(f" Created: {user.username} with role {user.role}")
 else:
-    print("\n✅ User 'essam' already exists")
+    print("\n User 'essam' already exists")
 
 # Verify user password
 user = User.objects.get(username='essam')
-print(f"\n🔐 User password verification:")
+print(f"\n User password verification:")
 print(f"  Password matches 'password123': {user.check_password('password123')}")
 print(f"  Password hash: {user.password[:50]}...")
 

@@ -8,40 +8,40 @@ import websockets
 import requests
 
 # First get auth token
-print("🔐 Getting authentication token...")
+print(" Getting authentication token...")
 login_response = requests.post(
     'http://localhost:8000/api/login',
     json={'username': 'essam', 'password': 'password123'}
 )
 
 if login_response.status_code != 200:
-    print("❌ Login failed!")
+    print(" Login failed!")
     exit(1)
 
 token = login_response.json()['access']
-print(f"✅ Got token: {token[:50]}...")
+print(f" Got token: {token[:50]}...")
 
 async def test_websocket():
     """Test WebSocket connection"""
     ws_url = f"ws://localhost:8000/ws/notifications/?token={token}"
 
-    print(f"\n🔌 Connecting to WebSocket: {ws_url[:60]}...")
+    print(f"\n Connecting to WebSocket: {ws_url[:60]}...")
 
     try:
         async with websockets.connect(ws_url) as websocket:
-            print("✅ WebSocket connected!")
+            print(" WebSocket connected!")
 
             # Wait for a message for up to 5 seconds
-            print("\n📡 Waiting for messages (5 seconds)...")
+            print("\n Waiting for messages (5 seconds)...")
             try:
                 message = await asyncio.wait_for(websocket.recv(), timeout=5)
                 data = json.loads(message)
-                print(f"✅ Received message: {json.dumps(data, indent=2)}")
+                print(f" Received message: {json.dumps(data, indent=2)}")
             except asyncio.TimeoutError:
-                print("⏱️ No messages received (timeout) - but connection is working!")
+                print(" No messages received (timeout) - but connection is working!")
 
     except Exception as e:
-        print(f"❌ WebSocket error: {e}")
+        print(f" WebSocket error: {e}")
         return False
 
     return True
@@ -51,5 +51,5 @@ if __name__ == "__main__":
     success = asyncio.run(test_websocket())
     if success or True:  # Connection established is success
         print("\n" + "=" * 60)
-        print("✅ WebSocket system is working!")
+        print(" WebSocket system is working!")
         print("=" * 60)

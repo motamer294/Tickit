@@ -398,7 +398,7 @@ def assign_ticket(request, ticket_id: int, employee_id: int):
     # Send real-time notifications
     notification_service.ticket_assigned(ticket, employee, request.user)
 
-    # 🔄 Broadcast real-time data update
+    #  Broadcast real-time data update
     realtime_service.broadcast_ticket_updated(ticket, ['assigned_to', 'status'])
 
     return ticket
@@ -443,13 +443,13 @@ def create_ticket(request, data: TicketCreateSchema):
     # Dispatch AI triage as a background Celery task (non-blocking)
     ai_triage_ticket.delay(ticket.id)
 
-    # 🔔 Send real-time notifications to managers
+    #  Send real-time notifications to managers
     notification_service.ticket_created(ticket, request.user)
 
     # � Log audit trail
     audit_service.log_ticket_created(ticket, request.user, request)
 
-    # �🔄 Broadcast real-time data update
+    # � Broadcast real-time data update
     realtime_service.broadcast_ticket_created(ticket)
 
     return ticket
@@ -529,14 +529,14 @@ def search_tickets(
                 from_date = datetime.fromisoformat(created_from.strip())
                 filters &= Q(created_at__gte=from_date)
             except (ValueError, AttributeError) as e:
-                print(f"⚠️ Invalid created_from date: {created_from} - {str(e)}")
+                print(f" Invalid created_from date: {created_from} - {str(e)}")
 
         if created_to:
             try:
                 to_date = datetime.fromisoformat(created_to.strip())
                 filters &= Q(created_at__lte=to_date)
             except (ValueError, AttributeError) as e:
-                print(f"⚠️ Invalid created_to date: {created_to} - {str(e)}")
+                print(f" Invalid created_to date: {created_to} - {str(e)}")
 
         # Tag filter (many-to-many)
         if tag_ids:
@@ -545,14 +545,14 @@ def search_tickets(
                 if tag_list:
                     tickets = tickets.filter(tags__id__in=tag_list).distinct()
             except (ValueError, AttributeError) as e:
-                print(f"⚠️ Invalid tag_ids: {tag_ids} - {str(e)}")
+                print(f" Invalid tag_ids: {tag_ids} - {str(e)}")
 
         tickets = tickets.filter(filters).distinct()
 
         # Order by newest first
         return tickets.order_by('-created_at')
     except Exception as e:
-        print(f"❌ Error in search_tickets: {str(e)}")
+        print(f" Error in search_tickets: {str(e)}")
         import traceback
         traceback.print_exc()
         # Return empty list on error
@@ -634,13 +634,13 @@ def add_comment(request, ticket_id: int, data: CommentSchema):
         text=data.text
     )
 
-    # 🔔 Send real-time notifications to users subscribed to this ticket
+    #  Send real-time notifications to users subscribed to this ticket
     notification_service.comment_added(ticket, comment, request.user)
 
     # � Log audit trail
     audit_service.log_comment_added(ticket, request.user, request)
 
-    # �🔄 Broadcast real-time data update to trigger React Query invalidation
+    # � Broadcast real-time data update to trigger React Query invalidation
     # This ensures ALL users see the new comment immediately
     realtime_service.broadcast_comment_added(ticket.id, comment.id, request.user.username)
 
@@ -726,10 +726,10 @@ def update_status(request, ticket_id: int, data: TicketStatusUpdateSchema):
     # � Log audit trail
     audit_service.log_status_changed(ticket, old_status, data.status, request.user, request)
 
-    # �🔔 Send real-time notifications
+    # � Send real-time notifications
     notification_service.ticket_updated(ticket, request.user, old_status, data.status)
 
-    # 🔄 Broadcast real-time data update
+    #  Broadcast real-time data update
     realtime_service.broadcast_ticket_updated(ticket, ['status'])
 
     return ticket
@@ -752,16 +752,16 @@ def delete_ticket(request, ticket_id: int):
     # Save ticket info before deleting (for broadcasting)
     ticket_title = ticket.title
 
-    # 🔔 Send notification before deleting (so we still have ticket data)
+    #  Send notification before deleting (so we still have ticket data)
     notification_service.ticket_deleted(ticket, request.user)
 
-    # 📝 Log audit trail
+    #  Log audit trail
     audit_service.log_ticket_deleted(ticket_id, ticket_title, request.user, request)
 
     # Delete the ticket
     ticket.delete()
 
-    # 🔄 Broadcast real-time data update
+    #  Broadcast real-time data update
     realtime_service.broadcast_ticket_deleted(ticket_id, ticket_title)
 
     return api.create_response(
@@ -787,7 +787,7 @@ def update_ticket(request, ticket_id: int, data: TicketUpdateSchema):
             status=403
         )
 
-    # ✅ VALIDATE ALL FOREIGN KEYS BEFORE SAVING
+    #  VALIDATE ALL FOREIGN KEYS BEFORE SAVING
     fields_updated = []
     category_obj = None
     tag_objs = []
@@ -811,7 +811,7 @@ def update_ticket(request, ticket_id: int, data: TicketUpdateSchema):
     else:
         print(f"[UPDATE_TICKET] No tag_ids provided, keeping existing")
 
-    # ✅ NOW UPDATE FIELDS (validation passed)
+    #  NOW UPDATE FIELDS (validation passed)
     if data.title and data.title.strip():
         ticket.title = data.title
         fields_updated.append('title')
@@ -838,13 +838,13 @@ def update_ticket(request, ticket_id: int, data: TicketUpdateSchema):
     ticket.save()
     print(f"[UPDATE_TICKET] Ticket saved. Fields updated: {fields_updated}")
 
-    # 📝 Log audit trail
+    #  Log audit trail
     audit_service.log_ticket_updated(ticket, request.user, request)
 
-    # 🔔 Send real-time notifications
+    #  Send real-time notifications
     notification_service.ticket_updated(ticket, request.user, None, None)
 
-    # 🔄 Broadcast real-time data update
+    #  Broadcast real-time data update
     realtime_service.broadcast_ticket_updated(ticket, fields_updated)
 
     return ticket
@@ -1410,7 +1410,7 @@ def upload_attachment(request, ticket_id: int):
     # � Log audit trail
     audit_service.log_attachment_added(ticket, request.user, request)
 
-    # �🔄 Broadcast real-time data update
+    # � Broadcast real-time data update
     realtime_service.broadcast_ticket_updated(ticket, ['attachments'])
 
     return {
@@ -1517,7 +1517,7 @@ def delete_attachment(request, attachment_id: int):
     from tickets.audit_service import audit_service
     audit_service.log_attachment_deleted(ticket, filename, request.user, request)
 
-    # 🔄 Broadcast real-time data update
+    #  Broadcast real-time data update
     realtime_service.broadcast_ticket_updated(ticket, ['attachments'])
 
     return {

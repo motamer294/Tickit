@@ -29,7 +29,7 @@ import {
 } from "@/api/tickets.api";
 import type { Category } from "@/types/ticket";
 
-// ─── Brand palette (matches all other pages) ───────────────────────────────────
+//  Brand palette (matches all other pages) 
 
 const BRAND = {
   purple: "#7F77DD",
@@ -62,7 +62,7 @@ const TH_STYLE: React.CSSProperties = {
   whiteSpace: "nowrap",
 };
 
-// ─── Suggested swatches ────────────────────────────────────────────────────────
+//  Suggested swatches 
 
 const SWATCHES = [
   "#7F77DD",
@@ -82,7 +82,7 @@ const SWATCHES = [
   "#FF6B6B",
 ];
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
+//  Sub-components 
 
 function StatCard({
   label,
@@ -139,7 +139,7 @@ function StatCard({
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+//  Main Component 
 
 export default function CategoryAdminPanel() {
   const queryClient = useQueryClient();
@@ -151,13 +151,13 @@ export default function CategoryAdminPanel() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
 
-  // ── Queries ──
+  //  Queries 
   const { data: categories = [], isLoading } = useQuery({
     queryKey: ["admin-categories"],
     queryFn: fetchCategoriesApi,
   });
 
-  // ── Mutations ──
+  //  Mutations 
   const createMutation = useMutation({
     mutationFn: (payload: typeof formData) => createCategoryApi(payload),
     onSuccess: () => {
@@ -222,7 +222,7 @@ export default function CategoryAdminPanel() {
       }),
   });
 
-  // ── Handlers ──
+  //  Handlers 
   const closeModal = () => {
     setOpened(false);
     setEditingCategory(null);
@@ -258,7 +258,7 @@ export default function CategoryAdminPanel() {
     else createMutation.mutate(formData);
   };
 
-  // ── Filtered list ──
+  //  Filtered list 
   const displayCategories = useMemo(() => {
     if (!searchQuery.trim()) return categories;
     const q = searchQuery.toLowerCase();
@@ -272,7 +272,7 @@ export default function CategoryAdminPanel() {
   return (
     <Container size="lg" py="lg">
       <Stack gap="lg">
-        {/* ── Header ── */}
+        {/*  Header  */}
         <Group justify="space-between" align="flex-end">
           <Box>
             <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>
@@ -294,7 +294,7 @@ export default function CategoryAdminPanel() {
           </Button>
         </Group>
 
-        {/* ── Stat cards ── */}
+        {/*  Stat cards  */}
         <Group gap={10} wrap="nowrap">
           <StatCard
             label="Total categories"
@@ -310,7 +310,7 @@ export default function CategoryAdminPanel() {
           />
         </Group>
 
-        {/* ── Search + Table ── */}
+        {/*  Search + Table  */}
         <Paper
           radius="md"
           style={{
@@ -571,7 +571,7 @@ export default function CategoryAdminPanel() {
         </Paper>
       </Stack>
 
-      {/* ── Create / Edit Modal ── */}
+      {/*  Create / Edit Modal  */}
       <Modal
         opened={opened}
         onClose={closeModal}
@@ -751,7 +751,7 @@ export default function CategoryAdminPanel() {
         </Stack>
       </Modal>
 
-      {/* ── Delete Confirm Modal ── */}
+      {/*  Delete Confirm Modal  */}
       <Modal
         opened={deleteConfirmId !== null}
         onClose={() => setDeleteConfirmId(null)}

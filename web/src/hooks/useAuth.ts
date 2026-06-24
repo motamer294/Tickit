@@ -8,7 +8,7 @@ import { decodeJWT, getUserIdFromToken } from '@/utils/jwt'
 import { logger } from '@/utils/logger'
 
 /**
- * 🛠️ useAuth: Access current authentication state and user info
+ *  useAuth: Access current authentication state and user info
  *
  * Example:
  * const { user, isAuthenticated, isManager, logout } = useAuth()
@@ -42,7 +42,7 @@ export const useAuth = () => {
 }
 
 /**
- * 🛠️ useLogin: Handles the login process with enhanced error handling
+ *  useLogin: Handles the login process with enhanced error handling
  *
  * Example:
  * const { mutate, isPending, error } = useLogin()
@@ -87,7 +87,7 @@ export function useLogin() {
 }
 
 /**
- * 🛠️ useSignup: Handles the signup process with enhanced error handling
+ *  useSignup: Handles the signup process with enhanced error handling
  *
  * Example:
  * const { mutate, isPending } = useSignup()

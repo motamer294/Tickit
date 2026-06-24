@@ -1,5 +1,5 @@
 """
-🎯 INTEGRATION TESTS - Critical System Paths
+ INTEGRATION TESTS - Critical System Paths
 Tests the most important user workflows and API functionality
 """
 import pytest
@@ -17,7 +17,7 @@ class AuthenticationWorkflowTest(TestCase):
         self.client = Client()
 
     def test_signup_and_login_workflow(self):
-        """Full workflow: signup → login → access protected resource"""
+        """Full workflow: signup  login  access protected resource"""
         # 1. Signup
         signup_response = self.client.post('/api/signup',
             data=json.dumps({'username': 'newtoken', 'password': 'secure123', 'role': 'CUSTOMER'}),

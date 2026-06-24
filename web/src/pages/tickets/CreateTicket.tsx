@@ -36,7 +36,7 @@ import { ThinkingDots, TypedText, dedupeAiSolution } from "@/components/AiTyping
 import type { Ticket } from "@/types/ticket";
 import { useState, useEffect } from "react";
 
-// ─── Brand palette ─────────────────────────────────────────────────────────────
+//  Brand palette 
 
 const BRAND = {
   purple: "#7F77DD",
@@ -60,7 +60,7 @@ const BRAND = {
   blueText: "#0C447C",
 };
 
-// ─── Priority / Sentiment metadata ────────────────────────────────────────────
+//  Priority / Sentiment metadata 
 
 const PRIORITY_META: Record<
   string,
@@ -128,7 +128,7 @@ const STATUS_META: Record<string, { bg: string; text: string; dot: string }> = {
   PENDING: { bg: BRAND.blueLight, text: BRAND.blueText, dot: BRAND.blue },
 };
 
-// ─── Shared sub-components ─────────────────────────────────────────────────────
+//  Shared sub-components 
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -201,7 +201,7 @@ function InfoPill({
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+//  Main Component 
 
 export default function CreateTicket() {
   const navigate = useNavigate();
@@ -298,7 +298,7 @@ export default function CreateTicket() {
     },
   });
 
-  // ── Success / AI analysis screen ──────────────────────────────────────────────
+  //  Success / AI analysis screen 
 
   if (createdTicket) {
     const priorityM =
@@ -311,7 +311,7 @@ export default function CreateTicket() {
     return (
       <Container size="md" py="lg">
         <Stack gap="lg">
-          {/* ── Success header ── */}
+          {/*  Success header  */}
           <Paper
             p="lg"
             radius="md"
@@ -356,7 +356,7 @@ export default function CreateTicket() {
             </Group>
           </Paper>
 
-          {/* ── AI Analysis Results ── */}
+          {/*  AI Analysis Results  */}
           <Paper
             p="lg"
             radius="md"
@@ -401,7 +401,7 @@ export default function CreateTicket() {
 
             <Divider mb="md" />
 
-            {/* ── While AI is still running ── */}
+            {/*  While AI is still running  */}
             {(createdTicket.ai_status === "PENDING" ||
               createdTicket.ai_status === "PROCESSING") && (
               <Box
@@ -426,7 +426,7 @@ export default function CreateTicket() {
               </Box>
             )}
 
-            {/* ── Normal stat cards (shown once AI is done / for old tickets) ── */}
+            {/*  Normal stat cards (shown once AI is done / for old tickets)  */}
             {(!createdTicket.ai_status ||
               createdTicket.ai_status === "DONE" ||
               createdTicket.ai_status === "FAILED") && (
@@ -523,7 +523,7 @@ export default function CreateTicket() {
               )}
           </Paper>
 
-          {/* ── Action buttons ── */}
+          {/*  Action buttons  */}
           <Group justify="flex-end" gap={8}>
             <Button
               variant="default"
@@ -552,12 +552,12 @@ export default function CreateTicket() {
     );
   }
 
-  // ── Create form ───────────────────────────────────────────────────────────────
+  //  Create form 
 
   return (
     <Container size="md" py="lg">
       <Stack gap="lg">
-        {/* ── Header ── */}
+        {/*  Header  */}
         <Group justify="space-between" align="flex-end">
           <Box>
             <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>
@@ -573,7 +573,7 @@ export default function CreateTicket() {
           </Button>
         </Group>
 
-        {/* ── AI info banner ── */}
+        {/*  AI info banner  */}
         <Paper
           p="md"
           radius="md"
@@ -620,7 +620,7 @@ export default function CreateTicket() {
           </Group>
         </Paper>
 
-        {/* ── Form ── */}
+        {/*  Form  */}
         <Paper
           radius="md"
           style={{
@@ -903,7 +903,7 @@ export default function CreateTicket() {
           )}
         </Paper>
 
-        {/* ── Tips card ── */}
+        {/*  Tips card  */}
         <Paper
           p="md"
           radius="md"

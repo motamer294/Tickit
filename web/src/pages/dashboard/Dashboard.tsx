@@ -39,7 +39,7 @@ import { CustomAlert } from "@/components/CustomAlert";
 import UserAvatar from "@/components/UserAvatar";
 import type { Ticket, TicketStatus } from "@/types/ticket";
 
-// ─── Brand palette ─────────────────────────────────────────────────────────────
+//  Brand palette 
 
 const BRAND = {
   purple: "#7F77DD",
@@ -63,7 +63,7 @@ const BRAND = {
   blueText: "#0C447C",
 };
 
-// ─── Status / Priority metadata ────────────────────────────────────────────────
+//  Status / Priority metadata 
 
 const STATUS_META: Record<
   TicketStatus,
@@ -105,7 +105,7 @@ const FALLBACK_TEAM_MEMBERS = [
 
 const TICKET_TABLE_HEADERS = ["ID", "Title", "Status", "Priority", "Created by", "Assigned to", ""];
 
-// ─── Chart helpers ─────────────────────────────────────────────────────────────
+//  Chart helpers 
 
 function chartColors(isDark: boolean) {
   return {
@@ -117,7 +117,7 @@ function chartColors(isDark: boolean) {
   };
 }
 
-// ─── Recharts chart components ─────────────────────────────────────────────────
+//  Recharts chart components 
 
 function TrendChart({ trends, isDark }: { trends: { date: string; count: number }[]; isDark: boolean }) {
   const c = chartColors(isDark);
@@ -200,7 +200,7 @@ function WorkloadChart({ workload, isDark }: {
   );
 }
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
+//  Sub-components 
 
 function StatCard({
   label, value, icon, accentColor, delta, deltaUp,
@@ -342,7 +342,7 @@ function TicketCard({ ticket, onView }: { ticket: Ticket; onView: () => void }) 
   );
 }
 
-// ─── Dashboard ─────────────────────────────────────────────────────────────────
+//  Dashboard 
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -443,7 +443,7 @@ const Dashboard = () => {
   const avgResolution = analytics?.avg_resolution_time_hours?.toFixed(1) ?? "—";
   const pendingCount = analytics ? analytics.open_tickets + stats.inProgress : stats.open + stats.inProgress;
 
-  // ── Loading / Error guards ──
+  //  Loading / Error guards 
   if (isLoading) {
     return (
       <Container size="xl" py="lg">
@@ -476,7 +476,7 @@ const Dashboard = () => {
       <Stack gap="lg">
         <DashboardErrorAlert />
 
-        {/* ── Header ─────────────────────────────────────────────────── */}
+        {/*  Header  */}
         <Group justify="space-between" align="flex-end" wrap="wrap" gap={12}>
           <Box>
             <Text fw={600} style={{ fontSize: isMobile ? 18 : 22, lineHeight: 1.2 }}>
@@ -496,7 +496,7 @@ const Dashboard = () => {
           </Button>
         </Group>
 
-        {/* ── Stat cards ─────────────────────────────────────────────── */}
+        {/*  Stat cards  */}
         <SimpleGrid cols={{ base: 2, sm: 3, md: 5 }} spacing={10}>
           <StatCard
             label="Total tickets"
@@ -539,7 +539,7 @@ const Dashboard = () => {
           />
         </SimpleGrid>
 
-        {/* ── Manager analytics ───────────────────────────────────────── */}
+        {/*  Manager analytics  */}
         {isManager && (
           analyticsLoading ? (
             <AnalyticsSkeleton />
@@ -689,7 +689,7 @@ const Dashboard = () => {
                       <Group justify="space-between">
                         <Text size="xs" c="dimmed">91 total assigned</Text>
                         <Button variant="subtle" size="xs" style={{ color: BRAND.purpleDark, padding: "0 4px", height: "auto" }} onClick={() => navigate("/app/analytics")}>
-                          Full report ↗
+                          Full report 
                         </Button>
                       </Group>
                     </Stack>
@@ -700,7 +700,7 @@ const Dashboard = () => {
           )
         )}
 
-        {/* ── Recent Tickets ──────────────────────────────────────────── */}
+        {/*  Recent Tickets  */}
         <Paper radius="md" style={{ border: "0.5px solid var(--mantine-color-default-border)", overflow: "hidden" }}>
           <Group justify="space-between" align="center" p="md" pb={0}>
             <SectionLabel>Recent tickets</SectionLabel>
@@ -710,7 +710,7 @@ const Dashboard = () => {
               style={{ color: BRAND.purpleDark, padding: "0 4px", height: "auto" }}
               onClick={() => navigate("/app/tickets")}
             >
-              View all ↗
+              View all 
             </Button>
           </Group>
 

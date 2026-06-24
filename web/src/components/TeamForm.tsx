@@ -22,7 +22,7 @@ import { Icon } from '@iconify-icon/react'
 import type { Team, Department, User } from '@/api/departments.api'
 import UserAvatar from '@/components/UserAvatar'
 
-// ─── Brand palette ─────────────────────────────────────────────────────────────
+//  Brand palette 
 
 const BRAND = {
   purple:      '#7F77DD',
@@ -37,7 +37,7 @@ const BRAND = {
   blueText:    '#0C447C',
 }
 
-// ─── Props ─────────────────────────────────────────────────────────────────────
+//  Props 
 
 interface TeamFormProps {
   opened: boolean
@@ -54,7 +54,7 @@ interface TeamFormProps {
   isLoading?: boolean
 }
 
-// ─── Component ─────────────────────────────────────────────────────────────────
+//  Component 
 
 export function TeamForm({
   opened,

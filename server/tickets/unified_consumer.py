@@ -32,9 +32,9 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
 
             # Accept connection first (authentication happens in receive)
             await self.accept()
-            print(f"✅ Unified WebSocket connection accepted, waiting for authentication")
+            print(f" Unified WebSocket connection accepted, waiting for authentication")
         except Exception as e:
-            print(f"❌ Connection error: {e}")
+            print(f" Connection error: {e}")
             import traceback
             traceback.print_exc()
             await self.close()
@@ -44,50 +44,50 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
         try:
             for group in getattr(self, 'groups', []):
                 await self.channel_layer.group_discard(group, self.channel_name)
-            print(f"❌ User {getattr(self, 'user_id', 'unknown')} disconnected from unified WebSocket")
+            print(f" User {getattr(self, 'user_id', 'unknown')} disconnected from unified WebSocket")
         except Exception as e:
-            print(f"⚠️ Error during disconnect: {e}")
+            print(f" Error during disconnect: {e}")
 
     async def receive(self, text_data):
         """Handle incoming messages - authenticate or handle various message types"""
-        print(f"📨 [receive] ENTRY: text_data length={len(text_data)}")
+        print(f" [receive] ENTRY: text_data length={len(text_data)}")
         try:
             data = json.loads(text_data)
             message_type = data.get('type')
 
-            print(f"📨 [receive] Got message type: {message_type}, authenticated: {self.is_authenticated}")
+            print(f" [receive] Got message type: {message_type}, authenticated: {self.is_authenticated}")
 
             # Handle authentication
             if message_type == 'authenticate':
-                print(f"📨 [receive] -> authenticate")
+                print(f" [receive] -> authenticate")
                 await self.handle_authenticate(data)
             # Handle keep-alive ping
             elif message_type == 'ping':
-                print(f"📨 [receive] -> pong")
+                print(f" [receive] -> pong")
                 await self.send(text_data=json.dumps({'type': 'pong'}))
             # Handle chat messages
             elif message_type == 'join_chat':
-                print(f"📨 [receive] -> join_chat")
+                print(f" [receive] -> join_chat")
                 await self.handle_join_chat(data)
             elif message_type == 'chat_message':
-                print(f"📨 [receive] -> chat_message - ticket_id={data.get('ticket_id')}, message={data.get('message')[:50] if data.get('message') else None}")
+                print(f" [receive] -> chat_message - ticket_id={data.get('ticket_id')}, message={data.get('message')[:50] if data.get('message') else None}")
                 await self.handle_chat_message(data)
             else:
-                print(f"❌ [receive] Unknown message type: {message_type}")
+                print(f" [receive] Unknown message type: {message_type}")
                 if not self.is_authenticated:
-                    print(f"❌ Unauthenticated message received: {message_type}")
+                    print(f" Unauthenticated message received: {message_type}")
                     await self.close(code=4001)
         except json.JSONDecodeError as e:
-            print(f"❌ [receive] JSON decode error: {e}")
+            print(f" [receive] JSON decode error: {e}")
         except Exception as e:
-            print(f"❌ [receive] Exception: {type(e).__name__}: {e}")
+            print(f" [receive] Exception: {type(e).__name__}: {e}")
 
     async def handle_authenticate(self, data):
         """Authenticate user via JWT token in message"""
         try:
             token = data.get('token')
             if not token:
-                print(f"❌ No token provided")
+                print(f" No token provided")
                 await self.close(code=4002)
                 return
 
@@ -95,7 +95,7 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
             user = await get_user_from_token(token)
 
             if user.is_anonymous:
-                print(f"❌ Invalid token")
+                print(f" Invalid token")
                 await self.close(code=4003)
                 return
 
@@ -131,9 +131,9 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
                 'role': self.user.role,
             }))
 
-            print(f"✅ User {self.user.username} ({self.user.role}) authenticated and connected to unified WebSocket")
+            print(f" User {self.user.username} ({self.user.role}) authenticated and connected to unified WebSocket")
         except Exception as e:
-            print(f"❌ Authentication error: {e}")
+            print(f" Authentication error: {e}")
             import traceback
             traceback.print_exc()
             await self.close(code=4000)
@@ -167,7 +167,7 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
     async def send_notification(self, event):
         """Send notification to frontend"""
         try:
-            print(f"📬 Processing notification: type={event.get('type')}, title={event.get('title')}, ticket_id={event.get('ticket_id')}")
+            print(f" Processing notification: type={event.get('type')}, title={event.get('title')}, ticket_id={event.get('ticket_id')}")
 
             # Map backend notification types to frontend types
             type_map = {
@@ -222,9 +222,9 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
             }
 
             await self.send(text_data=json.dumps(notification_payload))
-            print(f"✅ Notification sent to user {self.user_id}: {event.get('title', 'System')} (type: {frontend_type})")
+            print(f" Notification sent to user {self.user_id}: {event.get('title', 'System')} (type: {frontend_type})")
         except Exception as e:
-            print(f"❌ Error sending notification: {e}")
+            print(f" Error sending notification: {e}")
             import traceback
             traceback.print_exc()
 
@@ -262,7 +262,7 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
             # Verify user has access to ticket
             has_access = await self.verify_ticket_access(ticket_id)
             if not has_access:
-                print(f"❌ User {self.user_id} denied access to ticket {ticket_id} chat")
+                print(f" User {self.user_id} denied access to ticket {ticket_id} chat")
                 return
 
             # Add to chat group
@@ -270,10 +270,10 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
             if chat_group not in self.groups:
                 await self.channel_layer.group_add(chat_group, self.channel_name)
                 self.groups.append(chat_group)
-                print(f"✅ User {self.user_id} joined chat for ticket {ticket_id}")
+                print(f" User {self.user_id} joined chat for ticket {ticket_id}")
 
         except Exception as e:
-            print(f"❌ Error in handle_join_chat: {e}")
+            print(f" Error in handle_join_chat: {e}")
 
     async def handle_chat_message(self, data):
         """Handle incoming chat message"""
@@ -282,28 +282,28 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
             message = data.get('message')
 
             if not ticket_id or not message:
-                print(f"❌ Missing ticket_id or message: {ticket_id}, {message}")
+                print(f" Missing ticket_id or message: {ticket_id}, {message}")
                 return
 
             # Verify access
             has_access = await self.verify_ticket_access(ticket_id)
             if not has_access:
-                print(f"❌ Access denied for user {self.user_id} to ticket {ticket_id}")
+                print(f" Access denied for user {self.user_id} to ticket {ticket_id}")
                 return
 
             # Save message to database
-            print(f"💾 Saving message from user {self.user_id} for ticket {ticket_id}...")
+            print(f" Saving message from user {self.user_id} for ticket {ticket_id}...")
             chat_message = await self.save_chat_message(ticket_id, self.user_id, message)
 
             if not chat_message:
-                print(f"❌ Failed to save chat message (returned None)")
+                print(f" Failed to save chat message (returned None)")
                 return
 
-            print(f"✅ Message saved with ID: {chat_message.id}")
+            print(f" Message saved with ID: {chat_message.id}")
 
             # Broadcast to all users in chat group
             chat_group = f'ticket_chat_{ticket_id}'
-            print(f"📢 Broadcasting to group: {chat_group}")
+            print(f" Broadcasting to group: {chat_group}")
             await self.channel_layer.group_send(chat_group, {
                 'type': 'chat_message_broadcast',
                 'message_id': chat_message.id,
@@ -314,10 +314,10 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
                 'timestamp': chat_message.timestamp.isoformat(),
             })
 
-            print(f"💬 Chat message from {self.user.username} in ticket {ticket_id}")
+            print(f" Chat message from {self.user.username} in ticket {ticket_id}")
 
         except Exception as e:
-            print(f"❌ Error handling chat message: {e}")
+            print(f" Error handling chat message: {e}")
 
     async def chat_message_broadcast(self, event):
         """Broadcast chat message to WebSocket client"""
@@ -359,10 +359,10 @@ class UnifiedWebSocketConsumer(AsyncWebsocketConsumer):
                 sender_id=user_id,
                 message=message_text,
             )
-            print(f"  [save_chat_message] ✅ Created message ID: {chat_message.id}, timestamp: {chat_message.timestamp}")
+            print(f"  [save_chat_message]  Created message ID: {chat_message.id}, timestamp: {chat_message.timestamp}")
             return chat_message
         except Exception as e:
-            print(f"  [save_chat_message] ❌ Exception: {type(e).__name__}: {e}")
+            print(f"  [save_chat_message]  Exception: {type(e).__name__}: {e}")
             import traceback
             traceback.print_exc()
             return None

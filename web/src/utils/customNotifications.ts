@@ -1,6 +1,6 @@
 import { useNotificationStore } from '@/store/notification.store'
 
-// ─── Color → variant map ───────────────────────────────────────────────────────
+//  Color  variant map 
 // Covers every color string used across the codebase
 
 const COLOR_MAP: Record<string, 'info' | 'success' | 'warning' | 'error'> = {
@@ -32,7 +32,7 @@ function toVariant(color?: string): 'info' | 'success' | 'warning' | 'error' {
   return COLOR_MAP[color ?? 'info'] ?? 'info'
 }
 
-// ─── Drop-in replacement for Mantine's notifications object ───────────────────
+//  Drop-in replacement for Mantine's notifications object 
 //
 // Import this instead of '@mantine/notifications':
 //   import { notifications } from '@/utils/customNotifications'
@@ -70,7 +70,7 @@ export const notifications = {
   clean:  () => { /* no-op */ },
 }
 
-// ─── alertService (legacy helper — same behaviour) ────────────────────────────
+//  alertService (legacy helper — same behaviour) 
 
 export const alertService = {
   show({
@@ -91,7 +91,7 @@ export const alertService = {
   info:    (title: string, message: string) => notifications.show({ title, message, color: 'blue'   }),
 }
 
-// ─── customNotification (static helpers — safe outside React) ─────────────────
+//  customNotification (static helpers — safe outside React) 
 
 export const customNotification = {
   success: (title: string, message: string) => alertService.success(title, message),
@@ -100,7 +100,7 @@ export const customNotification = {
   info:    (title: string, message: string) => alertService.info(title, message),
 }
 
-// ─── useCustomNotification (React hook) ───────────────────────────────────────
+//  useCustomNotification (React hook) 
 
 import { useCallback } from 'react'
 

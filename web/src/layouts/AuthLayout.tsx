@@ -4,8 +4,6 @@ import ThemeToggle from "@/components/ThemeToggle";
 import logoSvg from "@/assets/logo.svg";
 
 const B = {
-  purple: "#7F77DD",
-  purpleDark: "#534AB7",
   purpleLight: "#EEEDFE",
 };
 
@@ -25,56 +23,30 @@ const AuthLayout = () => {
         `,
       }}
     >
-      {/* ── Header ── */}
-      <Container
-        size="xl"
-        w="100%"
-        h={60}
-        display="flex"
-        style={{ alignItems: "center" }}
-      >
+      {/* Header */}
+      <Container size="xl" w="100%" h={60} display="flex" style={{ alignItems: "center" }}>
         <Group justify="space-between" w="100%">
-          {/* Logo */}
           <Box style={{ cursor: "pointer" }} onClick={() => navigate("/login")}>
-            <img src={logoSvg} alt="TicketMe" style={{ height: 28, width: "auto", display: "block" }} />
+            <img src={logoSvg} alt="Tickit" style={{ height: 28, width: "auto", display: "block" }} />
           </Box>
-
           <ThemeToggle />
         </Group>
       </Container>
 
-      {/* ── Content ── */}
+      {/* Content */}
       <Stack flex={1} justify="center" align="center" px="md" py={32}>
-        <Box
-          style={{
-            width: "100%",
-            animation: "auth-reveal 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
-          }}
-        >
+        <Box style={{ width: "100%" }}>
           <Outlet />
         </Box>
 
-        {/* Footer */}
         <Group gap="lg" mt={32} style={{ opacity: 0.45 }}>
           {["Security", "Privacy", "System Status"].map((link) => (
-            <Text
-              key={link}
-              size="xs"
-              fw={500}
-              style={{ cursor: "pointer", letterSpacing: "0.04em" }}
-            >
+            <Text key={link} size="xs" fw={500} style={{ cursor: "pointer", letterSpacing: "0.04em" }}>
               {link}
             </Text>
           ))}
         </Group>
       </Stack>
-
-      <style>{`
-        @keyframes auth-reveal {
-          from { opacity: 0; transform: translateY(8px); }
-          to   { opacity: 1; transform: translateY(0);   }
-        }
-      `}</style>
     </Box>
   );
 };

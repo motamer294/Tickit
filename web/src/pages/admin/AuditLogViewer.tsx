@@ -24,7 +24,7 @@ import { Icon } from '@iconify-icon/react'
 import { listAuditLogs, type AuditLog } from '@/api/admin.api'
 import UserAvatar from '@/components/UserAvatar'
 
-// ─── Brand palette (matches all other pages) ───────────────────────────────────
+//  Brand palette (matches all other pages) 
 
 const BRAND = {
   purple:      '#7F77DD',
@@ -60,7 +60,7 @@ const BRAND = {
   orangeText:  '#7A3A05',
 }
 
-// ─── Action type metadata ──────────────────────────────────────────────────────
+//  Action type metadata 
 
 const ACTION_META: Record<string, { label: string; bg: string; text: string; dot: string; icon: string }> = {
   TICKET_CREATED:        { label: 'Ticket Created',        bg: BRAND.blueLight,   text: BRAND.blueText,   dot: BRAND.blue,   icon: 'solar:ticket-bold-duotone'              },
@@ -86,7 +86,7 @@ const ACTION_META: Record<string, { label: string; bg: string; text: string; dot
   OTHER:                 { label: 'Other',                 bg: BRAND.grayLight,   text: BRAND.grayText,   dot: BRAND.gray,   icon: 'solar:info-circle-bold-duotone'         },
 }
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
+//  Sub-components 
 
 function ActionBadge({ actionType }: { actionType: string }) {
   const m = ACTION_META[actionType] ?? ACTION_META.OTHER
@@ -200,7 +200,7 @@ const TH_STYLE: React.CSSProperties = {
 
 const PAGE_SIZE = 50
 
-// ─── Mobile audit card ─────────────────────────────────────────────────────────
+//  Mobile audit card 
 
 function AuditMobileCard({ log, onClick }: { log: AuditLog; onClick: () => void }) {
   const meta = ACTION_META[log.action_type] ?? ACTION_META.OTHER
@@ -240,7 +240,7 @@ function AuditMobileCard({ log, onClick }: { log: AuditLog; onClick: () => void 
   )
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+//  Main Component 
 
 export default function AuditLogViewer() {
   const isMobile = useMediaQuery('(max-width: 640px)')
@@ -321,7 +321,7 @@ export default function AuditLogViewer() {
       `}</style>
       <Stack gap="lg">
 
-        {/* ── Header ── */}
+        {/*  Header  */}
         <Group justify="space-between" align="flex-end">
           <Box>
             <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>Audit Log</Text>
@@ -356,7 +356,7 @@ export default function AuditLogViewer() {
           </Group>
         </Group>
 
-        {/* ── Stat cards ── */}
+        {/*  Stat cards  */}
         <SimpleGrid cols={{ base: 2, md: 4 }} spacing={10}>
           <StatCard label="Entries shown"  value={logs.length}          icon="solar:list-check-linear"           accentColor={BRAND.purple} />
           <StatCard label="Ticket events"  value={actionCounts.ticket}  icon="solar:ticket-linear"               accentColor={BRAND.blue}   />
@@ -364,7 +364,7 @@ export default function AuditLogViewer() {
           <StatCard label="Other events"   value={actionCounts.other}   icon="solar:info-circle-linear"          accentColor={BRAND.gray}   />
         </SimpleGrid>
 
-        {/* ── Filters ── */}
+        {/*  Filters  */}
         <Paper radius="md" p="md" style={{ border: '0.5px solid var(--mantine-color-default-border)' }}>
           <Group gap={10} wrap="wrap" align="flex-end">
             <TextInput
@@ -402,7 +402,7 @@ export default function AuditLogViewer() {
           </Group>
         </Paper>
 
-        {/* ── Error ── */}
+        {/*  Error  */}
         {error && (
           <Paper p="md" radius="md" style={{ background: BRAND.redLight, border: `0.5px solid ${BRAND.red}33` }}>
             <Group justify="space-between">
@@ -417,7 +417,7 @@ export default function AuditLogViewer() {
           </Paper>
         )}
 
-        {/* ── Table ── */}
+        {/*  Table  */}
         <Paper radius="md" style={{ border: '0.5px solid var(--mantine-color-default-border)', overflow: 'hidden' }}>
           {isLoading ? (
             /* Pagination skeleton (page > 0 still loading) */
@@ -621,7 +621,7 @@ export default function AuditLogViewer() {
         </Paper>
       </Stack>
 
-      {/* ── Details Modal ── */}
+      {/*  Details Modal  */}
       {selectedLog && (
         <Modal
           opened={modalOpened}

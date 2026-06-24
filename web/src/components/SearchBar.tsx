@@ -19,7 +19,7 @@ import type { SearchFilters } from '@/api/tickets.api'
 import type { Employee } from '@/api/tickets.api'
 import type { Category, Tag } from '@/types/ticket'
 
-// ─── Brand palette ─────────────────────────────────────────────────────────────
+//  Brand palette 
 
 const BRAND = {
   purple:      '#7F77DD',
@@ -63,7 +63,7 @@ const PRIORITY_COLORS: Record<string, { bg: string; text: string; dot: string }>
   URGENT: { bg: BRAND.redLight,   text: BRAND.redText,   dot: BRAND.red   },
 }
 
-// ─── Select options ────────────────────────────────────────────────────────────
+//  Select options 
 
 const PRIORITY_OPTIONS = [
   { label: 'Low',    value: 'LOW'    },
@@ -80,7 +80,7 @@ const STATUS_OPTIONS = [
   { label: 'Closed',      value: 'CLOSED'      },
 ]
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
+//  Sub-components 
 
 /** Removable active-filter pill */
 function FilterPill({
@@ -137,7 +137,7 @@ function FilterPill({
   )
 }
 
-// ─── Props ─────────────────────────────────────────────────────────────────────
+//  Props 
 
 interface SearchBarProps {
   onSearch: (filters: SearchFilters) => void
@@ -147,7 +147,7 @@ interface SearchBarProps {
   isLoading?: boolean
 }
 
-// ─── Component ─────────────────────────────────────────────────────────────────
+//  Component 
 
 export function SearchBar({
   onSearch,
@@ -210,7 +210,7 @@ export function SearchBar({
 
   return (
     <Stack gap="sm">
-      {/* ── Main search row ── */}
+      {/*  Main search row  */}
       <Group gap={8} wrap="nowrap">
         <TextInput
           placeholder="Search by title or description…"
@@ -272,7 +272,7 @@ export function SearchBar({
         </Button>
       </Group>
 
-      {/* ── Active filter pills ── */}
+      {/*  Active filter pills  */}
       {hasActiveFilters && (
         <Group gap={6} wrap="wrap" align="center">
           <Text size="xs" c="dimmed" fw={500}>Active:</Text>
@@ -365,7 +365,7 @@ export function SearchBar({
         </Group>
       )}
 
-      {/* ── Advanced filters panel ── */}
+      {/*  Advanced filters panel  */}
       <Collapse in={expanded}>
         <Box
           p="md"

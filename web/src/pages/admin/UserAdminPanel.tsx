@@ -34,7 +34,7 @@ import {
 } from "@/api/admin.api";
 import UserAvatar from "@/components/UserAvatar";
 
-// ─── Brand palette (matches Dashboard & TicketsList) ──────────────────────────
+//  Brand palette (matches Dashboard & TicketsList) 
 
 const BRAND = {
   purple: "#7F77DD",
@@ -58,7 +58,7 @@ const BRAND = {
   blueText: "#0C447C",
 };
 
-// ─── Role / Status metadata ────────────────────────────────────────────────────
+//  Role / Status metadata 
 
 const ROLE_META: Record<
   string,
@@ -97,7 +97,7 @@ const ROLE_META: Record<
   },
 };
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
+//  Sub-components 
 
 function RoleBadge({ role }: { role: string }) {
   const m = ROLE_META[role] ?? {
@@ -217,7 +217,7 @@ function RolePill({
   );
 }
 
-// ─── Stat Card ─────────────────────────────────────────────────────────────────
+//  Stat Card 
 
 function StatCard({
   label,
@@ -315,7 +315,7 @@ function UserMobileCard({
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+//  Main Component 
 
 type FormData = {
   username?: string;
@@ -344,7 +344,7 @@ export default function UserAdminPanel() {
 
   const isMobile = useMediaQuery("(max-width: 640px)");
 
-  // ── Queries ──
+  //  Queries 
   const {
     data: users = [],
     isLoading,
@@ -354,7 +354,7 @@ export default function UserAdminPanel() {
     queryFn: () => listUsers(1000, 0),
   });
 
-  // ── Mutations ──
+  //  Mutations 
   const createUserMutation = useMutation({
     mutationFn: (payload: UserCreatePayload) => createUser(payload),
     onSuccess: () => {
@@ -421,7 +421,7 @@ export default function UserAdminPanel() {
     },
   });
 
-  // ── Handlers ──
+  //  Handlers 
   const openCreate = () => {
     setEditingUser(null);
     setFormData(DEFAULT_FORM);
@@ -494,7 +494,7 @@ export default function UserAdminPanel() {
     }
   };
 
-  // ── Derived data ──
+  //  Derived data 
   const roleCounts = useMemo(() => {
     const counts: Record<string, number> = { ALL: users.length };
     ["MANAGER", "EMPLOYEE", "CUSTOMER"].forEach((r) => {
@@ -537,7 +537,7 @@ export default function UserAdminPanel() {
   return (
     <Container size="lg" py="lg">
       <Stack gap="lg">
-        {/* ── Header ── */}
+        {/*  Header  */}
         <Group justify="space-between" align="flex-end" wrap="wrap" gap={12}>
           <Box>
             <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>
@@ -559,7 +559,7 @@ export default function UserAdminPanel() {
           </Button>
         </Group>
 
-        {/* ── Stat cards ── */}
+        {/*  Stat cards  */}
         <SimpleGrid cols={{ base: 2, sm: 3, md: 6 }} spacing={10}>
           <StatCard
             label="Total users"
@@ -599,7 +599,7 @@ export default function UserAdminPanel() {
           />
         </SimpleGrid>
 
-        {/* ── Error ── */}
+        {/*  Error  */}
         {error && (
           <Paper
             p="md"
@@ -631,7 +631,7 @@ export default function UserAdminPanel() {
           </Paper>
         )}
 
-        {/* ── Role filter pills + search ── */}
+        {/*  Role filter pills + search  */}
         <Paper
           radius="md"
           p="md"
@@ -699,7 +699,7 @@ export default function UserAdminPanel() {
           </Group>
         </Paper>
 
-        {/* ── Table ── */}
+        {/*  Table  */}
         <Paper
           radius="md"
           style={{
@@ -1004,7 +1004,7 @@ export default function UserAdminPanel() {
         </Paper>
       </Stack>
 
-      {/* ── User Form Modal ── */}
+      {/*  User Form Modal  */}
       <Modal
         opened={opened}
         onClose={closeModal}

@@ -29,9 +29,9 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
             # Accept connection first (authentication happens in receive)
             await self.accept()
-            print(f"✅ WebSocket connection accepted, waiting for authentication")
+            print(f" WebSocket connection accepted, waiting for authentication")
         except Exception as e:
-            print(f"❌ Connection error: {e}")
+            print(f" Connection error: {e}")
             import traceback
             traceback.print_exc()
             await self.close()
@@ -41,9 +41,9 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         try:
             for group in getattr(self, 'groups', []):
                 await self.channel_layer.group_discard(group, self.channel_name)
-            print(f"❌ User {getattr(self, 'user_id', 'unknown')} disconnected from notifications")
+            print(f" User {getattr(self, 'user_id', 'unknown')} disconnected from notifications")
         except Exception as e:
-            print(f"⚠️ Error during disconnect: {e}")
+            print(f" Error during disconnect: {e}")
 
     async def receive(self, text_data):
         """Handle incoming messages - authenticate or handle ping"""
@@ -59,17 +59,17 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 await self.send(text_data=json.dumps({'type': 'pong'}))
             else:
                 if not self.is_authenticated:
-                    print(f"❌ Unauthenticated message received: {message_type}")
+                    print(f" Unauthenticated message received: {message_type}")
                     await self.close(code=4001)
         except Exception as e:
-            print(f"❌ Receive error: {e}")
+            print(f" Receive error: {e}")
 
     async def handle_authenticate(self, data):
         """Authenticate user via JWT token in message"""
         try:
             token = data.get('token')
             if not token:
-                print(f"❌ No token provided")
+                print(f" No token provided")
                 await self.close(code=4002)
                 return
 
@@ -77,7 +77,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             user = await get_user_from_token(token)
 
             if user.is_anonymous:
-                print(f"❌ Invalid token")
+                print(f" Invalid token")
                 await self.close(code=4003)
                 return
 
@@ -107,9 +107,9 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 'role': self.user.role,
             }))
 
-            print(f"✅ User {self.user.username} ({self.user.role}) authenticated and connected to notifications")
+            print(f" User {self.user.username} ({self.user.role}) authenticated and connected to notifications")
         except Exception as e:
-            print(f"❌ Authentication error: {e}")
+            print(f" Authentication error: {e}")
             import traceback
             traceback.print_exc()
             await self.close(code=4000)
@@ -190,9 +190,9 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             }
 
             await self.send(text_data=json.dumps(notification_data))
-            print(f"✉️ Sent notification: {notification_data['type']}")
+            print(f" Sent notification: {notification_data['type']}")
         except Exception as e:
-            print(f"❌ Error sending notification: {e}")
+            print(f" Error sending notification: {e}")
             import traceback
             traceback.print_exc()
 

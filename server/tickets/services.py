@@ -56,7 +56,7 @@ def analyze_ticket_with_ai(title: str, description: str) -> dict:
 
     except requests.exceptions.ConnectionError as e:
         # ML service is completely unreachable — no point retrying from here
-        logger.error(f"⚠️ ML Service unreachable: {e}")
+        logger.error(f" ML Service unreachable: {e}")
         return {
             "category": "General IT",
             "priority": "LOW",
@@ -65,7 +65,7 @@ def analyze_ticket_with_ai(title: str, description: str) -> dict:
         }
     except requests.exceptions.RequestException as e:
         # Timeout or HTTP error — re-raise so Celery retries with back-off
-        logger.error(f"⚠️ ML Service request failed (will retry): {e}")
+        logger.error(f" ML Service request failed (will retry): {e}")
         raise
 
 

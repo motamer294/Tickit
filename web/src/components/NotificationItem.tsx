@@ -3,7 +3,7 @@ import { Icon } from '@iconify-icon/react'
 import type { Notification, NotificationType } from '@/types/notification'
 import { useNotifications } from '@/hooks/useNotifications'
 
-// ─── Brand palette ─────────────────────────────────────────────────────────────
+//  Brand palette 
 
 const BRAND = {
   purple:      '#7F77DD',
@@ -36,7 +36,7 @@ const BRAND = {
   grayText:    '#444441',
 }
 
-// ─── Type metadata ─────────────────────────────────────────────────────────────
+//  Type metadata 
 
 const TYPE_META: Record<
   NotificationType,
@@ -125,7 +125,7 @@ const TYPE_META: Record<
 
 const DEFAULT_META = TYPE_META.SYSTEM
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
+//  Helpers 
 
 function formatTime(date: Date): string {
   const diffMs   = Date.now() - new Date(date).getTime()
@@ -139,7 +139,7 @@ function formatTime(date: Date): string {
   return new Date(date).toLocaleDateString()
 }
 
-// ─── Component ─────────────────────────────────────────────────────────────────
+//  Component 
 
 interface NotificationItemProps {
   notification: Notification

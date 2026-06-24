@@ -28,22 +28,22 @@ declare -a FAILED_TESTS
 # Helper functions
 print_header() {
     echo ""
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╍${NC}"
+    echo -e "${BLUE}${NC}"
     echo -e "${BLUE}$1${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╍${NC}"
+    echo -e "${BLUE}${NC}"
 }
 
 print_test() {
-    echo -e "${YELLOW}→ $1${NC}"
+    echo -e "${YELLOW} $1${NC}"
 }
 
 print_pass() {
-    echo -e "${GREEN}✓ $1${NC}"
+    echo -e "${GREEN} $1${NC}"
     ((TESTS_PASSED++))
 }
 
 print_fail() {
-    echo -e "${RED}✗ $1${NC}"
+    echo -e "${RED} $1${NC}"
     ((TESTS_FAILED++))
     FAILED_TESTS+=("$1")
 }
@@ -431,9 +431,9 @@ main() {
     clear
 
     echo ""
-    echo -e "${BLUE}╔════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║   HelpDesk Infrastructure & Nginx Testing Suite       ║${NC}"
-    echo -e "${BLUE}╚════════════════════════════════════════════════════════╝${NC}"
+    echo -e "${BLUE}${NC}"
+    echo -e "${BLUE}   HelpDesk Infrastructure & Nginx Testing Suite       ${NC}"
+    echo -e "${BLUE}${NC}"
     echo ""
     echo -e "Testing Target: ${YELLOW}${PROTOCOL}://${HOST}:${PORT}${NC}"
     echo -e "Verbose Mode: ${YELLOW}${VERBOSE}${NC}"
@@ -456,8 +456,8 @@ main() {
     # Summary
     print_header "Test Summary"
     echo ""
-    echo -e "${GREEN}✓ Passed: $TESTS_PASSED${NC}"
-    echo -e "${RED}✗ Failed: $TESTS_FAILED${NC}"
+    echo -e "${GREEN} Passed: $TESTS_PASSED${NC}"
+    echo -e "${RED} Failed: $TESTS_FAILED${NC}"
     echo ""
 
     if [ "$TESTS_FAILED" -gt 0 ]; then
@@ -468,7 +468,7 @@ main() {
         echo ""
         exit 1
     else
-        echo -e "${GREEN}All tests passed! ✅${NC}"
+        echo -e "${GREEN}All tests passed! ${NC}"
         echo ""
         exit 0
     fi

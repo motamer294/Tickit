@@ -22,7 +22,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       notifications: [newNotification, ...state.notifications],
     }))
 
-    // ✅ REMOVED: No auto-dismiss timeout
+    //  REMOVED: No auto-dismiss timeout
     // Notifications stay unread until user manually opens dropdown
   },
 

@@ -31,7 +31,7 @@ import EditProfileModal from "./EditProfileModal";
 import { notifications } from "@/utils/customNotifications";
 import UserAvatar from "@/components/UserAvatar";
 
-// ─── Brand palette ─────────────────────────────────────────────────────────────
+//  Brand palette 
 
 const B = {
   purple: "#7F77DD",
@@ -79,7 +79,7 @@ const ROLE_META: Record<
   },
 };
 
-// ─── Stat card data ────────────────────────────────────────────────────────────
+//  Stat card data 
 
 function getStatCards(stats: any) {
   return [
@@ -122,7 +122,7 @@ function getStatCards(stats: any) {
   ];
 }
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
+//  Sub-components 
 
 function SLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -259,7 +259,7 @@ const mStyles = {
   body: { paddingTop: 16 },
 };
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+//  Main Component 
 
 export function UserProfile() {
   const navigate = useNavigate();
@@ -382,7 +382,7 @@ export function UserProfile() {
   return (
     <Container size="md" py="lg">
       <Stack gap="lg">
-        {/* ── Header ── */}
+        {/*  Header  */}
         <Group justify="space-between" align="flex-end">
           <Box>
             <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>
@@ -409,7 +409,7 @@ export function UserProfile() {
           </Button>
         </Group>
 
-        {/* ── Error ── */}
+        {/*  Error  */}
         {profileError && (
           <Box
             p="md"
@@ -432,7 +432,7 @@ export function UserProfile() {
           </Box>
         )}
 
-        {/* ── Profile card ── */}
+        {/*  Profile card  */}
         <Card>
           <CardHeader
             left={
@@ -672,7 +672,7 @@ export function UserProfile() {
           ) : null}
         </Card>
 
-        {/* ── Stats card ── */}
+        {/*  Stats card  */}
         {profile && (
           <Card>
             <CardHeader
@@ -706,7 +706,7 @@ export function UserProfile() {
         )}
       </Stack>
 
-      {/* ── Edit Profile Modal ── */}
+      {/*  Edit Profile Modal  */}
       <EditProfileModal
         open={editModalOpen}
         onClose={() => setEditModalOpen(false)}
@@ -716,7 +716,7 @@ export function UserProfile() {
         }}
       />
 
-      {/* ── Change Password Modal ── */}
+      {/*  Change Password Modal  */}
       <Modal
         opened={passwordModalOpen}
         onClose={() => {

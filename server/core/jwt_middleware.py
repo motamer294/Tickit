@@ -33,23 +33,23 @@ def get_user_from_token(token_str):
         user_id = payload.get('user_id')
 
         if not user_id:
-            logger.error("❌ No user_id in token")
+            logger.error(" No user_id in token")
             return AnonymousUser()
 
         # Get user from database
         user = User.objects.get(id=user_id)
-        logger.info(f"✅ JWT authenticated user: {user.username} (role: {user.role})")
+        logger.info(f" JWT authenticated user: {user.username} (role: {user.role})")
         return user
     except jwt.ExpiredSignatureError:
-        logger.error("❌ Token has expired")
+        logger.error(" Token has expired")
         from django.contrib.auth.models import AnonymousUser
         return AnonymousUser()
     except jwt.InvalidTokenError as e:
-        logger.error(f"❌ Invalid token: {e}")
+        logger.error(f" Invalid token: {e}")
         from django.contrib.auth.models import AnonymousUser
         return AnonymousUser()
     except Exception as e:
-        logger.error(f"❌ Token validation error: {type(e).__name__}: {e}")
+        logger.error(f" Token validation error: {type(e).__name__}: {e}")
         from django.contrib.auth.models import AnonymousUser
         return AnonymousUser()
 
@@ -72,7 +72,7 @@ class JWTAuthMiddleware(BaseMiddleware):
         query_string = scope.get('query_string', b'').decode()
         token = None
 
-        logger.debug(f"📋 Query string: {query_string}")
+        logger.debug(f" Query string: {query_string}")
 
         # Parse query string to get token (fallback method)
         if query_string:
@@ -82,7 +82,7 @@ class JWTAuthMiddleware(BaseMiddleware):
                 if 'token' in parsed and parsed['token']:
                     token = parsed['token'][0]
             except Exception as e:
-                logger.error(f"⚠️ Error parsing query string: {e}")
+                logger.error(f" Error parsing query string: {e}")
                 # Fallback to manual parsing
                 for param in query_string.split('&'):
                     if param.startswith('token='):
@@ -91,11 +91,11 @@ class JWTAuthMiddleware(BaseMiddleware):
 
         # Authenticate user if token provided
         if token:
-            logger.info("🔑 Token found, authenticating...")
+            logger.info(" Token found, authenticating...")
             user = await get_user_from_token(token)
             scope['user'] = user
         else:
             scope['user'] = AnonymousUser()
-            logger.warning("⚠️ WebSocket connection without token")
+            logger.warning(" WebSocket connection without token")
 
         return await super().__call__(scope, receive, send)

@@ -3,14 +3,14 @@ import { Box, Stack } from "@mantine/core";
 import { CustomAlert } from "@/components/CustomAlert";
 import { useNotificationStore } from "@/store/notification.store";
 
-// ─── Constants ─────────────────────────────────────────────────────────────────
+//  Constants 
 
 const TOAST_WIDTH = 340;
 const TOAST_GAP = 10;
 const TOP_OFFSET = 20;
 const RIGHT_OFFSET = 20;
 
-// ─── Component ─────────────────────────────────────────────────────────────────
+//  Component 
 
 export function CustomToastContainer() {
   const notifications = useNotificationStore((s) => s.notifications);

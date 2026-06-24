@@ -30,7 +30,7 @@ import {
 } from "@/api/tickets.api";
 import type { Tag } from "@/types/ticket";
 
-// ─── Brand palette ─────────────────────────────────────────────────────────────
+//  Brand palette 
 
 const BRAND = {
   purple: "#7F77DD",
@@ -78,7 +78,7 @@ const TH_STYLE: React.CSSProperties = {
   whiteSpace: "nowrap",
 };
 
-// ─── Stat card ─────────────────────────────────────────────────────────────────
+//  Stat card 
 
 function StatCard({
   label,
@@ -177,7 +177,7 @@ function TagMobileCard({
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+//  Main Component 
 
 export default function TagAdminPanel() {
   const queryClient = useQueryClient();
@@ -191,13 +191,13 @@ export default function TagAdminPanel() {
 
   const isMobile = useMediaQuery("(max-width: 640px)");
 
-  // ── Queries ──
+  //  Queries 
   const { data: tags = [], isLoading } = useQuery({
     queryKey: ["admin-tags"],
     queryFn: fetchTagsApi,
   });
 
-  // ── Mutations ──
+  //  Mutations 
   const createMutation = useMutation({
     mutationFn: (payload: typeof formData) => createTagApi(payload),
     onSuccess: () => {
@@ -259,7 +259,7 @@ export default function TagAdminPanel() {
       }),
   });
 
-  // ── Handlers ──
+  //  Handlers 
   const closeModal = () => {
     setOpened(false);
     setEditingTag(null);
@@ -291,7 +291,7 @@ export default function TagAdminPanel() {
     else createMutation.mutate(formData);
   };
 
-  // ── Filtered list ──
+  //  Filtered list 
   const displayTags = useMemo(() => {
     if (!searchQuery.trim()) return tags;
     const q = searchQuery.toLowerCase();
@@ -301,7 +301,7 @@ export default function TagAdminPanel() {
   return (
     <Container size="lg" py="lg">
       <Stack gap="lg">
-        {/* ── Header ── */}
+        {/*  Header  */}
         <Group justify="space-between" align="flex-end" wrap="wrap" gap={12}>
           <Box>
             <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>
@@ -323,7 +323,7 @@ export default function TagAdminPanel() {
           </Button>
         </Group>
 
-        {/* ── Stat cards ── */}
+        {/*  Stat cards  */}
         <SimpleGrid cols={{ base: 2, sm: 2 }} spacing={10}>
           <StatCard
             label="Total tags"
@@ -339,7 +339,7 @@ export default function TagAdminPanel() {
           />
         </SimpleGrid>
 
-        {/* ── Table card ── */}
+        {/*  Table card  */}
         <Paper
           radius="md"
           style={{
@@ -628,7 +628,7 @@ export default function TagAdminPanel() {
         </Paper>
       </Stack>
 
-      {/* ── Create / Edit Modal ── */}
+      {/*  Create / Edit Modal  */}
       <Modal
         opened={opened}
         onClose={closeModal}
@@ -781,7 +781,7 @@ export default function TagAdminPanel() {
         </Stack>
       </Modal>
 
-      {/* ── Delete Confirm Modal ── */}
+      {/*  Delete Confirm Modal  */}
       <Modal
         opened={deleteConfirmId !== null}
         onClose={() => setDeleteConfirmId(null)}

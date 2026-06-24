@@ -1,7 +1,7 @@
 import { Box, Text } from "@mantine/core";
 import { Icon } from "@iconify-icon/react";
 
-// ─── Brand / variant config ────────────────────────────────────────────────────
+//  Brand / variant config 
 
 const VARIANT_CONFIG = {
   success: {

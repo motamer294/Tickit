@@ -39,11 +39,11 @@ export default function DebugPage() {
 
     setToken(t || 'NO TOKEN FOUND')
 
-    addLog('🔍 Debug Page Initialized')
-    addLog(`📍 Frontend: ${window.location.origin}`)
-    addLog(`📍 API URL: ${apiUrl}`)
-    addLog(`📍 WebSocket URL: ${wsUrl}`)
-    addLog(`🔑 Token: ${t ? `${t.substring(0, 20)}...` : 'MISSING'}`)
+    addLog(' Debug Page Initialized')
+    addLog(` Frontend: ${window.location.origin}`)
+    addLog(` API URL: ${apiUrl}`)
+    addLog(` WebSocket URL: ${wsUrl}`)
+    addLog(` Token: ${t ? `${t.substring(0, 20)}...` : 'MISSING'}`)
   }, [])
 
   const addLog = (message: string) => {
@@ -55,11 +55,11 @@ export default function DebugPage() {
   }
 
   const testWebSocket = async () => {
-    addLog('🚀 Attempting WebSocket connection...')
+    addLog(' Attempting WebSocket connection...')
 
     const t = useAuthStore.getState().accessToken
     if (!t) {
-      addLog('❌ ERROR: No access token found')
+      addLog(' ERROR: No access token found')
       return
     }
 
@@ -69,17 +69,17 @@ export default function DebugPage() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
 
     const wsUrl = `${protocol}//${wsHost}:${wsPort}/ws/unified/`
-    addLog(`📡 Connecting to: ${wsUrl}`)
+    addLog(` Connecting to: ${wsUrl}`)
 
     try {
       const newWs = new WebSocket(wsUrl)
 
       newWs.onopen = () => {
-        addLog('✅ WebSocket connection successful')
+        addLog(' WebSocket connection successful')
         setWsConnected(true)
 
         // Send authentication
-        addLog('📤 Sending authentication message...')
+        addLog(' Sending authentication message...')
         newWs.send(JSON.stringify({
           type: 'authenticate',
           token: t,
@@ -88,61 +88,61 @@ export default function DebugPage() {
 
       newWs.onmessage = (event) => {
         const data = JSON.parse(event.data)
-        addLog(`📨 Received: ${JSON.stringify(data)}`)
+        addLog(` Received: ${JSON.stringify(data)}`)
 
         if (data.type === 'authenticated') {
-          addLog(`✅ Authenticated as: ${data.username} (${data.role})`)
+          addLog(` Authenticated as: ${data.username} (${data.role})`)
         }
       }
 
       newWs.onerror = (error) => {
-        addLog(`❌ WebSocket error: ${error}`)
+        addLog(` WebSocket error: ${error}`)
         setWsConnected(false)
       }
 
       newWs.onclose = () => {
-        addLog('❌ WebSocket closed')
+        addLog(' WebSocket closed')
         setWsConnected(false)
       }
 
       setWs(newWs)
     } catch (error: any) {
-      addLog(`❌ Exception: ${error.message}`)
+      addLog(` Exception: ${error.message}`)
     }
   }
 
   const testApi = async () => {
-    addLog('🚀 Testing API connection...')
+    addLog(' Testing API connection...')
 
     const t = useAuthStore.getState().accessToken
     if (!t) {
-      addLog('❌ ERROR: No access token found')
+      addLog(' ERROR: No access token found')
       return
     }
 
     try {
-      addLog(`📤 Calling GET /api/my-tickets...`)
+      addLog(` Calling GET /api/my-tickets...`)
       const response = await fetch(`http://${window.location.hostname}:8000/api/my-tickets`, {
         headers: {
           'Authorization': `Bearer ${t}`,
         },
       })
 
-      addLog(`📥 Response status: ${response.status}`)
+      addLog(` Response status: ${response.status}`)
       const data = await response.json()
-      addLog(`✅ API working. Got ${Array.isArray(data) ? data.length : 0} tickets`)
+      addLog(` API working. Got ${Array.isArray(data) ? data.length : 0} tickets`)
       addLog(`Response: ${JSON.stringify(data).substring(0, 100)}...`)
     } catch (error: any) {
-      addLog(`❌ API error: ${error.message}`)
+      addLog(` API error: ${error.message}`)
     }
   }
 
   const testChatApi = async () => {
-    addLog('🚀 Testing Chat API...')
+    addLog(' Testing Chat API...')
 
     const t = useAuthStore.getState().accessToken
     if (!t) {
-      addLog('❌ ERROR: No access token found')
+      addLog(' ERROR: No access token found')
       return
     }
 
@@ -156,12 +156,12 @@ export default function DebugPage() {
       const tickets = await ticketsResponse.json()
 
       if (!Array.isArray(tickets) || tickets.length === 0) {
-        addLog('❌ No tickets available to test chat')
+        addLog(' No tickets available to test chat')
         return
       }
 
       const ticketId = tickets[0]?.id
-      addLog(`📤 Testing GET /api/tickets/${ticketId}/chat...`)
+      addLog(` Testing GET /api/tickets/${ticketId}/chat...`)
 
       const response = await fetch(`http://${window.location.hostname}:8000/api/tickets/${ticketId}/chat`, {
         headers: {
@@ -169,17 +169,17 @@ export default function DebugPage() {
         },
       })
 
-      addLog(`📥 Response status: ${response.status}`)
+      addLog(` Response status: ${response.status}`)
       const data = await response.json()
-      addLog(`✅ Chat API working. Got ${Array.isArray(data) ? data.length : 0} messages`)
+      addLog(` Chat API working. Got ${Array.isArray(data) ? data.length : 0} messages`)
     } catch (error: any) {
-      addLog(`❌ Chat API error: ${error.message}`)
+      addLog(` Chat API error: ${error.message}`)
     }
   }
 
   const clearLogs = () => {
     setLogs([])
-    addLog('📝 Logs cleared')
+    addLog(' Logs cleared')
   }
 
   const closeWs = () => {
@@ -187,7 +187,7 @@ export default function DebugPage() {
       ws.close()
       setWs(null)
       setWsConnected(false)
-      addLog('❌ Manually closed WebSocket')
+      addLog(' Manually closed WebSocket')
     }
   }
 
@@ -195,7 +195,7 @@ export default function DebugPage() {
     <Container size="lg" py="lg">
       <Stack gap="lg">
         <div>
-          <Title order={1}>🧪 Debug Console</Title>
+          <Title order={1}> Debug Console</Title>
           <Text size="sm" c="dimmed">
             Test API and WebSocket connections
           </Text>
@@ -210,7 +210,7 @@ export default function DebugPage() {
                   Token Status
                 </Text>
                 <Badge color={token && token !== 'NO TOKEN FOUND' ? 'green' : 'red'}>
-                  {token && token !== 'NO TOKEN FOUND' ? '✓ Present' : '✗ Missing'}
+                  {token && token !== 'NO TOKEN FOUND' ? ' Present' : ' Missing'}
                 </Badge>
               </Group>
               <Code block>{token.substring(0, 50)}...</Code>
@@ -224,7 +224,7 @@ export default function DebugPage() {
                   WebSocket Status
                 </Text>
                 <Badge color={wsConnected ? 'green' : 'red'}>
-                  {wsConnected ? '✓ Connected' : '✗ Disconnected'}
+                  {wsConnected ? ' Connected' : ' Disconnected'}
                 </Badge>
               </Group>
               <Text size="xs" c="dimmed">
@@ -270,7 +270,7 @@ export default function DebugPage() {
         <div>
           <Group justify="space-between" mb="xs">
             <Text size="sm" fw={600}>
-              📊 Event Logs ({logs.length})
+               Event Logs ({logs.length})
             </Text>
           </Group>
           <Paper
@@ -326,7 +326,7 @@ export default function DebugPage() {
               </li>
               <li>
                 <Text size="sm">
-                  Watch the <Kbd>📊 Event Logs</Kbd> section for detailed output
+                  Watch the <Kbd> Event Logs</Kbd> section for detailed output
                 </Text>
               </li>
             </ul>

@@ -30,9 +30,9 @@ class RealtimeDataConsumer(AsyncWebsocketConsumer):
 
             # Accept connection first (authentication happens in receive)
             await self.accept()
-            print(f"✅ Real-time WebSocket connection accepted, waiting for authentication")
+            print(f" Real-time WebSocket connection accepted, waiting for authentication")
         except Exception as e:
-            print(f"❌ Real-time connection error: {e}")
+            print(f" Real-time connection error: {e}")
             import traceback
             traceback.print_exc()
             await self.close()
@@ -41,7 +41,7 @@ class RealtimeDataConsumer(AsyncWebsocketConsumer):
         """Unsubscribe from real-time channels"""
         for group in getattr(self, 'groups', []):
             await self.channel_layer.group_discard(group, self.channel_name)
-        print(f"❌ User {getattr(self, 'user_id', 'unknown')} disconnected from real-time data")
+        print(f" User {getattr(self, 'user_id', 'unknown')} disconnected from real-time data")
 
     async def receive(self, text_data):
         """Handle incoming messages - authenticate or keep-alive pings"""
@@ -57,17 +57,17 @@ class RealtimeDataConsumer(AsyncWebsocketConsumer):
                 await self.send(text_data=json.dumps({'type': 'pong'}))
             else:
                 if not self.is_authenticated:
-                    print(f"❌ Unauthenticated message received: {message_type}")
+                    print(f" Unauthenticated message received: {message_type}")
                     await self.close(code=4001)
         except Exception as e:
-            print(f"❌ Receive error: {e}")
+            print(f" Receive error: {e}")
 
     async def handle_authenticate(self, data):
         """Authenticate user via JWT token in message"""
         try:
             token = data.get('token')
             if not token:
-                print(f"❌ No token provided")
+                print(f" No token provided")
                 await self.close(code=4002)
                 return
 
@@ -75,7 +75,7 @@ class RealtimeDataConsumer(AsyncWebsocketConsumer):
             user = await get_user_from_token(token)
 
             if user.is_anonymous:
-                print(f"❌ Invalid token")
+                print(f" Invalid token")
                 await self.close(code=4003)
                 return
 
@@ -101,9 +101,9 @@ class RealtimeDataConsumer(AsyncWebsocketConsumer):
                 'role': self.user.role,
             }))
 
-            print(f"✅ User {self.user.username} authenticated and connected to real-time data")
+            print(f" User {self.user.username} authenticated and connected to real-time data")
         except Exception as e:
-            print(f"❌ Authentication error: {e}")
+            print(f" Authentication error: {e}")
             import traceback
             traceback.print_exc()
             await self.close(code=4000)

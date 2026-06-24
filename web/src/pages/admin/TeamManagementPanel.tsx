@@ -46,7 +46,7 @@ import { DepartmentForm } from "@/components/DepartmentForm";
 import { TeamForm } from "@/components/TeamForm";
 import { TeamMemberManager } from "@/components/TeamMemberManager";
 
-// ─── Brand palette (matches Dashboard, TicketsList, UserAdminPanel) ────────────
+//  Brand palette (matches Dashboard, TicketsList, UserAdminPanel) 
 
 const BRAND = {
   purple: "#7F77DD",
@@ -88,7 +88,7 @@ function getInitials(name: string) {
     .slice(0, 2);
 }
 
-// ─── Shared sub-components ─────────────────────────────────────────────────────
+//  Shared sub-components 
 
 function StatCard({
   label,
@@ -259,7 +259,7 @@ function TeamMobileCard({
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+//  Main Component 
 
 export default function TeamManagementPanel() {
   const queryClient = useQueryClient();
@@ -284,7 +284,7 @@ export default function TeamManagementPanel() {
 
   const isMobile = useMediaQuery("(max-width: 640px)");
 
-  // ── Queries ──
+  //  Queries 
   const {
     data: departments = [],
     isLoading: departmentsLoading,
@@ -314,7 +314,7 @@ export default function TeamManagementPanel() {
     gcTime: 1000 * 60 * 10,
   });
 
-  // ── Mutations ──
+  //  Mutations 
   const createDeptMutation = useMutation({
     mutationFn: (data: Parameters<typeof createDepartmentApi>[0]) =>
       createDepartmentApi(data),
@@ -491,7 +491,7 @@ export default function TeamManagementPanel() {
       }),
   });
 
-  // ── Handlers ──
+  //  Handlers 
   const handleDeleteClick = (
     type: "department" | "team",
     id: number,
@@ -522,7 +522,7 @@ export default function TeamManagementPanel() {
     }
   };
 
-  // ── Filtered lists ──
+  //  Filtered lists 
   const filteredDepts = useMemo(() => {
     if (!deptSearch.trim()) return departments;
     const q = deptSearch.toLowerCase();
@@ -539,18 +539,18 @@ export default function TeamManagementPanel() {
     return teams.filter((t: Team) => t.name.toLowerCase().includes(q));
   }, [teams, teamSearch]);
 
-  // ── Derived counts ──
+  //  Derived counts 
   const totalMembers = teams.reduce(
     (s: number, t: Team) => s + (t.employee_count ?? 0),
     0,
   );
 
-  // ─── Render ───────────────────────────────────────────────────────────────────
+  //  Render 
 
   return (
     <Container size="xl" py="lg">
       <Stack gap="lg">
-        {/* ── Header ── */}
+        {/*  Header  */}
         <Group justify="space-between" align="flex-end" wrap="wrap" gap={12}>
           <Box>
             <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>
@@ -562,7 +562,7 @@ export default function TeamManagementPanel() {
           </Box>
         </Group>
 
-        {/* ── Stat cards ── */}
+        {/*  Stat cards  */}
         <SimpleGrid cols={{ base: 2, md: 4 }} spacing={10}>
           <StatCard
             label="Departments"
@@ -590,7 +590,7 @@ export default function TeamManagementPanel() {
           />
         </SimpleGrid>
 
-        {/* ── Tabs ── */}
+        {/*  Tabs  */}
         <Paper
           radius="md"
           style={{
@@ -667,7 +667,7 @@ export default function TeamManagementPanel() {
               </Tabs.Tab>
             </Tabs.List>
 
-            {/* ── Departments panel ── */}
+            {/*  Departments panel  */}
             <Tabs.Panel value="departments">
               <Box p="md">
                 <Group justify="space-between" mb="md">
@@ -962,7 +962,7 @@ export default function TeamManagementPanel() {
               </Box>
             </Tabs.Panel>
 
-            {/* ── Teams panel ── */}
+            {/*  Teams panel  */}
             <Tabs.Panel value="teams">
               <Box p="md">
                 <Group justify="space-between" mb="md">
@@ -1321,7 +1321,7 @@ export default function TeamManagementPanel() {
         </Paper>
       </Stack>
 
-      {/* ── Department Form Modal ── */}
+      {/*  Department Form Modal  */}
       <DepartmentForm
         opened={departmentFormOpen}
         onClose={() => {
@@ -1340,7 +1340,7 @@ export default function TeamManagementPanel() {
         isLoading={createDeptMutation.isPending || updateDeptMutation.isPending}
       />
 
-      {/* ── Team Form Modal ── */}
+      {/*  Team Form Modal  */}
       <TeamForm
         opened={teamFormOpen}
         onClose={() => {
@@ -1358,7 +1358,7 @@ export default function TeamManagementPanel() {
         isLoading={createTeamMutation.isPending || updateTeamMutation.isPending}
       />
 
-      {/* ── Member Manager Modal ── */}
+      {/*  Member Manager Modal  */}
       <Modal
         opened={memberManagerOpen}
         onClose={() => {
@@ -1413,7 +1413,7 @@ export default function TeamManagementPanel() {
         )}
       </Modal>
 
-      {/* ── Delete Confirmation Modal ── */}
+      {/*  Delete Confirmation Modal  */}
       <Modal
         opened={deleteConfirmOpen}
         onClose={() => {

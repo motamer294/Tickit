@@ -17,7 +17,7 @@ import ThemeToggle from '@/components/ThemeToggle'
 import { NotificationCenter } from '@/components/NotificationCenter'
 import UserAvatar from '@/components/UserAvatar'
 
-// ─── Brand ─────────────────────────────────────────────────────────────────────
+//  Brand 
 
 const BRAND = {
   purple:      '#7F77DD',
@@ -29,7 +29,7 @@ const BRAND = {
   redText:     '#791F1F',
 }
 
-// ─── Nav data ──────────────────────────────────────────────────────────────────
+//  Nav data 
 
 const NAV_ITEMS = [
   { label: 'Dashboard', icon: 'solar:widget-5-bold-duotone',          path: '/app/dashboard' },
@@ -49,7 +49,7 @@ const BOTTOM_ITEMS = [
   { label: 'Profile',  icon: 'solar:user-bold-duotone',     path: '/app/profile'   },
 ]
 
-// ─── NavItem ───────────────────────────────────────────────────────────────────
+//  NavItem 
 
 function NavItem({
   label,
@@ -128,7 +128,7 @@ function NavItem({
   )
 }
 
-// ─── Layout ────────────────────────────────────────────────────────────────────
+//  Layout 
 
 const DashboardLayout = () => {
   const [opened, { toggle }] = useDisclosure()
@@ -163,7 +163,7 @@ const DashboardLayout = () => {
       transitionDuration={300}
       transitionTimingFunction="ease"
     >
-      {/* ── Header ── */}
+      {/*  Header  */}
       <AppShell.Header
         style={{
           borderBottom: '0.5px solid var(--mantine-color-default-border)',
@@ -175,7 +175,7 @@ const DashboardLayout = () => {
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
 
             {/* Logo mark */}
-            <img src={logoSvg} alt="TicketMe" style={{ height: 26, width: 'auto', display: 'block' }} />
+            <img src={logoSvg} alt="Tickit" style={{ height: 26, width: 'auto', display: 'block' }} />
           </Group>
 
           <Group gap={6}>
@@ -185,7 +185,7 @@ const DashboardLayout = () => {
         </Group>
       </AppShell.Header>
 
-      {/* ── Sidebar ── */}
+      {/*  Sidebar  */}
       <AppShell.Navbar
         style={{
           borderRight: '0.5px solid var(--mantine-color-default-border)',
@@ -291,7 +291,7 @@ const DashboardLayout = () => {
         </Box>
       </AppShell.Navbar>
 
-      {/* ── Main content ── */}
+      {/*  Main content  */}
       <AppShell.Main
         style={{ background: 'var(--mantine-color-default-hover)' }}
       >

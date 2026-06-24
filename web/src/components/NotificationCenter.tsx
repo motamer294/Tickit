@@ -18,7 +18,7 @@ import { useNotifications } from '@/hooks/useNotifications'
 import { NotificationItem } from './NotificationItem'
 import type { NotificationType } from '@/types/notification'
 
-// ─── Brand ─────────────────────────────────────────────────────────────────────
+//  Brand 
 
 const BRAND = {
   purple:      '#7F77DD',
@@ -29,7 +29,7 @@ const BRAND = {
   redLight:    '#FCEBEB',
 }
 
-// ─── Filter tab data ───────────────────────────────────────────────────────────
+//  Filter tab data 
 
 const FILTER_TABS: Array<{ type: NotificationType | 'ALL'; label: string; icon: string }> = [
   { type: 'ALL',               label: 'All',      icon: 'solar:layers-bold-duotone'                    },
@@ -42,7 +42,7 @@ const FILTER_TABS: Array<{ type: NotificationType | 'ALL'; label: string; icon: 
   { type: 'MANAGER_ACTIVITY',  label: 'Activity', icon: 'solar:pulse-bold-duotone'                     },
 ]
 
-// ─── Filter pill ───────────────────────────────────────────────────────────────
+//  Filter pill 
 
 function FilterPill({
   label,
@@ -85,7 +85,7 @@ function FilterPill({
   )
 }
 
-// ─── Component ─────────────────────────────────────────────────────────────────
+//  Component 
 
 export const NotificationCenter = () => {
   const { colorScheme } = useMantineColorScheme()
@@ -106,7 +106,7 @@ export const NotificationCenter = () => {
     filter === 'ALL' ? notifications : notifications.filter((n) => n.type === (filter as NotificationType))
   const hasNotifications = notifications.length > 0
 
-  // ── Trigger button ────────────────────────────────────────────────────────────
+  //  Trigger button 
 
   const triggerButton = (
     <Tooltip label="Notifications" withArrow fz={11} position="bottom">
@@ -157,7 +157,7 @@ export const NotificationCenter = () => {
     </Tooltip>
   )
 
-  // ── Shared panel content ──────────────────────────────────────────────────────
+  //  Shared panel content 
 
   const panelContent = (
     <Stack gap={0} style={{ height: '100%' }}>
@@ -326,7 +326,7 @@ export const NotificationCenter = () => {
                   padding: 0,
                 }}
               >
-                Show all ↗
+                Show all 
               </button>
             )}
           </Box>
@@ -335,7 +335,7 @@ export const NotificationCenter = () => {
     </Stack>
   )
 
-  // ── Mobile: full-screen drawer ────────────────────────────────────────────────
+  //  Mobile: full-screen drawer 
 
   if (isMobile) {
     return (
@@ -363,7 +363,7 @@ export const NotificationCenter = () => {
     )
   }
 
-  // ── Desktop: popover ──────────────────────────────────────────────────────────
+  //  Desktop: popover 
 
   return (
     <Popover

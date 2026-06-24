@@ -59,7 +59,7 @@ class AuditService:
             ip_address=ip_address,
         )
 
-        # 📡 Broadcast real-time update so all clients refresh their audit logs
+        #  Broadcast real-time update so all clients refresh their audit logs
         from tickets.realtime_service import realtime_service
         realtime_service.broadcast_audit_log_created(audit_log)
         return audit_log
@@ -86,7 +86,7 @@ class AuditService:
         AuditService.log_action(
             action_type='STATUS_CHANGED',
             performed_by=performed_by,
-            description=f"Ticket #{ticket.id} status changed: {old_status} → {new_status}",
+            description=f"Ticket #{ticket.id} status changed: {old_status}  {new_status}",
             ticket=ticket,
             old_value=old_status,
             new_value=new_status,
@@ -182,7 +182,7 @@ class AuditService:
         AuditService.log_action(
             action_type='USER_ROLE_CHANGED',
             performed_by=performed_by,
-            description=f"User {user.username} role changed: {old_role} → {new_role}",
+            description=f"User {user.username} role changed: {old_role}  {new_role}",
             user=user,
             old_value=old_role,
             new_value=new_role,

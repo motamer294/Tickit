@@ -21,7 +21,7 @@ import { notifications } from "@/utils/customNotifications";
 import type { Team, User } from "@/api/departments.api";
 import UserAvatar from "@/components/UserAvatar";
 
-// ─── Brand palette ─────────────────────────────────────────────────────────────
+//  Brand palette 
 
 const BRAND = {
   purple: "#7F77DD",
@@ -42,7 +42,7 @@ function displayName(user: User) {
     : user.username;
 }
 
-// ─── Props ─────────────────────────────────────────────────────────────────────
+//  Props 
 
 interface TeamMemberManagerProps {
   team: Team;
@@ -62,7 +62,7 @@ const TH_STYLE: React.CSSProperties = {
   whiteSpace: "nowrap",
 };
 
-// ─── Component ─────────────────────────────────────────────────────────────────
+//  Component 
 
 export function TeamMemberManager({
   team,
@@ -133,7 +133,7 @@ export function TeamMemberManager({
         overlayProps={{ radius: "sm", blur: 2 }}
       />
 
-      {/* ── Add member ── */}
+      {/*  Add member  */}
       <Box
         p="md"
         style={{
@@ -238,7 +238,7 @@ export function TeamMemberManager({
         )}
       </Box>
 
-      {/* ── Members list ── */}
+      {/*  Members list  */}
       <Box
         style={{
           borderRadius: "var(--mantine-radius-md)",

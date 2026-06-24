@@ -19,7 +19,7 @@ import {
 import { Icon } from '@iconify-icon/react'
 import type { Department } from '@/api/departments.api'
 
-// ─── Brand palette ─────────────────────────────────────────────────────────────
+//  Brand palette 
 
 const BRAND = {
   purple:      '#7F77DD',
@@ -31,7 +31,7 @@ const BRAND = {
   redText:     '#791F1F',
 }
 
-// ─── Props ─────────────────────────────────────────────────────────────────────
+//  Props 
 
 interface DepartmentFormProps {
   opened: boolean
@@ -41,7 +41,7 @@ interface DepartmentFormProps {
   isLoading?: boolean
 }
 
-// ─── Component ─────────────────────────────────────────────────────────────────
+//  Component 
 
 export function DepartmentForm({
   opened,

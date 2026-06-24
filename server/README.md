@@ -5,7 +5,7 @@ Here is the updated, modernized `README.md` for your `server` directory. I have 
 ### `HELPDESK_AI_WORKSPACE/Nexus_Ai/server/README.md`
 
 ```markdown
-# ⚙️ Nexus AI: Core Backend Server
+#  Nexus AI: Core Backend Server
 
 Welcome to the Core Backend (The "Body") of the Nexus AI Help Desk System. This service handles all central business logic, database management, user authentication, and real-time live chat communications. 
 
@@ -13,18 +13,18 @@ It is built for high performance using **Django 6.0** and **Django Ninja** (Fast
 
 ---
 
-## 📌 Key Features
+##  Key Features
 
-- ✅ **High-Speed RESTful API** – Built with Django Ninja for Pydantic-validated, fast routing.
-- ✅ **Real-Time WebSockets** – Room-based live chat per ticket via Django Channels, Daphne, and Redis, complete with message persistence.
-- ✅ **Advanced Analytics & SLA tracking** – Manager-only dashboard endpoints utilizing complex PostgreSQL aggregations (`Count`, `Avg`, `F` expressions) and MTTR (Mean Time To Resolution) tracking.
-- ✅ **AI Microservice Integration** – Seamless REST communication with the isolated FastAPI RAG engine.
-- ✅ **JWT Authentication & RBAC** – Secure role-based access control (Roles: `CUSTOMER`, `EMPLOYEE`, `MANAGER`).
-- ✅ **Fully Containerized** – Postgres and Redis run via Docker for zero-friction local development.
+-  **High-Speed RESTful API** – Built with Django Ninja for Pydantic-validated, fast routing.
+-  **Real-Time WebSockets** – Room-based live chat per ticket via Django Channels, Daphne, and Redis, complete with message persistence.
+-  **Advanced Analytics & SLA tracking** – Manager-only dashboard endpoints utilizing complex PostgreSQL aggregations (`Count`, `Avg`, `F` expressions) and MTTR (Mean Time To Resolution) tracking.
+-  **AI Microservice Integration** – Seamless REST communication with the isolated FastAPI RAG engine.
+-  **JWT Authentication & RBAC** – Secure role-based access control (Roles: `CUSTOMER`, `EMPLOYEE`, `MANAGER`).
+-  **Fully Containerized** – Postgres and Redis run via Docker for zero-friction local development.
 
 ---
 
-## 📋 Prerequisites
+##  Prerequisites
 
 Make sure you have the following installed on your machine:
 
@@ -34,7 +34,7 @@ Make sure you have the following installed on your machine:
 
 ---
 
-## 💻 1. Local Setup (For VS Code / IDE Support)
+##  1. Local Setup (For VS Code / IDE Support)
 
 For the best development experience (IDE autocomplete & linting), you should set up a local Python virtual environment.
 
@@ -62,7 +62,7 @@ pip install -r requirements.txt
 
 ---
 
-## 🚀 2. Running the Infrastructure (Database & Redis)
+##  2. Running the Infrastructure (Database & Redis)
 
 We use Docker to instantly spin up **PostgreSQL** (for relational data) and **Redis** (as the message broker for WebSockets).
 
@@ -80,7 +80,7 @@ docker compose up -d
 
 ---
 
-## 🏃 3. Running the Django Server
+##  3. Running the Django Server
 
 Because we are using WebSockets, we run the server using **Daphne** (an ASGI server) instead of the standard WSGI `runserver`.
 
@@ -105,7 +105,7 @@ daphne -p 8001 core.asgi:application
 
 ---
 
-## 🌅 4. Daily Routine (How to start working)
+##  4. Daily Routine (How to start working)
 
 When you open your computer to work, simply:
 1. Make sure Docker is running (`docker compose up -d`).
@@ -114,7 +114,7 @@ When you open your computer to work, simply:
 
 ---
 
-## 🌐 Access the System
+##  Access the System
 
 | Service                            | URL                              |
 |------------------------------------|----------------------------------|
@@ -128,7 +128,7 @@ You can also test the API using the provided Postman collection:
 
 ---
 
-## 🛑 Useful Commands
+##  Useful Commands
 
 | Action                             | Command                                                          |
 |------------------------------------|------------------------------------------------------------------|
@@ -139,6 +139,6 @@ You can also test the API using the provided Postman collection:
 | Wipe Docker DB & Redis clean       | `docker compose down -v`                                         |
 
 ---
-Happy Coding! 💻🚀
+Happy Coding! 
 
 

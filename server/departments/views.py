@@ -382,7 +382,7 @@ def test_departments_router(request):
 @router.get('/employees', tags=['Employees'])
 def list_employees(request, team_id: int = Query(None), department_id: int = Query(None), role: str = Query(None)):
     """List employees with their team/department info"""
-    print("🔍 DEBUG: list_employees called from departments/views.py")
+    print(" DEBUG: list_employees called from departments/views.py")
     if not request.user or not request.user.is_authenticated:
         raise HttpError(401, 'Authentication required')
 
@@ -450,9 +450,9 @@ def list_employees(request, team_id: int = Query(None), department_id: int = Que
 
         result.append(emp_dict)
 
-    print(f"📤 DEBUG: Returning {len(result)} employees with full data from departments/views.py")
+    print(f" DEBUG: Returning {len(result)} employees with full data from departments/views.py")
     if result:
-        print(f"📤 DEBUG: First employee keys: {list(result[0].keys())}")
+        print(f" DEBUG: First employee keys: {list(result[0].keys())}")
     return result
 
 

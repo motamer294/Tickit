@@ -37,7 +37,7 @@ import {
 } from "@/api/admin.api";
 import type { Category } from "@/types/ticket";
 
-// ─── Brand palette ─────────────────────────────────────────────────────────────
+//  Brand palette 
 
 const B = {
   purple: "#7F77DD",
@@ -68,7 +68,7 @@ const PRIORITY_META: Record<string, { bg: string; text: string; dot: string }> =
     LOW: { bg: B.greenLight, text: B.greenText, dot: B.green },
   };
 
-// ─── Shared micro-components ──────────────────────────────────────────────────
+//  Shared micro-components 
 
 function SLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -196,7 +196,7 @@ const mStyles = {
   body: { paddingTop: 16 },
 };
 
-// ─── Default form ─────────────────────────────────────────────────────────────
+//  Default form 
 
 type FormData = {
   name: string;
@@ -218,7 +218,7 @@ const DEFAULT_FORM: FormData = {
   is_active: true,
 };
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
+//  Skeleton 
 
 function SLAListSkeleton() {
   return (
@@ -333,7 +333,7 @@ function SLAMobileCard({
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+//  Main Component 
 
 export default function SLAManagement() {
   const queryClient = useQueryClient();
@@ -346,7 +346,7 @@ export default function SLAManagement() {
 
   const isMobile = useMediaQuery("(max-width: 640px)");
 
-  // ── Queries ──
+  //  Queries 
   const {
     data: slas = [],
     isLoading,
@@ -361,7 +361,7 @@ export default function SLAManagement() {
     queryFn: fetchCategoriesApi,
   });
 
-  // ── Mutations ──
+  //  Mutations 
   const createMutation = useMutation({
     mutationFn: (payload: SLACreatePayload) => createSLA(payload),
     onSuccess: () => {
@@ -420,7 +420,7 @@ export default function SLAManagement() {
       }),
   });
 
-  // ── Handlers ──
+  //  Handlers 
   const closeModal = () => {
     setOpened(false);
     setEditingSLA(null);
@@ -487,7 +487,7 @@ export default function SLAManagement() {
     }
   };
 
-  // ── Derived data ──
+  //  Derived data 
   const categoryMap = useMemo(
     () => Object.fromEntries((categories as Category[]).map((c) => [c.id, c])),
     [categories],
@@ -511,7 +511,7 @@ export default function SLAManagement() {
   return (
     <Container size="lg" py="lg">
       <Stack gap="lg">
-        {/* ── Header ── */}
+        {/*  Header  */}
         <Group justify="space-between" align="flex-end" wrap="wrap" gap={12}>
           <Box>
             <Text fw={500} style={{ fontSize: 22, lineHeight: 1.2 }}>
@@ -534,7 +534,7 @@ export default function SLAManagement() {
           </Button>
         </Group>
 
-        {/* ── Stat cards ── */}
+        {/*  Stat cards  */}
         <SimpleGrid cols={{ base: 2, sm: 4 }} spacing={10}>
           <StatCard
             label="Total SLAs"
@@ -562,7 +562,7 @@ export default function SLAManagement() {
           />
         </SimpleGrid>
 
-        {/* ── Error ── */}
+        {/*  Error  */}
         {error && (
           <Box
             p="md"
@@ -595,7 +595,7 @@ export default function SLAManagement() {
           </Box>
         )}
 
-        {/* ── Table card ── */}
+        {/*  Table card  */}
         <Paper
           radius="md"
           style={{
@@ -968,7 +968,7 @@ export default function SLAManagement() {
         </Paper>
       </Stack>
 
-      {/* ── Create / Edit Modal ── */}
+      {/*  Create / Edit Modal  */}
       <Modal
         opened={opened}
         onClose={closeModal}
@@ -1202,7 +1202,7 @@ export default function SLAManagement() {
         </Stack>
       </Modal>
 
-      {/* ── Delete Confirm Modal ── */}
+      {/*  Delete Confirm Modal  */}
       <Modal
         opened={deleteConfirmId !== null}
         onClose={() => setDeleteConfirmId(null)}

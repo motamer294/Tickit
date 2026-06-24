@@ -28,7 +28,7 @@ class RealtimeService:
             'realtime_updates',
             payload
         )
-        print(f"🔄 Broadcast: New ticket #{ticket.id}")
+        print(f" Broadcast: New ticket #{ticket.id}")
 
     def broadcast_ticket_deleted(self, ticket_id, title):
         """Broadcast when a ticket is deleted"""
@@ -44,7 +44,7 @@ class RealtimeService:
             'realtime_updates',
             payload
         )
-        print(f"🔄 Broadcast: Ticket #{ticket_id} deleted")
+        print(f" Broadcast: Ticket #{ticket_id} deleted")
 
     def broadcast_ticket_updated(self, ticket, changed_fields):
         """Broadcast when a ticket is updated"""
@@ -71,7 +71,7 @@ class RealtimeService:
                 payload
             )
 
-        print(f"🔄 Broadcast: Ticket #{ticket.id} updated - {changed_fields}")
+        print(f" Broadcast: Ticket #{ticket.id} updated - {changed_fields}")
 
     def broadcast_comment_added(self, ticket_id, comment_id, author_name):
         """Broadcast when a comment is added"""
@@ -89,7 +89,7 @@ class RealtimeService:
             'realtime_updates',  # Send to everyone
             payload
         )
-        print(f"🔄 Broadcast: New comment on ticket #{ticket_id}")
+        print(f" Broadcast: New comment on ticket #{ticket_id}")
 
     def broadcast_to_user(self, user_id, event_type, data):
         """Broadcast a specific event to a user"""
@@ -118,7 +118,7 @@ class RealtimeService:
         async_to_sync(self.channel_layer.group_send)(
             f'user_realtime_{ticket.created_by_id}', payload
         )
-        print(f"🤖 Broadcast: AI triage complete for ticket #{ticket.id} ({ticket.ai_status})")
+        print(f" Broadcast: AI triage complete for ticket #{ticket.id} ({ticket.ai_status})")
 
     def broadcast_audit_log_created(self, audit_log):
         """Broadcast when a new audit log is created"""
@@ -136,7 +136,7 @@ class RealtimeService:
             'realtime_updates',
             payload
         )
-        print(f"🔄 Broadcast: New audit log #{audit_log.id} - {audit_log.action_type}")
+        print(f" Broadcast: New audit log #{audit_log.id} - {audit_log.action_type}")
 
 
 # Global instance

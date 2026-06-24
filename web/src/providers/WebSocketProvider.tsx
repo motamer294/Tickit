@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { logger } from '@/utils/logger'
 import { usePollingFallback } from '@/hooks/usePollingFallback'
 
-// ─── WS message type guards ────────────────────────────────────────────────────
+//  WS message type guards 
 
 const NOTIFICATION_TYPES = new Set([
   'TICKET_CREATED', 'TICKET_UPDATED', 'TICKET_ASSIGNED',
@@ -16,7 +16,7 @@ function isValidWsMessage(data: unknown): data is Record<string, unknown> {
   return typeof data === 'object' && data !== null && typeof (data as Record<string, unknown>).type === 'string'
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 
 export interface WebSocketContextType {
   ws: WebSocket | null
@@ -34,7 +34,7 @@ export const WebSocketContext = createContext<WebSocketContextType>({
   disablePollingFallback: () => {},
 })
 
-// ⚠️ useWebSocketContext moved to: hooks/useWebSocketContext.ts
+//  useWebSocketContext moved to: hooks/useWebSocketContext.ts
 // Import from: import { useWebSocketContext } from '@/hooks/useWebSocketContext'
 
 interface WebSocketProviderProps {
@@ -207,8 +207,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       wsUrl = `${envWsUrl}/ws/unified/`
       logger.debug('[WebSocket] Using env WSS URL:', wsUrl)
     } else {
-      // ✅ Always WSS through Nginx reverse proxy
-      // Nginx handles SSL and proxies /ws/ → Django Channels (ws://)
+      //  Always WSS through Nginx reverse proxy
+      // Nginx handles SSL and proxies /ws/  Django Channels (ws://)
       wsUrl = `wss://${hostname}/ws/unified/`
       logger.debug('[WebSocket] Using Nginx reverse proxy WSS URL:', wsUrl)
     }
@@ -221,10 +221,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       newWs.onopen = () => {
         logger.info('[WebSocket] Connected')
 
-        // ✅ FIX: Set BOTH ws state and isConnected in the same event handler
+        //  FIX: Set BOTH ws state and isConnected in the same event handler
         // so consumers never see isConnected=true with ws=null
         setIsConnected(true)
-        setWs(newWs)           // ← moved here, no longer deferred
+        setWs(newWs)           //  moved here, no longer deferred
         wsRef.current = newWs  // ensure ref is also up to date
 
         disablePollingFallback()
@@ -328,8 +328,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       }
 
       newWs.onclose = (event) => {
-        logger.warn('[WebSocket] ❌ Connection closed', event.code, event.reason)
-        // ✅ FIX: Clear both ws state and isConnected together
+        logger.warn('[WebSocket]  Connection closed', event.code, event.reason)
+        //  FIX: Clear both ws state and isConnected together
         setIsConnected(false)
         setWs(null)
         wsRef.current = null
@@ -345,14 +345,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
       newWs.onerror = (error) => {
         logger.error('[WebSocket] Connection error — readyState:', newWs.readyState, 'url:', newWs.url, error)
-        // ✅ FIX: Clear both together on error too
+        //  FIX: Clear both together on error too
         setIsConnected(false)
         setWs(null)
         enablePollingFallback()
         // wsRef will be cleaned up in onclose which fires after onerror
       }
 
-      // ✅ FIX: wsRef is set here for internal guard logic (before onopen)
+      //  FIX: wsRef is set here for internal guard logic (before onopen)
       // but setWs() is now called inside onopen so React state is consistent
       wsRef.current = newWs
 

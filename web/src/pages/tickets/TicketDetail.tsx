@@ -54,7 +54,7 @@ import {
 import { Pill, SLabel, Card, CardHeader } from "@/components/ticket/TicketCard";
 import { AttachmentsSection } from "@/components/ticket/AttachmentsSection";
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
+//  Skeleton 
 
 function TicketDetailSkeleton() {
   return (
@@ -98,7 +98,7 @@ function TicketDetailSkeleton() {
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+//  Main 
 
 export default function TicketDetail() {
   const { ticketId } = useParams<{ ticketId: string }>();
@@ -263,7 +263,7 @@ export default function TicketDetail() {
               : "Ticket not found or has been deleted"}
           </CustomAlert>
           <Button variant="default" size="sm" onClick={() => navigate("..")}>
-            ← Back to Tickets
+             Back to Tickets
           </Button>
         </Stack>
       </Container>
@@ -290,7 +290,7 @@ export default function TicketDetail() {
     setEditModalOpen(true);
   };
 
-  // ─── Shared modal title builder ──────────────────────────────────────────────
+  //  Shared modal title builder 
   const mTitle = (icon: string, label: string, color = B.purple) => (
     <Group gap={8}>
       <Icon icon={icon} width={18} style={{ color }} />
@@ -310,7 +310,7 @@ export default function TicketDetail() {
   return (
     <Container size="xl" py="lg">
       <Stack gap="md">
-        {/* ── Back nav ─────────────────────────────────────────────────────── */}
+        {/*  Back nav  */}
         <Group
           gap={6}
           style={{ cursor: "pointer", width: "fit-content" }}
@@ -326,7 +326,7 @@ export default function TicketDetail() {
           </Text>
         </Group>
 
-        {/* ── Hero card ────────────────────────────────────────────────────── */}
+        {/*  Hero card  */}
         <Card>
           {/* Title area */}
           <Box px={{ base: "md", sm: "lg" }} pt={{ base: "md", sm: "lg" }} pb="md">
@@ -501,7 +501,7 @@ export default function TicketDetail() {
           </Box>
         </Card>
 
-        {/* ── Two-column body ───────────────────────────────────────────────── */}
+        {/*  Two-column body  */}
         <Box className="td-grid">
           {/* LEFT column */}
           <Stack gap={12}>
@@ -553,7 +553,7 @@ export default function TicketDetail() {
                 }
               />
               <Box p="md">
-                {/* ── AI processing states ── */}
+                {/*  AI processing states  */}
                 {(ticket.ai_status === "PENDING" || ticket.ai_status === "PROCESSING") && (
                   <Box
                     p="sm"
@@ -596,7 +596,7 @@ export default function TicketDetail() {
                   </Box>
                 )}
 
-                {/* ── Stat cards (show skeleton while AI is running) ── */}
+                {/*  Stat cards (show skeleton while AI is running)  */}
                 <SimpleGrid cols={{ base: 2, sm: 4 }} spacing={10} mb="md">
                   {/* Category */}
                   <Box p="sm" style={{ borderRadius: 8, border: "0.5px solid var(--mantine-color-default-border)" }}>
@@ -1079,7 +1079,7 @@ export default function TicketDetail() {
         </Box>
       </Stack>
 
-      {/* ── Modals ──────────────────────────────────────────────────────────── */}
+      {/*  Modals  */}
 
       {/* Assign */}
       <Modal

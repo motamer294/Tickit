@@ -1,5 +1,5 @@
 """
-TIcketMe ML Service — Pure Classical ML Edition
+ ML Service — Pure Classical ML Edition
 All predictions (category, priority, sentiment) come from trained sklearn models.
 Solutions come from FAISS nearest-ticket retrieval. No LLM required.
 """
@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
 # ── App ───────────────────────────────────────────────────────────────────────
 
 app = FastAPI(
-    title="TIcketMe ML Service",
+    title="ML Service",
     description="Classical ML ticket classification + FAISS solution retrieval",
     lifespan=lifespan,
 )
