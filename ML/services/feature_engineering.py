@@ -5,6 +5,8 @@ _URGENCY_WORDS = [
     'urgent', 'critical', 'down', 'outage', 'crash', 'asap', 'immediately',
     'not working', 'broken', 'failed', 'error', 'cannot', "can't", "won't",
     'blocked', 'emergency', 'severe', 'unresponsive', 'corrupted',
+    'production', 'prod', 'live environment', 'live server',
+    'data loss', 'rollback', 'migration failed', 'deployment failed',
 ]
 
 _SCOPE_WORDS = [
@@ -16,6 +18,8 @@ _SCOPE_WORDS = [
 _TIME_WORDS = [
     'deadline', 'presentation', 'client', 'meeting', 'due today', 'by today',
     'end of day', 'eod', 'by tomorrow', 'immediately', 'right now',
+    'need fixes fast', 'fix fast', 'fix quickly', 'fix asap', 'fix now',
+    'resolve fast', 'resolve now', 'fix immediately', 'fast', 'quickly',
 ]
 
 # All words/phrases that signal negative tone.
@@ -29,16 +33,29 @@ _NEG_SIGNALS = [
     'entire team', 'all users', 'cannot work', 'blocking',
     'need this fixed', 'for 2 days', 'for 3 days',
     'since yesterday', 'second time', 'third time', 'multiple times',
+    # Production/deployment failure (always urgent and frustrating)
+    'production', 'prod environment', 'live environment', 'live server',
+    'failed on production', 'failed in production', 'migration failed',
+    'migrations failed', 'deployment failed', 'deploy failed',
+    'data loss', 'rollback', 'broke in production', 'down in production',
+    # Speed demand
+    'need fixes fast', 'fix fast', 'fix quickly', 'fix asap', 'fix now',
+    'resolve fast', 'resolve now', 'fixes fast',
+    # Failure language
+    'failed', 'failing', 'all failed', 'everything failed',
     # Frustration language (more common in real-world tickets)
     'still', 'again', 'already', 'waiting', 'escalate', 'unacceptable',
     'terrible', 'horrible', 'awful', 'frustrated', 'useless',
-    'ridiculous', 'disappointed', 'ignored', 'no response', 'getting worse',
+    'ridiculous', 'disappointed', 'ignored', 'no response', 'getting worse', 'mad', 'angry', 'annoyed',
+      'upset', 'unhappy', 'displeased','sad', 'disgusted', 'dissatisfied', 'irritated', 'pissed', 'fuming','losing my mind','very angry', 'extremely frustrated', 'completely unacceptable', 'beyond frustrated', 'fed up', 'outraged', 'infuriated', 'exasperated', 'disheartened', 'disillusioned', 'discontented', 'disgruntled', 'displeased with the service','dissatisfied with the support','frustrated with the response','irritated by the delay','pissed off about the issue','fuming over the problem','losing my patience','very upset about this','extremely disappointed','completely dissatisfied','beyond annoyed','fed up with the situation','outraged by the lack of help','infuriated by the incompetence','exasperated by the delays','disheartened by the experience','disillusioned by the process','discontented with the outcome','disgruntled with the service','displeased with the handling of my case'
 ]
 
 # Polite/appreciative language
 _POSITIVE_WORDS = [
     'thank you', 'thanks', 'appreciate', 'grateful', 'helpful',
-    'resolved', 'excellent', 'great',
+    'resolved', 'excellent', 'great', 'good', 'happy', 'satisfied',
+    'working', 'fixed', 'awesome', 'nice', 'perfect', 'pleased',
+    'thankful', 'well done', 'glad', 'smooth', 'easy',
 ]
 
 # Low-urgency phrases — the key signal for Satisfied tone.

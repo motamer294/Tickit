@@ -153,26 +153,31 @@ class RAGService:
         """
         Returns a suggested solution string.
         Priority and category come from the ML classifiers — not this service.
+        Prefers same-category results to avoid cross-category solution bleed
+        (e.g. hardware solutions appearing for software/migration tickets).
         """
         hit, cached = self._check_cache(query, category)
         if hit:
             return cached
 
-        results = self.search_similar_faqs(query, top_k=faiss_config.TOP_K)
+        # Fetch extra candidates so we can filter by category
+        results = self.search_similar_faqs(query, top_k=max(faiss_config.TOP_K, 10))
         if not results:
             return "No similar cases found in the knowledge base."
 
-        top_faq, top_sim = results[0]
+        # Prefer results whose Topic matches the predicted category
+        same_cat = [(faq, sim) for faq, sim in results if faq.get('Topic', '') == category]
+        candidates = same_cat if same_cat else results
+
+        top_faq, top_sim = candidates[0]
 
         if top_sim >= 0.90:
-            # Very close match — return its resolution directly
             solution = top_faq.get('Resolution', '').strip()[:400]
             logger.info(f"High-confidence match (sim={top_sim:.2f}): returning resolution directly.")
         else:
-            # Merge top-2 resolutions, skipping duplicates
             parts = []
             seen = set()
-            for faq, _ in results[:2]:
+            for faq, _ in candidates[:2]:
                 res = faq.get('Resolution', '').strip()
                 if res and res not in seen:
                     seen.add(res)

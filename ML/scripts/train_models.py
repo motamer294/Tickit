@@ -38,8 +38,8 @@ SENTIMENT_MAP = {
     'Dissatisfied': 'negative',
 }
 
-C_GRID = [0.01, 0.1, 1, 10, 100]
-CV_FOLDS = 5
+C_GRID = [0.1, 1, 10]
+CV_FOLDS = 3
 
 
 def section(title: str):
@@ -66,7 +66,7 @@ def best_svc(X_train, y_train, scoring='f1_macro') -> CalibratedClassifierCV:
         param_grid={'C': C_GRID},
         cv=cv,
         scoring=scoring,
-        n_jobs=-1,
+        n_jobs=1,
         verbose=0,
     )
     gs.fit(X_train, y_train)
@@ -123,9 +123,12 @@ def main():
 
     # category feature matrix: embeddings (dense→sparse) + TF-IDF (sparse)
     cat_X = hstack([csr_matrix(embeddings), tfidf_sparse])
-    # priority & sentiment: embeddings + hand-crafted (both dense)
+    # priority: embeddings + hand-crafted urgency features
     pri_X = np.hstack([embeddings, prio_feats])
-    sen_X = np.hstack([embeddings, sent_feats])
+    # sentiment: hand-crafted features only — labels are derived from these same
+    # signals so embeddings add noise and break inference (nlp_service.py only
+    # passes the 6 hand-crafted features, not embeddings)
+    sen_X = sent_feats
 
     # ── Train/test split ──────────────────────────────────────────────────────
     indices = np.arange(len(df))

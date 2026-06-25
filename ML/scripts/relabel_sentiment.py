@@ -44,7 +44,7 @@ def derive_sentiment(text: str) -> str:
 
     pos_score = pos + low * 3   # low-urgency phrases are strong positive signal
 
-    if neg >= 2 and neg > pos_score:
+    if neg >= 1 and neg > pos_score:
         return 'Dissatisfied'
     elif pos_score >= 2 and pos_score > neg:
         return 'Satisfied'
