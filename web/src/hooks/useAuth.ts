@@ -1,6 +1,6 @@
 // @/hooks/useAuth.ts
 import { useMutation } from '@tanstack/react-query'
-import { loginApi, signupApi } from '@/api/auth.api'
+import { loginApi, signupApi, googleAuthApi } from '@/api/auth.api'
 import { useAuthStore } from '@/store/auth.store'
 import { notifications } from '@/utils/customNotifications'
 import { parseError, toNotificationPayload } from '@/utils/error-handling'
@@ -81,6 +81,47 @@ export function useLogin() {
       const errorInfo = parseError(error)
       setError(errorInfo.message)
 
+      notifications.show(toNotificationPayload(errorInfo))
+    },
+  })
+}
+
+/**
+ *  useGoogleAuth: Handles Google OAuth login/signup
+ *
+ * Example:
+ * const { mutate, isPending } = useGoogleAuth()
+ * mutate({ access_token: googleAccessToken })
+ */
+export function useGoogleAuth() {
+  const loginSuccess = useAuthStore((s) => s.loginSuccess)
+  const setError = useAuthStore((s) => s.setError)
+
+  return useMutation({
+    mutationFn: googleAuthApi,
+    onSuccess: (data: any) => {
+      const decoded = decodeJWT(data.access)
+      const userId = getUserIdFromToken(data.access) || data.user?.id || 0
+      const userRole = (decoded?.role || data.user?.role || 'CUSTOMER') as 'MANAGER' | 'EMPLOYEE' | 'CUSTOMER'
+
+      loginSuccess(data.access, data.refresh, {
+        id: userId,
+        username: data.user?.username || '',
+        role: userRole,
+      })
+
+      setError(null)
+
+      notifications.show({
+        title: 'Welcome!',
+        message: `Signed in with Google as ${data.user?.username}`,
+        color: 'green',
+        autoClose: 3000,
+      })
+    },
+    onError: (error: any) => {
+      const errorInfo = parseError(error)
+      setError(errorInfo.message)
       notifications.show(toNotificationPayload(errorInfo))
     },
   })

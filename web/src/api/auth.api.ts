@@ -32,6 +32,20 @@ export interface SignupResponse {
   role: 'MANAGER' | 'EMPLOYEE' | 'CUSTOMER'
 }
 
+export interface GoogleAuthPayload {
+  credential: string
+}
+
+export interface GoogleAuthResponse {
+  access: string
+  refresh: string
+  user: {
+    id: number
+    username: string
+    role: 'MANAGER' | 'EMPLOYEE' | 'CUSTOMER'
+  }
+}
+
 // ============================================
 // Authentication API Functions
 // ============================================
@@ -96,6 +110,26 @@ export async function signupApi(
           throw new Error('Username already taken')
         }
       }
+    }
+    throw error
+  }
+}
+
+/**
+ * Authenticate with Google OAuth access token
+ * Sends the token to the backend which verifies it with Google and returns our JWT
+ */
+export async function googleAuthApi(payload: GoogleAuthPayload): Promise<GoogleAuthResponse> {
+  try {
+    const client = getAxiosInstance()
+    const response = await client.post<GoogleAuthResponse>('/auth/google', {
+      credential: payload.credential,
+    })
+    return response.data
+  } catch (error) {
+    if (error instanceof APIError) {
+      const data = error.data as { message?: string } | undefined
+      throw new Error(data?.message || 'Google authentication failed')
     }
     throw error
   }

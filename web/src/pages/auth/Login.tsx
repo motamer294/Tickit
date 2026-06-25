@@ -13,7 +13,8 @@ import {
 import { useForm } from "@mantine/form";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "@iconify-icon/react";
-import { useLogin } from "@/hooks/useAuth";
+import { useGoogleLogin } from "@react-oauth/google";
+import { useLogin, useGoogleAuth } from "@/hooks/useAuth";
 
 const B = {
   purple: "#7F77DD",
@@ -25,6 +26,15 @@ const B = {
 export default function Login() {
   const navigate = useNavigate();
   const login = useLogin();
+  const googleAuth = useGoogleAuth();
+
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: (response) =>
+      googleAuth.mutate(
+        { credential: response.access_token },
+        { onSuccess: () => navigate("/app") }
+      ),
+  });
 
   const form = useForm({
     initialValues: { username: "", password: "" },
@@ -66,6 +76,8 @@ export default function Login() {
           {/* Google SSO */}
           <Button
             variant="default"
+            onClick={() => handleGoogleLogin()}
+            loading={googleAuth.isPending}
             leftSection={
               <svg width="16" height="16" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />

@@ -151,6 +151,21 @@ NINJA_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'AUTH_TOKEN_CLASSES': ('core.api.CustomAccessToken',),
 }
+
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://localhost",
+    "https://127.0.0.1",
+    "http://localhost:5173",
+    "http://localhost:3000",
+]
+
+# Allow Google OAuth popup to communicate back to the opener window.
+# Django's SecurityMiddleware defaults to "same-origin" which severs the
+# window.opener reference the moment the popup navigates to accounts.google.com.
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
+
 # WebSockets / Channels Configuration
 # Redis configuration for Django Channels
 # Use environment-specific host: 'redis' for Docker, 'localhost' for local dev

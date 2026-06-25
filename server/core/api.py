@@ -4,6 +4,7 @@ from ninja_jwt.authentication import JWTAuth
 from ninja_jwt.tokens import AccessToken, RefreshToken
 from ninja import Schema
 from django.contrib.auth.hashers import make_password
+import requests as http_requests
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from django.shortcuts import get_object_or_404
@@ -150,6 +151,79 @@ def signup(request, data: UserSignupSchema):
         "access": str(access_token),
         "refresh": str(refresh_token)
     }
+
+# 2.2 Google OAuth Login / Signup
+class GoogleAuthSchema(Schema):
+    credential: str
+
+@api.post("/auth/google", auth=None)
+def google_auth(request, data: GoogleAuthSchema):
+    if not data.credential:
+        return api.create_response(request, {"message": "Missing Google credential"}, status=400)
+
+    try:
+        userinfo_resp = http_requests.get(
+            'https://www.googleapis.com/oauth2/v3/userinfo',
+            headers={'Authorization': f'Bearer {data.credential}'},
+            timeout=10,
+        )
+    except http_requests.RequestException as exc:
+        return api.create_response(request, {"message": f"Google verification failed: {exc}"}, status=502)
+
+    if userinfo_resp.status_code != 200:
+        return api.create_response(request, {"message": "Invalid Google token"}, status=401)
+
+    userinfo = userinfo_resp.json()
+    email = userinfo.get('email')
+    google_id = userinfo.get('sub')
+    given_name = userinfo.get('given_name', '')
+    family_name = userinfo.get('family_name', '')
+    email_verified = userinfo.get('email_verified', False)
+
+    if not email or not email_verified:
+        return api.create_response(request, {"message": "Google account email not verified"}, status=400)
+
+    user = User.objects.filter(google_id=google_id).first()
+
+    if not user:
+        user = User.objects.filter(email=email).first()
+        if user:
+            user.google_id = google_id
+            user.save(update_fields=['google_id'])
+        else:
+            base_username = email.split('@')[0]
+            username = base_username
+            counter = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}{counter}"
+                counter += 1
+
+            user = User.objects.create(
+                username=username,
+                email=email,
+                first_name=given_name,
+                last_name=family_name,
+                google_id=google_id,
+                role=User.Role.CUSTOMER,
+                password=make_password(None),
+            )
+
+    if not user.is_active:
+        return api.create_response(request, {"message": "Account is disabled"}, status=403)
+
+    access_token = CustomAccessToken.for_user(user)
+    refresh_token = CustomRefreshToken.for_user(user)
+
+    return {
+        "access": str(access_token),
+        "refresh": str(refresh_token),
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "role": user.role,
+        },
+    }
+
 
 # 2.1 Validate Token / Get Current User
 @api.get("/user/me")

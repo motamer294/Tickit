@@ -15,6 +15,7 @@
     "@mantine/hooks": "^8.3.14",
     "@mantine/modals": "^8.3.14",
     "@mantine/notifications": "^8.3.14",
+    "@react-oauth/google": "^0.13.5",
     "@tanstack/react-query": "^5.90.20",
     "axios": "^1.15.0",
     "date-fns": "^4.1.0",
