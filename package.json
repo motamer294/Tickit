@@ -19,6 +19,8 @@
     "docker:logs": "docker compose -f server/docker-compose.yml logs -f",
     "docker:status": "docker compose -f server/docker-compose.yml ps",
     "docker:rebuild": "docker compose -f server/docker-compose.yml up -d --build",
+    "docker:restart": "docker compose -f server/docker-compose.yml restart",
+    "docker:restart:backend": "docker compose -f server/docker-compose.yml restart backend",
     "docker:nuke": "docker compose -f server/docker-compose.yml down -v --rmi all && docker system prune -a -f --volumes",
     "// === DATABASE & MIGRATIONS (run inside the backend container) === //": "",
     "db:makemigrations": "docker compose -f server/docker-compose.yml exec backend python manage.py makemigrations",
@@ -34,6 +36,7 @@
     "ml:setup": "cd ML && python3 -m venv venv && . venv/bin/activate && pip install -r requirements.txt && python scripts/train_models.py",
     "ml:run": "bash ML/start_services.sh",
     "ml:stop": "bash ML/stop_services.sh",
+    "ml:retrain": "cd ML && python3 -m venv venv && . venv/bin/activate && python scripts/retrain_sentiment.py",
     "// ===  PRODUCTION === //": "",
     "build": "npm run build:client",
     "build:client": "npm run build --prefix web"
